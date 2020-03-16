@@ -342,7 +342,7 @@ long ini_getl(const TCHAR *Section, const TCHAR *Key, long DefValue, const TCHAR
 }
 
 #if defined INI_REAL
-/** ini_getf()
+/** ini_getd()
  * \param Section     the name of the section to search for
  * \param Key         the name of the entry to find the value of
  * \param DefValue    the default value in the event of a failed read
@@ -350,11 +350,11 @@ long ini_getl(const TCHAR *Section, const TCHAR *Key, long DefValue, const TCHAR
  *
  * \return            the value located at Key
  */
-INI_REAL ini_getf(const TCHAR *Section, const TCHAR *Key, INI_REAL DefValue, const TCHAR *Filename)
+INI_REAL ini_getd(const TCHAR *Section, const TCHAR *Key, INI_REAL DefValue, const TCHAR *Filename)
 {
   TCHAR LocalBuffer[64];
   int len = ini_gets(Section, Key, __T(""), LocalBuffer, sizearray(LocalBuffer), Filename);
-  return (len == 0) ? DefValue : ini_atof(LocalBuffer);
+  return (len == 0) ? DefValue : ini_atod(LocalBuffer);
 }
 #endif
 
@@ -869,7 +869,7 @@ int ini_putl(const TCHAR *Section, const TCHAR *Key, long Value, const TCHAR *Fi
 int ini_putf(const TCHAR *Section, const TCHAR *Key, INI_REAL Value, const TCHAR *Filename)
 {
   TCHAR LocalBuffer[64];
-  ini_ftoa(LocalBuffer, Value);
+  ini_dtoa(LocalBuffer, Value);
   return ini_puts(Section, Key, LocalBuffer, Filename);
 }
 #endif /* INI_REAL */

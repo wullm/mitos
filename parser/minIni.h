@@ -44,7 +44,7 @@ int   ini_getsection(int idx, mTCHAR *Buffer, int BufferSize, const mTCHAR *File
 int   ini_getkey(const mTCHAR *Section, int idx, mTCHAR *Buffer, int BufferSize, const mTCHAR *Filename);
 
 #if defined INI_REAL
-INI_REAL ini_getf(const mTCHAR *Section, const mTCHAR *Key, INI_REAL DefValue, const mTCHAR *Filename);
+INI_REAL ini_getd(const mTCHAR *Section, const mTCHAR *Key, INI_REAL DefValue, const mTCHAR *Filename);
 #endif
 
 #if !defined INI_READONLY
@@ -110,8 +110,8 @@ int  ini_browse(INI_CALLBACK Callback, void *UserData, const mTCHAR *Filename);
       }
 
 #if defined INI_REAL
-    INI_REAL getf(const std::string& Section, const std::string& Key, INI_REAL DefValue=0) const
-      { return ini_getf(Section.c_str(), Key.c_str(), DefValue, iniFilename.c_str()); }
+    INI_REAL getd(const std::string& Section, const std::string& Key, INI_REAL DefValue=0) const
+      { return ini_getd(Section.c_str(), Key.c_str(), DefValue, iniFilename.c_str()); }
 #endif
 
 #if ! defined INI_READONLY

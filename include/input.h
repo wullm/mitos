@@ -17,14 +17,27 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef INPUT_H
+#define INPUT_H
 
-#include "../include/input.h"
+/* The .ini parser library is minIni */
+#include "../parser/minIni.h"
 
+ struct params {
+     /* Random parameters */
+     long int Seed;
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+     /* Box parameters */
+     int GridSize;
+     double BoxLen;
+ };
+
+ struct units {
+     double UnitLengthMetres;
+     double UnitTimeSeconds;
+ };
+
+int readParams(struct params *parser, const char *fname);
+int readUnits(struct units *us, const char *fname);
 
 #endif

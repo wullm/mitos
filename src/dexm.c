@@ -32,16 +32,13 @@ int main(int argc, char *argv[]) {
 
     /* Read options */
     const char *fname = argv[1];
-    printf("The file is %s\n", fname);
+    printf("The parameter file is %s\n", fname);
 
-    long seed = ini_getl("Random", "Seed", 1, fname);
-    printf("%ld\n", seed);
+    struct params pars;
+    struct units us;
 
-    /* Seed the random number generator */
-    srand(seed);
-    int first = rand();
-    printf("%d\n", first);
+    readParams(&pars, fname);
+    readUnits(&us, fname);
 
-    double boxlen = ini_getf("Box", "BoxLen", 1.0, fname);
-    printf("%f\n", boxlen);
+    
 }

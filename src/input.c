@@ -17,14 +17,20 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
-
 #include "../include/input.h"
 
+int readParams(struct params *pars, const char *fname) {
+     pars->Seed = ini_getl("Random", "Seed", 1, fname);
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+     pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
+     pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
 
-#endif
+     return 1;
+}
+
+int readUnits(struct units *us, const char *fname) {
+     us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
+     us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
+
+     return 1;
+}
