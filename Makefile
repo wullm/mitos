@@ -8,7 +8,7 @@ LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES)
 
 all:
 	make minIni
-	$(GCC) dexm.c -o dexm $(LIBRARIES)
+	$(GCC) src/dexm.c -o dexm $(LIBRARIES)
 
 minIni:
 	cd parser && make
