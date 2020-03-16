@@ -17,15 +17,19 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#include <stdlib.h>
+#include <math.h>
 
-#include "input.h"
-#include "random.h"
+#include "../include/random.h"
+#include "../include/dexm.h"
 
+/* Generate standard normal variable with Box-Mueller */
+double sampleNorm() {
+    double u = (double) rand()/RAND_MAX;
+    double v = (double) rand()/RAND_MAX;
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+    double z0 = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
+    //double z1 = sqrt(-2 * u) * sin(2 * M_PI * v);
 
-#endif
+    return z0;
+}

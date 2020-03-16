@@ -40,5 +40,6 @@ int main(int argc, char *argv[]) {
     readParams(&pars, fname);
     readUnits(&us, fname);
 
-    
+    /* Seed the random number generator */
+    srand(pars.Seed);
 }

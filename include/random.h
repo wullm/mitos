@@ -17,15 +17,9 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef RANDOM_H
+#define RANDOM_H
 
-#include "input.h"
-#include "random.h"
-
-
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+double sampleNorm();
 
 #endif
