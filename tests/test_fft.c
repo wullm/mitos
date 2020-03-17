@@ -4,16 +4,16 @@
 #include <math.h>
 #include <string.h>
 
-#include <fftw3.h>
-
 #include "../include/dexm.h"
 
 static inline void sucmsg(const char *msg) {
     printf("%s%s%s\n\n", TXT_GREEN, msg, TXT_RESET);
 }
 
-static inline double sigma_func(double k, double kx, double ky, double kz) {
-    return exp(-k*k/0.02);
+static inline void sigma_func(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double kern = exp(-k*k/0.02);
+    the_kernel->kern = kern;
 }
 
 int main() {
@@ -66,8 +66,8 @@ int main() {
             for (int z=0; z<=N/2; z++) {
                 int idx = row_major_half(x, y, z, N);
 
-                assert(fabs(fbox[idx][0] - comp[idx][0]) < 1e-5);
-                assert(fabs(fbox[idx][1] - comp[idx][1]) < 1e-5);
+                assert(fabs(fbox[idx] - comp[idx]) < 1e-5);
+                // assert(fabs(fbox[idx][1] - comp[idx][1]) < 1e-5);
             }
         }
     }

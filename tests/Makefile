@@ -21,5 +21,9 @@ all:
 	@./test_random
 
 	$(GCC) test_fft.c -o test_fft $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	rm test.box
+	rm -f test.box
 	@./test_fft
+
+	$(GCC) test_poisson.c -o test_poisson $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	rm -f grf.box
+	@./test_poisson

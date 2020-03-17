@@ -37,8 +37,7 @@ void fft_normalize_r2c(fftw_complex *arr, int N, double boxlen) {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                arr[row_major_half(x, y, z, N)][0] *= boxvol/(N*N*N);
-                arr[row_major_half(x, y, z, N)][1] *= boxvol/(N*N*N);
+                arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
             }
         }
     }
@@ -62,7 +61,7 @@ void fft_execute(fftw_plan plan) {
 }
 
 void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, double (*kern)(double,double,double,double)) {
+                      double len, void (*compute)(struct kernel* the_kernel)) {
     const double dk = 2 * M_PI / len;
 
     double kx,ky,kz,k;
@@ -72,16 +71,17 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                 /* Calculate the wavevector */
                 fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
-                const double kernel = kern(k,kx,ky,kz);
-                const int id = row_major_half(x,y,z,N);
+                /* Compute the kernel */
+                struct kernel the_kernel = {kx, ky, kz, k, 0.f};
+                compute(&the_kernel);
 
-                write[id][0] = read[id][0] * kernel;
-                write[id][1] = read[id][1] * kernel;
+                /* Apply the kernel */
+                const int id = row_major_half(x,y,z,N);
+                write[id] = read[id] * the_kernel.kern;
             }
         }
     }
 }
-
 
 /* Quick and dirty write binary boxes */
 void write_floats(const char *fname, const float *floats, int n) {

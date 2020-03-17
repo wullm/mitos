@@ -20,7 +20,17 @@
 #ifndef FFT_H
 #define FFT_H
 
+#include <complex.h>
 #include <fftw3.h>
+
+/* A structure for calculating kernel functions */
+struct kernel {
+    /* Wavevector in internal inverse length units */
+    double kx,ky,kz;
+    double k;
+    /* Value of the kernel at this k */
+    double complex kern;
+};
 
 static inline int row_major(int i, int j, int k, int N) {
     return i*N*N + j*N + k;
@@ -39,7 +49,7 @@ void fft_normalize_c2r(double *arr, int N, double boxlen);
 void fft_execute(fftw_plan plan);
 
 void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, double (*kernel)(double,double,double,double));
+                      double len, void (*kern)(struct kernel* the_kernel));
 
 /* Some useful I/O functions for debugging */
 void write_floats(const char *fname, const float *floats, int n);
