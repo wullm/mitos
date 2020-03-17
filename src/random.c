@@ -29,7 +29,7 @@ double sampleNorm() {
     double v = (double) rand()/RAND_MAX;
 
     double z0 = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
-    //double z1 = sqrt(-2 * u) * sin(2 * M_PI * v);
+    //double z1 = sqrt(-2 * log(u)) * sin(2 * M_PI * v);
 
     return z0;
 }

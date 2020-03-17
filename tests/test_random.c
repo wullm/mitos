@@ -58,7 +58,7 @@ int main() {
     printf("sample_mean: %e\n", sample_mean);
     printf("sample_sdev: %e\n", sample_sdev);
 
-    assert(fabs(sample_mean) < 100);
+    assert(fabs(sample_mean) < 1e-2);
     assert(fabs(sample_sdev - 1.0) < 1e-2);
 
     /* Get rid of the random numbers */
