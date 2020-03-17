@@ -17,19 +17,17 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef DERIVATIVES_H
+#define DERIVATIVES_H
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
+/* First order derivatives with five-point stencil */
+void compute_derivative_x(double *d_dx, const double *in, int N, double len);
+void compute_derivative_y(double *d_dy, const double *in, int N, double len);
+void compute_derivative_z(double *d_dz, const double *in, int N, double len);
 
-
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+/* Second order derivatives with five-point stencil */
+void compute_derivative_xx(double *d_dx, const double *in, int N, double len);
+void compute_derivative_yy(double *d_dy, const double *in, int N, double len);
+void compute_derivative_zz(double *d_dz, const double *in, int N, double len);
 
 #endif

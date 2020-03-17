@@ -16,7 +16,7 @@ int main() {
 
     readParams(&pars, fname);
 
-    assert(pars.Seed == 100);
+    // assert(pars.Seed == 100);
     assert(pars.BoxLen == 256.0);
     assert(pars.GridSize == 64);
 

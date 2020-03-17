@@ -23,6 +23,8 @@
 #include <complex.h>
 #include <fftw3.h>
 
+#define wrap(i,N) (i%N+N)%N
+
 /* A structure for calculating kernel functions */
 struct kernel {
     /* Wavevector in internal inverse length units */
@@ -33,11 +35,17 @@ struct kernel {
 };
 
 static inline int row_major(int i, int j, int k, int N) {
+    i = wrap(i,N);
+    j = wrap(j,N);
+    k = wrap(k,N);
     return i*N*N + j*N + k;
 }
 
 static inline int row_major_half(int i, int j, int k, int N) {
-    return k + (N/2 + 1) * (j + N*i);
+    i = wrap(i,N);
+    j = wrap(j,N);
+    k = wrap(k,N);
+    return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,

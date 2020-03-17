@@ -60,6 +60,7 @@ void fft_execute(fftw_plan plan) {
     fftw_execute(plan);
 }
 
+/* Apply a kernel to a 3D array after transforming to momentum space */
 void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                       double len, void (*compute)(struct kernel* the_kernel)) {
     const double dk = 2 * M_PI / len;
