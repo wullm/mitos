@@ -35,5 +35,6 @@ all:
 	@./test_poisson
 
 	$(GCC) test_hdf5.c -o test_hdf5 $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
-	rm -f tests/test.hdf5
+	rm -f test.hdf5
 	@./test_hdf5
+	@rm test.hdf5
