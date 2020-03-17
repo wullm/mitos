@@ -70,27 +70,3 @@ void generate_complex_grf(fftw_complex *fbox, int N, double boxlen) {
         }
     }
 }
-
-
-void apply_transfer_function(fftw_complex *fbox, int N, double boxlen,
-                              double (*sigma_func)(double)) {
-    const double dk = 2 * M_PI / boxlen;
-
-    double kx,ky,kz,k;
-    for (int x=0; x<N; x++) {
-        for (int y=0; y<N; y++) {
-            for (int z=0; z<=N/2; z++) {
-                /* Calculate the wavevector */
-                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
-
-                /* Ignore the constant DC mode */
-                if (k > 0) {
-                    const double sigma = sigma_func(k);
-
-                    fbox[row_major_half(x,y,z,N)][0] *= sigma;
-                    fbox[row_major_half(x,y,z,N)][1] *= sigma;
-                }
-            }
-        }
-    }
-}

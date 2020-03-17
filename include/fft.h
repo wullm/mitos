@@ -38,6 +38,9 @@ void fft_normalize_c2r(double *arr, int N, double boxlen);
 
 void fft_execute(fftw_plan plan);
 
+void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
+                      double len, double (*kernel)(double,double,double,double));
+
 /* Some useful I/O functions for debugging */
 void write_floats(const char *fname, const float *floats, int n);
 void write_doubles_as_floats(const char *fname, const double *doubles, int n);

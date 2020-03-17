@@ -12,7 +12,7 @@ static inline void sucmsg(const char *msg) {
     printf("%s%s%s\n\n", TXT_GREEN, msg, TXT_RESET);
 }
 
-static inline double sigma_func(double k) {
+static inline double sigma_func(double k, double kx, double ky, double kz) {
     return exp(-k*k/0.02);
 }
 
@@ -42,12 +42,12 @@ int main() {
 
     /* Generate a Gaussian random field */
     generate_complex_grf(fbox, N, boxlen);
-    apply_transfer_function(fbox, N, boxlen, sigma_func);
+    fft_apply_kernel(fbox, fbox, N, boxlen, sigma_func);
 
     /* Copy the complex array into a secondary memory to compare later */
     memcpy(comp, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
 
-    /* Transform to momentum space */
+    /* Transform to real configuration space */
     fft_execute(c2r);
 	fft_normalize_c2r(box,N,boxlen);
 

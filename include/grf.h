@@ -23,8 +23,5 @@
  #include <fftw3.h>
 
  void generate_complex_grf(fftw_complex *fbox, int N, double boxlen);
- void apply_transfer_function(fftw_complex *fbox, int N, double boxlen, double (*sigma_func)(double));
-
-
 
  #endif

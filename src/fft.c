@@ -61,6 +61,28 @@ void fft_execute(fftw_plan plan) {
     fftw_execute(plan);
 }
 
+void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
+                      double len, double (*kern)(double,double,double,double)) {
+    const double dk = 2 * M_PI / len;
+
+    double kx,ky,kz,k;
+    for (int x=0; x<N; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<=N/2; z++) {
+                /* Calculate the wavevector */
+                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
+
+                const double kernel = kern(k,kx,ky,kz);
+                const int id = row_major_half(x,y,z,N);
+
+                write[id][0] = read[id][0] * kernel;
+                write[id][1] = read[id][1] * kernel;
+            }
+        }
+    }
+}
+
+
 /* Quick and dirty write binary boxes */
 void write_floats(const char *fname, const float *floats, int n) {
   FILE *f = fopen(fname, "wb");
