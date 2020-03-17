@@ -17,16 +17,30 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef FFT_H
+#define FFT_H
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
+#include <fftw3.h>
 
+static inline int row_major(int i, int j, int k, int N) {
+    return i*N*N + j*N + k;
+}
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+static inline int row_major_half(int i, int j, int k, int N) {
+    return k + (N/2 + 1) * (j + N*i);
+}
+
+void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
+                    double *ky, double *kz, double *k);
+
+void fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
+void fft_normalize_c2r(double *arr, int N, double boxlen);
+
+void fft_execute(fftw_plan plan);
+
+/* Some useful I/O functions for debugging */
+void write_floats(char *fname, float *floats, int nfloats);
+void write_doubles_as_floats(char *fname, double *doubles, int nfloats);
+
 
 #endif

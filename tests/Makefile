@@ -4,9 +4,10 @@ GCC = gcc
 #Libraries
 INI_PARSER = ../parser/minIni.o
 STD_LIBRARIES = -lm
-LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES)
+FFTW_LIBRARIES = -lfftw3
+LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES)
 
-OBJECTS = ../lib/input.o ../lib/random.o
+OBJECTS = ../lib/*.o
 
 all:
 	@#$(GCC) test_minIni.c -o test_minIni $(INI_PARSER)
@@ -17,3 +18,6 @@ all:
 
 	$(GCC) test_random.c -o test_random $(OBJECTS) $(LIBRARIES)
 	@./test_random
+
+	$(GCC) test_fft.c -o test_fft $(OBJECTS) $(LIBRARIES)
+	@./test_fft
