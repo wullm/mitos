@@ -6,6 +6,7 @@ INI_PARSER = ../parser/minIni.o
 STD_LIBRARIES = -lm
 FFTW_LIBRARIES = -lfftw3
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES)
+CFLAGS = -Wall
 
 OBJECTS = ../lib/*.o
 
@@ -13,11 +14,12 @@ all:
 	@#$(GCC) test_minIni.c -o test_minIni $(INI_PARSER)
 	@#@./test_minIni
 
-	$(GCC) test_input.c -o test_input $(OBJECTS) $(LIBRARIES)
+	$(GCC) test_input.c -o test_input $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	@./test_input
 
-	$(GCC) test_random.c -o test_random $(OBJECTS) $(LIBRARIES)
+	$(GCC) test_random.c -o test_random $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	@./test_random
 
-	$(GCC) test_fft.c -o test_fft $(OBJECTS) $(LIBRARIES)
+	$(GCC) test_fft.c -o test_fft $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	rm test.box
 	@./test_fft

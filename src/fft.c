@@ -62,22 +62,22 @@ void fft_execute(fftw_plan plan) {
 }
 
 /* Quick and dirty write binary boxes */
-void write_floats(char *fname, float *floats, int nfloats) {
+void write_floats(const char *fname, const float *floats, int n) {
   FILE *f = fopen(fname, "wb");
-  fwrite(floats, sizeof(float), nfloats, f);
+  fwrite(floats, sizeof(float), n, f);
   fclose(f);
 }
 
 /* Quick and dirty write binary boxes */
-void write_doubles_as_floats(char *fname, double *doubles, int nfloats) {
+void write_doubles_as_floats(const char *fname, const double *doubles, int n) {
   /* Convert to floats */
-  float *floats = (float *)malloc(sizeof(float) * nfloats);
-  for (int i = 0; i < nfloats; i++) {
+  float *floats = (float *)malloc(sizeof(float) * n);
+  for (int i = 0; i < n; i++) {
     floats[i] = (float)doubles[i];
   }
 
   FILE *f = fopen(fname, "wb");
-  fwrite(floats, sizeof(float), nfloats, f);
+  fwrite(floats, sizeof(float), n, f);
   fclose(f);
   free(floats);
 }
