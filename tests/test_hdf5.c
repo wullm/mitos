@@ -236,6 +236,9 @@ int main() {
     readParams(&pars, fname);
     readUnits(&us, fname);
 
+    /* Seed the random number generator */
+    srand(pars.Seed);
+
     /* File name for the test HDF5 file */
     char h5fname[50];
     sprintf(h5fname, "%s/%s", pars.OutputDirectory, "test.hdf5");
