@@ -21,100 +21,126 @@ void write_test_file(const char *h5fname, const char *simname) {
     hid_t h_file = H5Fcreate(h5fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     assert(h_file >= 0); //created successfully?
 
-    /* Open new Header group to write simulation properties */
-    hid_t h_grp = H5Gcreate(h_file, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    assert(h_grp >= 0);
-
-    /* Create dataspace */
-    hid_t h_space = H5Screate(H5S_SIMPLE);
-    assert(h_space >= 0);
-
-    /* Write an attribute consisting of two integers */
-    int ndims = 1;
-    hsize_t dim[1] = {2};
-    hid_t h_err = H5Sset_extent_simple(h_space, ndims, dim, NULL);
-    assert(h_err >= 0);
-
-    /* Create the attribute */
-    hid_t h_attr = H5Acreate1(h_grp, "Two Numbers", H5T_NATIVE_INT, h_space, H5P_DEFAULT);
-    assert(h_attr >= 0);
-
-    /* Write the data to the attribute */
-    int data[2] = {NUMBER_ONE,NUMBER_TWO};
-    h_err = H5Awrite(h_attr, H5T_NATIVE_INT, data);
-    assert(h_err >= 0);
-
-    /* Done with this attribute */
-    H5Sclose(h_space);
-    H5Aclose(h_attr);
-
-    /* Create another dataspace for a second attribute */
-    h_space = H5Screate(H5S_SCALAR);
-    assert(h_space >= 0);
-
-    /* For strings, we need to prepare a datatype */
-    const hid_t h_type = H5Tcopy(H5T_C_S1);
-    assert(h_type >= 0);
-    h_err = H5Tset_size(h_type, strlen(simname)); //length of simname
-    assert(h_err >= 0);
-
-    /* Create the second attribute, which is the name of the simulation */
-    h_attr = H5Acreate1(h_grp, "Name", h_type, h_space, H5P_DEFAULT);
-    assert(h_attr >= 0);
-
-    /* Write the second attribute */
-    h_err = H5Awrite(h_attr, h_type, simname);
-    assert(h_err >= 0);
-
-    /* Done with the Header group */
-    H5Tclose(h_type);
-    H5Sclose(h_space);
-    H5Aclose(h_attr);
-    H5Gclose(h_grp);
-
     /* Write another group with a large dataset */
-    h_grp = H5Gcreate(h_file, "/Data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    hid_t h_grp = H5Gcreate(h_file, "/Data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     assert(h_grp >= 0);
-
-    /* Create another dataspace */
-    h_space = H5Screate(H5S_SIMPLE);
-    assert(h_space >= 0);
 
     /* The dataspace consists of MxN random numbers with increasing variance */
-    ndims = 2;
-    hsize_t dim2[2] = {M,N};
-    h_err = H5Sset_extent_simple(h_space, ndims, dim2, NULL);
-    assert(h_err >= 0);
+    int ndims = 2;
+    hsize_t initial_dims[2] = {M/2,N};
+    hsize_t max_dims[2] = {H5S_UNLIMITED, N};
+    hid_t h_space = H5Screate_simple(ndims, initial_dims, max_dims);
+    assert(h_space >= 0);
 
     /* Dataset properties */
     hid_t h_prop = H5Pcreate(H5P_DATASET_CREATE);
     assert(h_prop >= 0);
+
+    /* Enable a chunked dataset */
+    hid_t h_err = H5Pset_layout(h_prop, H5D_CHUNKED);
+    assert(h_err >= 0);
+
+    /* Set the size of the first chunk */
+    hsize_t chunk_dims[2] = {M/2, N};
+    h_err = H5Pset_chunk(h_prop, ndims, chunk_dims);
+    assert(h_err >= 0);
 
     /* Create dataset */
     hid_t h_data = H5Dcreate(h_grp, "Samples", H5T_NATIVE_DOUBLE, h_space, H5P_DEFAULT, h_prop, H5P_DEFAULT);
     assert(h_data >= 0);
 
     /* Generate the data */
-    double *samples = malloc(M*N*sizeof(double));
-    for (int i=0; i<M; i++) {
+    double *samples = malloc(M/2*N*sizeof(double));
+    for (int i=0; i<M/2; i++) {
         for (int j=0; j<N; j++) {
             samples[j + N*i] = sampleNorm() * i;
         }
     }
 
-    /* Write data to the dataset */
-    h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_space, H5S_ALL, H5P_DEFAULT, samples);
+    /* Create a memory dataspace of the chunk*/
+    hid_t h_memspace = H5Screate_simple(ndims, chunk_dims, NULL);
+    assert(h_memspace >= 0);
+
+    hsize_t start[2] = {0, 0};
+    h_err = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
     assert(h_err >= 0);
 
+    /* Write data to the dataset */
+    h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, samples);
+    assert(h_err >= 0);
+
+    /* Free the memory */
     free(samples);
 
     /* Close the dataset and group */
     H5Dclose(h_data);
     H5Sclose(h_space);
+    H5Sclose(h_memspace);
     H5Pclose(h_prop);
     H5Gclose(h_grp);
 
     /* Close the file */
+    H5Fclose(h_file);
+}
+
+void append_test_file(const char *h5fname, const char *simname) {
+    /* Open the test file */
+    hid_t h_file = H5Fopen(h5fname, H5F_ACC_RDWR, H5P_DEFAULT);
+    assert(h_file >= 0);
+
+    /* Open the Data group */
+    hid_t h_grp = H5Gopen(h_file, "/Data", H5P_DEFAULT);
+    assert(h_grp >= 0);
+
+    /* Open the dataset */
+    hid_t h_data = H5Dopen(h_grp, "Samples", H5P_DEFAULT);
+    assert(h_data >= 0);
+
+    /* Set the size of the second chunk */
+    hsize_t chunk_dims[2] = {M/2, N};
+
+    /* The desired total dimensions */
+    int ndims = 2;
+    hsize_t dims[2] = {M,N};
+    hid_t h_err = H5Dset_extent(h_data, dims);
+    assert(h_err >= 0);
+
+    /* Generate more data */
+    double *samples = malloc(M/2*N*sizeof(double));
+    for (int i=0; i<M/2; i++) {
+        for (int j=0; j<N; j++) {
+            samples[j + N*i] = sampleNorm() * (M/2 + i);
+        }
+    }
+
+    /* Create a memory dataspace of the chunk*/
+    hid_t h_memspace = H5Screate_simple(ndims, chunk_dims, NULL);
+    assert(h_memspace >= 0);
+
+    /* Get the file dataspace */
+    hid_t h_space = H5Dget_space(h_data);
+    assert(h_space >= 0);
+
+    hsize_t start[2] = {M/2, 0};
+    h_err = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start, NULL, chunk_dims, NULL);
+    assert(h_err >= 0);
+
+    /* Write data to the dataset */
+    h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, samples);
+    assert(h_err >= 0);
+
+    /* Close the dataset */
+    H5Dclose(h_data);
+    H5Sclose(h_space);
+    H5Sclose(h_memspace);
+
+    /* Free the memory */
+    free(samples);
+
+    /* Close the Data group */
+    H5Gclose(h_grp);
+
+    /* Close the test file */
     H5Fclose(h_file);
 }
 
@@ -123,50 +149,8 @@ void read_test_file(const char *h5fname, const char *simname) {
     hid_t h_file = H5Fopen(h5fname, H5F_ACC_RDONLY, H5P_DEFAULT);
     assert(h_file >= 0);
 
-    /* Open the Header group */
-    hid_t h_grp = H5Gopen(h_file, "/Header", H5P_DEFAULT);
-    assert(h_grp >= 0);
-
-    /* Open the attribute, consisting of two numbers */
-    hid_t h_attr = H5Aopen(h_grp, "Two Numbers", H5P_DEFAULT);
-    assert(h_attr >= 0);
-
-    /* Read out the values */
-    int data[2];
-    hid_t h_err = H5Aread(h_attr, H5T_NATIVE_INT, data);
-    assert(h_err >= 0);
-
-    /* Is it what we expected? */
-    assert(data[0] == NUMBER_ONE);
-    assert(data[1] == NUMBER_TWO);
-
-    /* Close the attribute again */
-    H5Aclose(h_attr);
-
-    /* Open the string attribute */
-    h_attr = H5Aopen(h_grp, "Name", H5P_DEFAULT);
-    assert(h_attr >= 0);
-
-    /* Get the datatype of the string */
-    hid_t h_tp = H5Aget_type(h_attr);
-    assert(h_tp >= 0);
-
-    /* Read out the string */
-    char str[50];
-    h_err = H5Aread(h_attr, h_tp, str);
-
-    printf("The name stored was \"%s\".\n", str);
-    assert(strcmp(str, "Test Simulation") == 0);
-
-    /* Close the second attribute */
-    H5Tclose(h_tp);
-    H5Aclose(h_attr);
-
-    /* Close the header group */
-    H5Gclose(h_grp);
-
     /* Open the Data group */
-    h_grp = H5Gopen(h_file, "/Data", H5P_DEFAULT);
+    hid_t h_grp = H5Gopen(h_file, "/Data", H5P_DEFAULT);
     assert(h_grp >= 0);
 
     /* Open the dataset */
@@ -191,7 +175,8 @@ void read_test_file(const char *h5fname, const char *simname) {
 
     /* Read out the data */
     double *samples = malloc(M*N*sizeof(double));
-    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, samples);
+    hid_t h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, samples);
+    assert(h_err >= 0);
 
     /* Determine the sample standard deviation of each row */
     printf("sdev: ");
@@ -242,11 +227,15 @@ int main() {
 
     /* File name for the test HDF5 file */
     char h5fname[50];
-    sprintf(h5fname, "%s/%s", pars.OutputDirectory, "test.hdf5");
+    sprintf(h5fname, "%s/%s", pars.OutputDirectory, "test_chunked.hdf5");
 
     /* Test writing an HDF5 file */
     printf("Creating HDF5 file %s\n", h5fname);
     write_test_file(h5fname, pars.Name);
+
+    /* Append some data to the HDF5 file */
+    printf("Appending to HDF5 file %s\n", h5fname);
+    append_test_file(h5fname, pars.Name);
 
     /* Test reading an HDF5 file */
     printf("Reading out the HDF5 file %s\n", h5fname);

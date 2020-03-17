@@ -38,3 +38,8 @@ all:
 	rm -f test.hdf5
 	@./test_hdf5
 	@rm test.hdf5
+
+	$(GCC) test_hdf5_chunked.c -o test_hdf5_chunked $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	rm -f test_chunked.hdf5
+	@./test_hdf5_chunked
+	@rm test_chunked.hdf5
