@@ -17,6 +17,7 @@
  *
  ******************************************************************************/
 
+#include <stdlib.h>
 #include "../include/input.h"
 
 int readParams(struct params *pars, const char *fname) {
@@ -24,6 +25,12 @@ int readParams(struct params *pars, const char *fname) {
 
      pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
+
+     /* Read strings */
+     pars->OutputDirectory = malloc(50);
+     pars->Name = malloc(50);
+     ini_gets("Output", "Directory", "./output", pars->OutputDirectory, 50, fname);
+     ini_gets("Output", "Name", "No Name", pars->Name, 50, fname);
 
      return 1;
 }

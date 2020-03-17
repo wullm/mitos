@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 
 #include "../include/dexm.h"
 
@@ -23,9 +24,11 @@ int main() {
     /* Test reading units */
     struct units us;
     readUnits(&us, fname);
-
+    
     assert(us.UnitLengthMetres == 3.086e22);
     assert(us.UnitTimeSeconds == 3.154e16);
+    assert(strcmp(pars.Name, "Test Simulation") == 0);
 
-    sucmsg("test_input... SUCCESS");
+
+    sucmsg("test_input:\t SUCCESS");
 }

@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
     readParams(&pars, fname);
     readUnits(&us, fname);
 
+    printf("Creating initial conditions for: %s.\n", pars.Name);
+
     /* Seed the random number generator */
     srand(pars.Seed);
 }

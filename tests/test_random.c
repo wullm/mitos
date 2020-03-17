@@ -55,8 +55,8 @@ int main() {
     const double sample_sdev = sqrt(ssum / (N - 1.0));
 
     /* Conclusion */
-    printf("sample_mean: %e\n", sample_mean);
-    printf("sample_sdev: %e\n", sample_sdev);
+    printf("sample_mean:\t %e\n", sample_mean);
+    printf("sample_sdev:\t %e\n", sample_sdev);
 
     assert(fabs(sample_mean) < 1e-2);
     assert(fabs(sample_sdev - 1.0) < 1e-2);
@@ -64,5 +64,5 @@ int main() {
     /* Get rid of the random numbers */
     free(x);
 
-    sucmsg("test_random... SUCCESS");
+    sucmsg("test_random:\t SUCCESS");
 }

@@ -30,6 +30,10 @@
      /* Box parameters */
      int GridSize;
      double BoxLen;
+
+     /* Output parameters */
+     char *OutputDirectory;
+     char *Name;
  };
 
  struct units {

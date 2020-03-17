@@ -79,5 +79,5 @@ int main() {
     fftw_destroy_plan(r2c);
     fftw_destroy_plan(c2r);
 
-    sucmsg("test_fft... SUCCESS");
+    sucmsg("test_fft:\t SUCCESS");
 }
