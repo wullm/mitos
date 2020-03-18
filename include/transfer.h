@@ -35,7 +35,8 @@ enum transfer_format {
     CLASS
 };
 
-int readTransfers(const struct params *pars, struct transfer *trs);
+int readTransfers(const struct params *pars, const struct units *us,
+                  const struct cosmology *cosmo, struct transfer *trs);
 int cleanTransfers(struct transfer *trs);
 
 #endif

@@ -15,10 +15,12 @@ int main() {
     const char fname[] = "test_cosmology.ini";
     struct params pars;
     struct units us;
+    struct cosmology cosmo;
     struct transfer trs;
 
     readParams(&pars, fname);
     readUnits(&us, fname);
+    readCosmology(&cosmo, fname);
 
     /* Check if we can read the transfer function data file */
     const char *transfer_fname = pars.TransferFunctionsFile;
@@ -27,7 +29,7 @@ int main() {
     fclose(f);
 
     /* Read out the transfer functions */
-    readTransfers(&pars, &trs);
+    readTransfers(&pars, &us, &cosmo, &trs);
 
     /* Verify that we have the expected data */
     assert(trs.nrow == 616);
@@ -40,10 +42,14 @@ int main() {
     assert(strcmp(trs.titles[26], "t_tot") == 0);
 
     /* Verify some data values */
-    assert(abs(trs.k[0] - 1.062036233582e-05)/trs.k[0] < 1e-5);
-    assert(abs(trs.functions[2][0] - -2.987327466470e-05)/trs.functions[2][0] < 1e-5);
-    assert(abs(trs.k[615] - 1.110201190377e+01)/trs.k[615] < 1e-5);
-    assert(abs(trs.functions[2][615] - -2.543613922206e+03)/trs.functions[2][615] < 1e-5);
+    // assert(abs(trs.k[0] - 1.062036233582e-05)/trs.k[0] < 1e-5);
+    // assert(abs(trs.functions[2][0] - -2.987327466470e-05)/trs.functions[2][0] < 1e-5);
+    // assert(abs(trs.k[615] - 1.110201190377e+01)/trs.k[615] < 1e-5);
+    // assert(abs(trs.functions[2][615] - -2.543613922206e+03)/trs.functions[2][615] < 1e-5);
+    assert(abs(trs.k[0] - 7.174692E-06)/trs.k[0] < 1e-5);
+    assert(abs(trs.functions[2][0] - 5.803317E+05)/trs.functions[2][0] < 1e-5);
+    assert(abs(trs.k[615] - 7.500075E+00)/trs.k[615] < 1e-5);
+    assert(abs(trs.functions[2][615] - 4.521890E+01)/trs.functions[2][615] < 1e-5);
 
     /* Clean up */
     cleanTransfers(&trs);

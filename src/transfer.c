@@ -112,7 +112,8 @@ void readTitles(char *line, enum transfer_format format, char **titles) {
     }
 }
 
-int readTransfers(const struct params *pars, struct transfer *trs) {
+int readTransfers(const struct params *pars, const struct units *us,
+                  const struct cosmology *cosmo, struct transfer *trs) {
     const char *fname = pars->TransferFunctionsFile;
     const char *formatString = pars->TransferFunctionsFormat;
     enum transfer_format format;
@@ -179,6 +180,33 @@ int readTransfers(const struct params *pars, struct transfer *trs) {
     }
 
     fclose(f);
+
+    /* Internally, the h-exponent of the wavenumbers is 0
+     * (i.e. 1/Mpc not h/Mpc) and the k-exponent of the transfer
+     * functions is -2 as it is for CAMB/CMBFAST/Eisenstein-Hu.
+     */
+
+    double factor;
+
+    /* First, adjust the h-exponent (i.e. convert from h/Mpc to 1/Mpc) */
+    factor = pow(cosmo->h, us->Transfer_hExponent);
+
+    /* Next, convert to internal length units */
+    factor /= us->TransferUnitLengthMetres;
+    factor *= us->UnitLengthMetres;
+
+    /* Update the wavenumbers */
+    for (int i=0; i<nrow; i++) {
+        trs->k[i] *= factor;
+    }
+
+    /* Finally, adjust the k-exponent of the transfer functions */
+    for (int i=0; i<ncol; i++) {
+        for (int j=0; j<nrow; j++) {
+            trs->functions[i][j] /= pow(trs->k[j], us->Transfer_kExponent + 2);
+            trs->functions[i][j] *= us->Transfer_Sign; //an overall sign flip
+        }
+    }
 
     return 0;
 }

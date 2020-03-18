@@ -40,12 +40,24 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("TransferFunctions", "File", "", pars->TransferFunctionsFile, len, fname);
      ini_gets("TransferFunctions", "Format", "Plain", pars->TransferFunctionsFormat, len, fname);
 
-     return 1;
+     return 0;
 }
 
 int readUnits(struct units *us, const char *fname) {
      us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
      us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
      us->UnitMassKilogram = ini_getd("Units", "UnitMassKilogram", 1.0, fname);
-     return 1;
+
+     us->TransferUnitLengthMetres = ini_getd("TransferFunctions", "UnitLengthMetres", MPC_METRES, fname);
+     us->Transfer_hExponent = ini_getl("TransferFunctions", "hExponent", 0, fname);
+     us->Transfer_kExponent = ini_getl("TransferFunctions", "kExponent", -2, fname);
+     us->Transfer_Sign = ini_getl("TransferFunctions", "Sign", +1, fname);
+
+     return 0;
+}
+
+int readCosmology(struct cosmology *cosmo, const char *fname) {
+     cosmo->h = ini_getd("Cosmology", "h", 0.70, fname);
+
+     return 0;
 }

@@ -22,35 +22,48 @@
 
 #define DEFAULT_STRING_LENGTH 50
 
+#define MPC_METRES 3.086E22
+
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"
 
- struct params {
-     /* Random parameters */
-     long int Seed;
+struct params {
+    /* Random parameters */
+    long int Seed;
 
-     /* Box parameters */
-     int GridSize;
-     double BoxLen;
+    /* Box parameters */
+    int GridSize;
+    double BoxLen;
 
-     /* Simulation parameters */
-     char *Name;
-     int MaxParticleTypes;
-     int NumParticleTypes;
-     char *TransferFunctionsFile;
-     char *TransferFunctionsFormat;
+    /* Simulation parameters */
+    char *Name;
+    int MaxParticleTypes;
+    int NumParticleTypes;
+    char *TransferFunctionsFile;
+    char *TransferFunctionsFormat;
 
-     /* Output parameters */
-     char *OutputDirectory;
- };
+    /* Output parameters */
+    char *OutputDirectory;
+};
 
- struct units {
-     double UnitLengthMetres;
-     double UnitTimeSeconds;
-     double UnitMassKilogram;
- };
+struct units {
+    double UnitLengthMetres;
+    double UnitTimeSeconds;
+    double UnitMassKilogram;
+
+    /* Units for the transfer function input data */
+    double TransferUnitLengthMetres;
+    int Transfer_hExponent; //1 for h/Mpc; 0 for 1/Mpc
+    int Transfer_kExponent; //0 for CLASS; -2 for CAMB/CMBFAST/Eisenstein-Hu
+    int Transfer_Sign; //-1 for CLASS; +1 for CAMB/CMBFAST/Eisenstein-Hu
+};
+
+struct cosmology {
+    double h;
+};
 
 int readParams(struct params *parser, const char *fname);
 int readUnits(struct units *us, const char *fname);
+int readCosmology(struct cosmology *cosmo, const char *fname);
 
 #endif
