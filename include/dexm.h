@@ -26,7 +26,7 @@
 #include "grf.h"
 #include "fft_kernels.h"
 #include "derivatives.h"
-
+#include "particle_types.h"
 
 #define TXT_RED "\033[31;1m"
 #define TXT_GREEN "\033[32;1m"

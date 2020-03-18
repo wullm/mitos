@@ -20,14 +20,16 @@ int main() {
     // assert(pars.Seed == 100);
     assert(pars.BoxLen == 256.0);
     assert(pars.GridSize == 64);
+    assert(strcmp(pars.Name, "Test Simulation") == 0);
+    assert(strcmp(pars.OutputDirectory, "../tests") == 0);
 
     /* Test reading units */
     struct units us;
     readUnits(&us, fname);
-    
+
     assert(us.UnitLengthMetres == 3.086e22);
     assert(us.UnitTimeSeconds == 3.154e16);
-    assert(strcmp(pars.Name, "Test Simulation") == 0);
+    assert(us.UnitMassKilogram == 1.989e40);
 
 
     sucmsg("test_input:\t SUCCESS");

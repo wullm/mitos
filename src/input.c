@@ -26,11 +26,14 @@ int readParams(struct params *pars, const char *fname) {
      pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
 
+     pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
+     pars->NumParticleTypes = 0; //should not be read, but inferred
+
      /* Read strings */
      pars->OutputDirectory = malloc(50);
      pars->Name = malloc(50);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, 50, fname);
-     ini_gets("Output", "Name", "No Name", pars->Name, 50, fname);
+     ini_gets("Simulation", "Name", "No Name", pars->Name, 50, fname);
 
      return 1;
 }
@@ -38,6 +41,6 @@ int readParams(struct params *pars, const char *fname) {
 int readUnits(struct units *us, const char *fname) {
      us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
      us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
-
+     us->UnitMassKilogram = ini_getd("Units", "UnitMassKilogram", 1.0, fname);
      return 1;
 }

@@ -17,37 +17,19 @@
  *
  ******************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef PARTICLE_TYPES_H
+#define PARTICLE_TYPES_H
 
-#include "../include/dexm.h"
+#include "input.h"
 
-const char *fname;
+struct particle_type {
+    char *Identifier;
+    char *ExportName;
+    double Omega, Mass;
+    long long int TotalNumber;
+    int CubeRootNumber;
+};
 
-int main(int argc, char *argv[]) {
-    if (argc == 1) {
-        printf("No parameter file specified.\n");
-        return 0;
-    }
+int readTypes(struct params *pars, struct particle_type **tps, const char *fname);
 
-    /* Read options */
-    const char *fname = argv[1];
-    printf("The parameter file is %s\n", fname);
-
-    struct params pars;
-    struct units us;
-    struct particle_type *types = NULL;
-
-    readParams(&pars, fname);
-    readUnits(&us, fname);
-    readTypes(&pars, &types, fname);
-
-    printf("Creating initial conditions for: \"%s\".\n", pars.Name);
-
-    /* Seed the random number generator */
-    srand(pars.Seed);
-
-    free(types);
-
-
-}
+#endif

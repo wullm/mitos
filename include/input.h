@@ -31,14 +31,19 @@
      int GridSize;
      double BoxLen;
 
+     /* Simulation parameters */
+     char *Name;
+     int MaxParticleTypes;
+     int NumParticleTypes;
+
      /* Output parameters */
      char *OutputDirectory;
-     char *Name;
  };
 
  struct units {
      double UnitLengthMetres;
      double UnitTimeSeconds;
+     double UnitMassKilogram;
  };
 
 int readParams(struct params *parser, const char *fname);
