@@ -38,17 +38,27 @@ int main(int argc, char *argv[]) {
     struct params pars;
     struct units us;
     struct particle_type *types = NULL;
+    struct cosmology cosmo;
+    struct transfer trs;
 
     readParams(&pars, fname);
     readUnits(&us, fname);
+    readCosmology(&cosmo, fname);
     readTypes(&pars, &types, fname);
+
+    int err;
+    err = readTransfers(&pars, &us, &cosmo, &trs);
+    if(err) {
+        return 0;
+    }
 
     printf("Creating initial conditions for: \"%s\".\n", pars.Name);
 
     /* Seed the random number generator */
     srand(pars.Seed);
 
+    /* Clean up */
+    cleanTransfers(&trs);
     free(types);
-
 
 }

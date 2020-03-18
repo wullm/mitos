@@ -124,7 +124,7 @@ int readTransfers(const struct params *pars, const struct units *us,
     } else if (strcmp(formatString, "CLASS") == 0) {
         format = CLASS;
     } else {
-        printf("ERROR: Unknown transfer functions format.");
+        printf("ERROR: Unknown transfer functions format.\n");
         return 1;
     }
 
@@ -206,6 +206,17 @@ int readTransfers(const struct params *pars, const struct units *us,
             trs->functions[i][j] /= pow(trs->k[j], us->Transfer_kExponent + 2);
             trs->functions[i][j] *= us->Transfer_Sign; //an overall sign flip
         }
+    }
+
+    /* A useful warning if the format does not match the exponents */
+    if (format == CLASS && us->Transfer_Sign != -1) {
+        printf("Warning: TransferFunctions:Sign != -1 as expected for CLASS.\n");
+    }
+    if (format == CLASS && us->Transfer_hExponent != 1) {
+        printf("Warning: TransferFunctions:hExponent != 1 as expected for CLASS.\n");
+    }
+    if (format == CLASS && us->Transfer_kExponent != 0) {
+        printf("Warning: TransferFunctions:kExponent != 0 as expected for CLASS.\n");
     }
 
     return 0;
