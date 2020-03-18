@@ -31,5 +31,6 @@ struct particle_type {
 };
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);
+int cleanTypes(struct params *pars, struct particle_type **tps);
 
 #endif

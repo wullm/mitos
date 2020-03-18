@@ -29,6 +29,7 @@ int readParams(struct params *pars, const char *fname) {
 
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
      pars->NumParticleTypes = 0; //should not be read, but inferred
+     pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;

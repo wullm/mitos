@@ -52,5 +52,8 @@ int main() {
     assert(neutrino.CubeRootNumber == 64);
     assert(neutrino.TotalNumber == 262144);
 
+    /* Clean up */
+    cleanTypes(&pars, &types);
+
     sucmsg("test_types:\t SUCCESS");
 }

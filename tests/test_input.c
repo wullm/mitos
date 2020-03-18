@@ -24,6 +24,7 @@ int main() {
     assert(strcmp(pars.OutputDirectory, "../tests") == 0);
     assert(strcmp(pars.TransferFunctionsFile, "../transfer_functions/example_class_output_tk.dat") == 0);
     assert(strcmp(pars.TransferFunctionsFormat, "CLASS") == 0);
+    assert(pars.Homogeneous == 1);
 
     /* Test reading units */
     struct units us;

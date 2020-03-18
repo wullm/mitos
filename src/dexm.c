@@ -57,8 +57,12 @@ int main(int argc, char *argv[]) {
     /* Seed the random number generator */
     srand(pars.Seed);
 
+    if (pars.Homogeneous) {
+        printf("We are in homogeneous mode.\n");
+    }
+
     /* Clean up */
     cleanTransfers(&trs);
-    free(types);
+    cleanTypes(&pars, &types);
 
 }

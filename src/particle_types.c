@@ -67,5 +67,15 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
 
     pars->NumParticleTypes = num;
 
-    return 1;
+    return 0;
+}
+
+int cleanTypes(struct params *pars, struct particle_type **tps) {
+    for (int i=0; i<pars->NumParticleTypes; i++) {
+        struct particle_type *tp = *(tps) + i;
+        free(tp->Identifier);
+        free(tp->ExportName);
+    }
+    free(*tps);
+    return 0;
 }

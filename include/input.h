@@ -41,6 +41,7 @@ struct params {
     int NumParticleTypes;
     char *TransferFunctionsFile;
     char *TransferFunctionsFormat;
+    char Homogeneous;
 
     /* Output parameters */
     char *OutputDirectory;
