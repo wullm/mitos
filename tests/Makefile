@@ -43,3 +43,6 @@ all:
 	rm -f test_chunked.hdf5
 	@./test_hdf5_chunked
 	@rm test_chunked.hdf5
+
+	$(GCC) test_types.c -o test_types $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	@./test_types
