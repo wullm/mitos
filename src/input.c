@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 #include "../include/input.h"
 
 int readParams(struct params *pars, const char *fname) {
@@ -44,16 +45,34 @@ int readParams(struct params *pars, const char *fname) {
 }
 
 int readUnits(struct units *us, const char *fname) {
-     us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
-     us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
-     us->UnitMassKilogram = ini_getd("Units", "UnitMassKilogram", 1.0, fname);
+    /* Internal units */
+    us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
+    us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
+    us->UnitMassKilogram = ini_getd("Units", "UnitMassKilogram", 1.0, fname);
 
-     us->TransferUnitLengthMetres = ini_getd("TransferFunctions", "UnitLengthMetres", MPC_METRES, fname);
-     us->Transfer_hExponent = ini_getl("TransferFunctions", "hExponent", 0, fname);
-     us->Transfer_kExponent = ini_getl("TransferFunctions", "kExponent", -2, fname);
-     us->Transfer_Sign = ini_getl("TransferFunctions", "Sign", +1, fname);
+    /* Get the transfer functions format */
+    char format[DEFAULT_STRING_LENGTH];
+    ini_gets("TransferFunctions", "Format", "Plain", format, DEFAULT_STRING_LENGTH, fname);
 
-     return 0;
+    /* Format of the transfer functions */
+    int default_h_exponent;
+    int default_k_exponent;
+    int default_sign;
+    if (strcmp(format, "CLASS") == 0) {
+        default_h_exponent = 1;
+        default_k_exponent = 0;
+        default_sign = -1;
+    } else {
+        default_h_exponent = 0;
+        default_k_exponent = -2;
+        default_sign = +1;
+    }
+    us->TransferUnitLengthMetres = ini_getd("TransferFunctions", "UnitLengthMetres", MPC_METRES, fname);
+    us->Transfer_hExponent = ini_getl("TransferFunctions", "hExponent", default_h_exponent, fname);
+    us->Transfer_kExponent = ini_getl("TransferFunctions", "kExponent", default_k_exponent, fname);
+    us->Transfer_Sign = ini_getl("TransferFunctions", "Sign", default_sign, fname);
+
+    return 0;
 }
 
 int readCosmology(struct cosmology *cosmo, const char *fname) {

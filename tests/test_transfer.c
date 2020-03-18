@@ -46,10 +46,10 @@ int main() {
     // assert(abs(trs.functions[2][0] - -2.987327466470e-05)/trs.functions[2][0] < 1e-5);
     // assert(abs(trs.k[615] - 1.110201190377e+01)/trs.k[615] < 1e-5);
     // assert(abs(trs.functions[2][615] - -2.543613922206e+03)/trs.functions[2][615] < 1e-5);
-    assert(abs(trs.k[0] - 7.174692E-06)/trs.k[0] < 1e-5);
-    assert(abs(trs.functions[2][0] - 5.803317E+05)/trs.functions[2][0] < 1e-5);
-    assert(abs(trs.k[615] - 7.500075E+00)/trs.k[615] < 1e-5);
-    assert(abs(trs.functions[2][615] - 4.521890E+01)/trs.functions[2][615] < 1e-5);
+    assert(abs(trs.k[0] - 7.174692E-06)/trs.k[0] < 1e-3);
+    assert(abs(trs.functions[2][0] - 5.803317E+05)/trs.functions[2][0] < 1e-3);
+    assert(abs(trs.k[615] - 7.500075E+00)/trs.k[615] < 1e-3);
+    assert(abs(trs.functions[2][615] - 4.521890E+01)/trs.functions[2][615] < 1e-3);
 
     /* Clean up */
     cleanTransfers(&trs);

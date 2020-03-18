@@ -22,7 +22,7 @@
 
 #define DEFAULT_STRING_LENGTH 50
 
-#define MPC_METRES 3.086E22
+#define MPC_METRES 3.085677581282e22
 
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"

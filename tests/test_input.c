@@ -32,7 +32,7 @@ int main() {
     assert(us.UnitLengthMetres == 3.086e22);
     assert(us.UnitTimeSeconds == 3.154e16);
     assert(us.UnitMassKilogram == 1.989e40);
-    assert(us.TransferUnitLengthMetres == 3.086e22);
+    assert(us.TransferUnitLengthMetres == 3.085677581282e22);
     assert(us.Transfer_hExponent == 1);
     assert(us.Transfer_kExponent == 0);
     assert(us.Transfer_Sign == -1);
