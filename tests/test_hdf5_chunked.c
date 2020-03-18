@@ -241,5 +241,5 @@ int main() {
     printf("Reading out the HDF5 file %s\n", h5fname);
     read_test_file(h5fname, pars.Name);
 
-    sucmsg("test_hdf5:\t SUCCESS");
+    sucmsg("test_hdf5_chunked:\t SUCCESS");
 }
