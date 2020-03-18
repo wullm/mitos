@@ -20,6 +20,8 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#define DEFAULT_STRING_LENGTH 50
+
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"
 
@@ -35,6 +37,8 @@
      char *Name;
      int MaxParticleTypes;
      int NumParticleTypes;
+     char *TransferFunctionsFile;
+     char *TransferFunctionsFormat;
 
      /* Output parameters */
      char *OutputDirectory;

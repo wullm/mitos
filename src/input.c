@@ -30,10 +30,15 @@ int readParams(struct params *pars, const char *fname) {
      pars->NumParticleTypes = 0; //should not be read, but inferred
 
      /* Read strings */
-     pars->OutputDirectory = malloc(50);
-     pars->Name = malloc(50);
-     ini_gets("Output", "Directory", "./output", pars->OutputDirectory, 50, fname);
-     ini_gets("Simulation", "Name", "No Name", pars->Name, 50, fname);
+     int len = DEFAULT_STRING_LENGTH;
+     pars->OutputDirectory = malloc(len);
+     pars->Name = malloc(len);
+     pars->TransferFunctionsFile = malloc(len);
+     pars->TransferFunctionsFormat = malloc(len);
+     ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
+     ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
+     ini_gets("TransferFunctions", "File", "", pars->TransferFunctionsFile, len, fname);
+     ini_gets("TransferFunctions", "Format", "Plain", pars->TransferFunctionsFormat, len, fname);
 
      return 1;
 }

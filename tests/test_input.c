@@ -22,6 +22,8 @@ int main() {
     assert(pars.GridSize == 64);
     assert(strcmp(pars.Name, "Test Simulation") == 0);
     assert(strcmp(pars.OutputDirectory, "../tests") == 0);
+    // assert(strcmp(pars.TransferFunctionsFile, "../transfer_functions/example_class_output_tk.dat") == 0);
+    // assert(strcmp(pars.TransferFunctionsFormat, "CLASS") == 0);
 
     /* Test reading units */
     struct units us;
