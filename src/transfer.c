@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h> //isdigit
 #include <math.h>
 #include "../include/transfer.h"
 
@@ -67,11 +68,14 @@ void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines) {
 
 void readTitles(char *line, enum transfer_format format, char **titles) {
     if (format == Plain) {
+        /* The Plain format is "# k name name name " */
+        /* We want to read out the column names */
+
         /* Skip the first character, which should be '#' */
         char title[50];
-        int j = 0, read = 1, bytes;
+        int j = 0, read = 0, bytes;
 
-        /* Read the column titles */
+        /* Read the column titles & count the # of bytes read */
         while(sscanf(line + read, "%s%n", title, &bytes) > 0) {
             titles[j] = malloc(strlen(title) + 1);
             strcpy(titles[j], title);
@@ -80,34 +84,36 @@ void readTitles(char *line, enum transfer_format format, char **titles) {
             j++;
         }
     } else if (format == CLASS) {
+        /* The CLASS format is "# 1:k    2:name     3:name    4:name ...." */
+        /* We want to read out the column names */
+
         /* Skip the first character, which should be '#' */
-        char title[50];
-        int j = 0, col, read = 1, bytes;
+        char string[50];
+        int j = 0, read = 1, bytes;
 
-        /* We need to adjust for a space in the first column title,
-         * which looks like "1:k (h/Mpc)".
-         */
+        /* Read string until encountering a colon & count the # of bytes read */
+        while(sscanf(line + read, "%[^:]%n", string, &bytes) > 0) {
+            /* Parse the title from the full string */
+            int string_read = 0, string_bytes; //second counter within string
+            char part[50], title[50];
+            strcpy(title, "");
+            /* Read words (separated by spaces) until encountering a number */
+            while (sscanf(string + string_read, "%s%n", part, &string_bytes) > 0
+                   && !isdigit(part[0])) {
+                strcat(title, part);
+                strcat(title, " ");
+                string_read += string_bytes;
+            }
 
-        /* Read the first part of the first column "1:k" */
-        sscanf(line + read, "%d:%s%n", &col, title, &bytes);
-        read += bytes;
+            /* If we found a non-empty title, store it */
+            if (strlen(title) > 0) {
+                title[strlen(title)-1] = '\0'; /* delete trailing whitespace */
+                titles[j] = malloc(strlen(title) + 1);
+                strcpy(titles[j], title);
+                j++;
+            }
 
-        /* Store the first column title (just "k") */
-        titles[0] = malloc(strlen(title) + 1);
-        strcpy(titles[0], title);
-        j++;
-
-        /* Next read the second bit of the first column "(h/Mpc)" */
-        sscanf(line + read, "%s%n", title, &bytes);
-        read += bytes;
-
-        /* Now read the remaining column titles, which contain no spaces */
-        while(sscanf(line + read, "%d:%s%n", &col, title, &bytes) > 0) {
-            titles[j] = malloc(strlen(title) + 1);
-            strcpy(titles[j], title);
-
-            read += bytes;
-            j++;
+            read += bytes + 1;
         }
     }
 }
@@ -152,6 +158,12 @@ int readTransfers(const struct params *pars, const struct units *us,
 
     /* Read out the column titles */
     readTitles(line, format, trs->titles);
+
+    /* Change the first title to "k" if that was not already the case */
+    if (strcmp(trs->titles[0], "k") != 0) {
+        trs->titles[0] = realloc(trs->titles[0], 2);
+        strcpy(trs->titles[0], "k");
+    }
 
     /* Allocate memory for the transfer function data */
     trs->k = malloc(nrow * sizeof(float));
