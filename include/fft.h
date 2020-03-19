@@ -48,6 +48,16 @@ static inline int row_major_half(int i, int j, int k, int N) {
     return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
+static inline void inverse_row_major(long long int id, int *x, int *y, int *z, int N) {
+    int i = id % N;
+    int j = (id - i)/N % N;
+    int k = (id - i - j*N)/(N*N) % N;
+
+    *z = i;
+    *y = j;
+    *x = k;
+}
+
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
                     double *ky, double *kz, double *k);
 

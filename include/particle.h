@@ -17,21 +17,26 @@
  *
  ******************************************************************************/
 
-#ifndef PARTICLE_TYPES_H
-#define PARTICLE_TYPES_H
+#ifndef PARTICLE_H
+#define PARTICLE_H
 
-#include "input.h"
+#include "dexm.h"
 
-struct particle_type {
-    char *Identifier;
-    char *ExportName;
-    double Omega, Mass;
-    long long int TotalNumber;
-    int CubeRootNumber;
-    int Chunks;
+struct particle {
+    float X,Y,Z;
+    float v_X, v_Y, v_Z;
+    float mass;
+    long long int id;
 };
 
-int readTypes(struct params *pars, struct particle_type **tps, const char *fname);
-int cleanTypes(struct params *pars, struct particle_type **tps);
+int allocParticles(struct particle **particles, const struct params *pars,
+                   const struct particle_type *ptype);
+
+int cleanParticles(struct particle **particles, const struct params *pars,
+                   const struct particle_type *ptype);
+
+int genParticles_FromGrid(struct particle **particles, const struct params *pars,
+                          const struct units *us, const struct cosmology *cosmo,
+                          const struct particle_type *ptype, int chunk);
 
 #endif

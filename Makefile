@@ -26,6 +26,7 @@ all:
 	$(GCC) src/derivatives.c -c -o lib/derivatives.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle_types.c -c -o lib/particle_types.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/transfer.c -c -o lib/transfer.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
 minIni:

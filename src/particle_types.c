@@ -49,6 +49,7 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->Mass = ini_getd(seek_str, "Mass", 1.0, fname);
             tp->TotalNumber = ini_getl(seek_str, "TotalNumber", 0, fname);
             tp->CubeRootNumber = ini_getl(seek_str, "CubeRootNumber", 0, fname);
+            tp->Chunks = ini_getl(seek_str, "Chunks", 1, fname);
 
             /* Infer total number from cube root number or vice versa */
             if (tp->TotalNumber == 0 && tp->CubeRootNumber > 0) {

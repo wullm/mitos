@@ -28,6 +28,7 @@
 #include "derivatives.h"
 #include "particle_types.h"
 #include "transfer.h"
+#include "particle.h"
 
 #define TXT_RED "\033[31;1m"
 #define TXT_GREEN "\033[32;1m"

@@ -37,13 +37,15 @@ int main() {
     assert(cdm.Omega == 0.20);
     assert(cdm.CubeRootNumber == 64);
     assert(cdm.TotalNumber == 262144);
+    assert(cdm.Chunks == 1);
 
     struct particle_type baryon = types[1];
     assert(strcmp(baryon.Identifier, "baryon") == 0);
     assert(strcmp(baryon.ExportName, "PartType2") == 0);
     assert(baryon.Mass == 12.5);
     assert(baryon.CubeRootNumber == 64);
-    assert(cdm.TotalNumber == 262144);
+    assert(baryon.TotalNumber == 262144);
+    assert(baryon.Chunks == 1);
 
     struct particle_type neutrino = types[2];
     assert(strcmp(neutrino.Identifier, "neutrino") == 0);
@@ -51,6 +53,7 @@ int main() {
     assert(neutrino.Omega == 0.01);
     assert(neutrino.CubeRootNumber == 64);
     assert(neutrino.TotalNumber == 262144);
+    assert(neutrino.Chunks == 1);
 
     /* Clean up */
     cleanTypes(&pars, &types);
