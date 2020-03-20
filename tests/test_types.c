@@ -57,6 +57,8 @@ int main() {
 
     /* Clean up */
     cleanTypes(&pars, &types);
+    cleanParams(&pars);
+
 
     sucmsg("test_types:\t SUCCESS");
 }

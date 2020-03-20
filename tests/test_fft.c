@@ -79,5 +79,8 @@ int main() {
     fftw_destroy_plan(r2c);
     fftw_destroy_plan(c2r);
 
+    /* Clean up */
+    cleanParams(&pars);
+
     sucmsg("test_fft:\t SUCCESS");
 }

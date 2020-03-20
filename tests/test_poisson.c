@@ -203,5 +203,8 @@ int main() {
     fftw_destroy_plan(c2r_y);
     fftw_destroy_plan(c2r_z);
 
+    /* Clean up */
+    cleanParams(&pars);
+
     sucmsg("test_poisson:\t SUCCESS");
 }

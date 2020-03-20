@@ -64,5 +64,8 @@ int main() {
     /* Get rid of the random numbers */
     free(x);
 
+    /* Clean up */
+    cleanParams(&pars);
+
     sucmsg("test_random:\t SUCCESS");
 }

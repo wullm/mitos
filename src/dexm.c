@@ -77,5 +77,6 @@ int main(int argc, char *argv[]) {
     /* Clean up */
     cleanTransfers(&trs);
     cleanTypes(&pars, &types);
+    cleanParams(&pars);
 
 }

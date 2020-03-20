@@ -53,6 +53,7 @@ int main() {
 
     /* Clean up */
     cleanTransfers(&trs);
+    cleanParams(&pars);
 
     sucmsg("test_transfer:\t SUCCESS");
 }
