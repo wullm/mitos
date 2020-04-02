@@ -17,24 +17,10 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef TITLES_H
+#define TITLES_H
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
-#include "transfer.h"
-#include "transfer_interp.h"
-#include "titles.h"
-#include "particle.h"
-#include "calc_powerspec.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+int find_title(char **titles, char *title, int ntitles);
 
 #endif

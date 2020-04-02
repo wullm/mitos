@@ -24,9 +24,6 @@ all:
 	@#$(GCC) test_minIni.c -o test_minIni $(INI_PARSER)
 	@#@./test_minIni
 
-	$(GCC) test_transfer_interp.c -o test_transfer_interp $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
-	@./test_transfer_interp
-
 	$(GCC) test_input.c -o test_input $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_input
 
@@ -59,3 +56,9 @@ all:
 
 	$(GCC) test_transfer.c -o test_transfer $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_transfer
+
+	$(GCC) test_transfer_interp.c -o test_transfer_interp $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	@./test_transfer_interp
+
+	$(GCC) test_titles.c -o test_titles $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	@./test_titles

@@ -30,6 +30,7 @@ all:
 	$(GCC) src/particle_types.c -c -o lib/particle_types.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/transfer.c -c -o lib/transfer.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/transfer_interp.c -c -o lib/transfer_interp.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/titles.c -c -o lib/titles.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/calc_powerspec.c -c -o lib/calc_powerspec.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)

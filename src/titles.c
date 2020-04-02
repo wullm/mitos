@@ -17,24 +17,22 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#include <stdlib.h>
+#include <string.h>
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
-#include "transfer.h"
-#include "transfer_interp.h"
-#include "titles.h"
-#include "particle.h"
-#include "calc_powerspec.h"
+#include "../include/titles.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+/* Returns the id of the title in the array. Returns -1 if not found */
+int find_title(char **titles, char *title, int ntitles) {
+    int len = strlen(title);
+    int found = -1;
 
-#endif
+    for (int i=0; i<ntitles; i++) {
+        if (strlen(titles[i]) != len) continue;
+        if (strncmp(titles[i], title, len) == 0) {
+            found = i;
+        }
+    }
+
+    return found;
+}

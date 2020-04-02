@@ -77,8 +77,11 @@ void readTitles(char *line, enum transfer_format format, char **titles) {
 
         /* Read the column titles & count the # of bytes read */
         while(sscanf(line + read, "%s%n", title, &bytes) > 0) {
-            titles[j] = malloc(strlen(title) + 1);
-            strcpy(titles[j], title);
+            /* Skip the first title, corresponding to the "k" column */
+            if (j > 0) {
+                titles[j-1] = malloc(strlen(title) + 1);
+                strcpy(titles[j-1], title);
+            }
 
             read += bytes;
             j++;
@@ -107,9 +110,12 @@ void readTitles(char *line, enum transfer_format format, char **titles) {
 
             /* If we found a non-empty title, store it */
             if (strlen(title) > 0) {
-                title[strlen(title)-1] = '\0'; /* delete trailing whitespace */
-                titles[j] = malloc(strlen(title) + 1);
-                strcpy(titles[j], title);
+                /* Skip the first title, corresponding to the "k" column */
+                if (j > 0) {
+                    title[strlen(title)-1] = '\0'; /* delete trailing whitespace */
+                    titles[j-1] = malloc(strlen(title) + 1);
+                    strcpy(titles[j-1], title);
+                }
                 j++;
             }
 
@@ -156,7 +162,7 @@ int readTransfers(const struct params *pars, const struct units *us,
     }
 
     /* Allocate memory for pointers to the column title strings */
-    trs->titles = malloc(ncol * sizeof(char*));
+    trs->titles = malloc(nfunctions * sizeof(char*));
 
     /* Read out the column titles */
     readTitles(line, format, trs->titles);
@@ -241,8 +247,8 @@ int cleanTransfers(struct transfer *trs) {
     free(trs->functions);
     free(trs->k);
 
-    /* Properly close the title strings (+1 for the k column)*/
-    for (int i=0; i<trs->n_functions + 1; i++) {
+    /* Properly close the title strings */
+    for (int i=0; i<trs->n_functions; i++) {
         free(trs->titles[i]);
     }
     free(trs->titles);

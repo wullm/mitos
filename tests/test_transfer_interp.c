@@ -39,10 +39,9 @@ int main() {
     assert(trs.n_functions == 26);
 
     /* Verify some column titles */
-    assert(strcmp(trs.titles[0], "k") == 0);
-    assert(strcmp(trs.titles[3], "d_cdm") == 0);
-    assert(strcmp(trs.titles[25], "t_ncdm[2]") == 0);
-    assert(strcmp(trs.titles[26], "t_tot") == 0);
+    assert(strcmp(trs.titles[2], "d_cdm") == 0);
+    assert(strcmp(trs.titles[24], "t_ncdm[2]") == 0);
+    assert(strcmp(trs.titles[25], "t_tot") == 0);
 
 
 

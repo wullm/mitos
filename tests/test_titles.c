@@ -35,24 +35,25 @@ int main() {
     assert(trs.nrow == 616);
     assert(trs.n_functions == 26);
 
+    int Nf = trs.n_functions;
+
     /* Verify some column titles */
     assert(strcmp(trs.titles[2], "d_cdm") == 0);
     assert(strcmp(trs.titles[24], "t_ncdm[2]") == 0);
     assert(strcmp(trs.titles[25], "t_tot") == 0);
 
-    /* Verify some data values */
-    // assert(abs(trs.k[0] - 1.062036233582e-05)/trs.k[0] < 1e-5);
-    // assert(abs(trs.functions[2][0] - -2.987327466470e-05)/trs.functions[2][0] < 1e-5);
-    // assert(abs(trs.k[615] - 1.110201190377e+01)/trs.k[615] < 1e-5);
-    // assert(abs(trs.functions[2][615] - -2.543613922206e+03)/trs.functions[2][615] < 1e-5);
-    assert(fabs(trs.k[0] - 7.174692E-06)/trs.k[0] < 1e-3);
-    assert(fabs(trs.functions[2][0] - 5.803317E+05)/trs.functions[2][0] < 1e-3);
-    assert(fabs(trs.k[615] - 7.500075E+00)/trs.k[615] < 1e-3);
-    assert(fabs(trs.functions[2][615] - 4.521890E+01)/trs.functions[2][615] < 1e-3);
+    /* Assert that we can find titles */
+    int d_cdm_id = find_title(trs.titles, "d_cdm", Nf);
+    int d_ncdm_2_id = find_title(trs.titles, "t_ncdm[2]", Nf);
+    int t_tot_id = find_title(trs.titles, "t_tot", Nf);
+
+    assert(d_cdm_id == 2);
+    assert(d_ncdm_2_id == 24);
+    assert(t_tot_id == 25);
 
     /* Clean up */
     cleanTransfers(&trs);
     cleanParams(&pars);
 
-    sucmsg("test_transfer:\t SUCCESS");
+    sucmsg("test_titles:\t SUCCESS");
 }
