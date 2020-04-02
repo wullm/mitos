@@ -44,11 +44,11 @@ void generate_complex_grf(fftw_complex *fbox, int N, double boxlen) {
 
                 /* Ignore the constant DC mode */
                 if (k > 0) {
-                    fbox[row_major_half(x,y,z,N)][0] = sampleNorm() * factor;
-                    fbox[row_major_half(x,y,z,N)][1] = sampleNorm() * factor;
+                    double a = sampleNorm() * factor;
+                    double b = sampleNorm() * factor;
+                    fbox[row_major_half(x,y,z,N)] = a + b * I;
                 } else {
-                    fbox[row_major_half(x,y,z,N)][0] = 0;
-                    fbox[row_major_half(x,y,z,N)][1] = 0;
+                    fbox[row_major_half(x,y,z,N)] = 0;
                 }
             }
         }
@@ -64,8 +64,7 @@ void generate_complex_grf(fftw_complex *fbox, int N, double boxlen) {
 
                 int id = row_major_half(x,y,z,N);
                 int invid = row_major_half(invx,invy,invz,N);
-                fbox[id][0] =  fbox[invid][0];
-                fbox[id][1] = -fbox[invid][1];
+                fbox[id] =  conj(fbox[invid]);
             }
         }
     }

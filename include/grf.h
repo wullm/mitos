@@ -17,11 +17,12 @@
  *
  ******************************************************************************/
 
- #ifndef GRF_H
- #define GRF_H
+#ifndef GRF_H
+#define GRF_H
 
- #include <fftw3.h>
+#include <complex.h>
+#include <fftw3.h>
 
- void generate_complex_grf(fftw_complex *fbox, int N, double boxlen);
+void generate_complex_grf(fftw_complex *fbox, int N, double boxlen);
 
- #endif
+#endif

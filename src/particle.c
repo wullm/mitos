@@ -35,8 +35,7 @@ int allocParticles(struct particle **particles, const struct params *pars,
                    const struct particle_type *ptype) {
 
     long long int partnum = ptype->TotalNumber;
-    int chunks = ptype->Chunks;
-    long long int chunk_size = ceil((double) partnum / chunks);
+    long long int chunk_size = ceil((double) partnum / ptype->Chunks);
     *particles = malloc(chunk_size * sizeof(struct particle));
 
     return 0;
@@ -47,6 +46,7 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
                           const struct particle_type *ptype, int chunk) {
 
     long long int partnum = ptype->TotalNumber;
+    long long int chunk_size = ceil((double) partnum / ptype->Chunks);
     int M = ptype->CubeRootNumber;
 
     /* Throw an error if the particle number is not a cube */
@@ -60,16 +60,12 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
     float spacing = len / M;
     float mass = ptype->Mass;
 
-    /* Only generate particles for this chunk */
-    int chunks = ptype->Chunks;
-    long long int chunk_size = ceil((double) partnum / chunks);
-
     /* Find where the chunk starts */
     long long start = chunk * chunk_size;
+    long long int id = start;
     int x0,y0,z0;
     inverse_row_major(start, &x0, &y0, &z0, M);
 
-    long long int id = start;
     for (int x=x0; x<M; x++) {
         for (int y=y0; y<M; y++) {
             for (int z=z0; z<M; z++) {

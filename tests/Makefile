@@ -20,9 +20,13 @@ OBJECTS = ../lib/*.o
 all:
 	@#$(GCC) test_minIni.c -o test_minIni $(INI_PARSER)
 	@#@./test_minIni
+	$(GCC) test_calc_powerspec.c -o test_calc_powerspec $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	rm -f test_ps.box
+	@./test_calc_powerspec
 
 	$(GCC) test_input.c -o test_input $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_input
+
 
 	$(GCC) test_random.c -o test_random $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_random

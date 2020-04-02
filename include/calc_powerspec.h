@@ -17,22 +17,14 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef CALC_POWERSPEC_H
+#define CALC_POWERSPEC_H
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
-#include "transfer.h"
-#include "particle.h"
-#include "calc_powerspec.h"
+#include <complex.h>
+#include <fftw3.h>
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
+                          const fftw_complex *box2, int bins, double *k_in_bins,
+                          double *power_in_bins, int *obs_in_bins);
 
 #endif

@@ -19,7 +19,7 @@ int main() {
 
     // assert(pars.Seed == 100);
     assert(pars.BoxLen == 256.0);
-    assert(pars.GridSize == 64);
+    assert(pars.GridSize == 128);
     assert(strcmp(pars.Name, "Test Simulation") == 0);
     assert(strcmp(pars.OutputDirectory, "../tests") == 0);
     assert(strcmp(pars.TransferFunctionsFile, "../transfer_functions/example_class_output_tk.dat") == 0);
