@@ -31,6 +31,9 @@ int main() {
     /* Read out the transfer functions */
     readTransfers(&pars, &us, &cosmo, &trs);
 
+    /* Initialize the interpolation splines */
+    tr_interp_init(&trs);
+
     /* Verify that we have the expected data */
     assert(trs.nrow == 616);
     assert(trs.n_functions == 26);
@@ -41,19 +44,40 @@ int main() {
     assert(strcmp(trs.titles[25], "t_ncdm[2]") == 0);
     assert(strcmp(trs.titles[26], "t_tot") == 0);
 
-    /* Verify some data values */
-    // assert(abs(trs.k[0] - 1.062036233582e-05)/trs.k[0] < 1e-5);
-    // assert(abs(trs.functions[2][0] - -2.987327466470e-05)/trs.functions[2][0] < 1e-5);
-    // assert(abs(trs.k[615] - 1.110201190377e+01)/trs.k[615] < 1e-5);
-    // assert(abs(trs.functions[2][615] - -2.543613922206e+03)/trs.functions[2][615] < 1e-5);
-    assert(fabs(trs.k[0] - 7.174692E-06)/trs.k[0] < 1e-3);
-    assert(fabs(trs.functions[2][0] - 5.803317E+05)/trs.functions[2][0] < 1e-3);
-    assert(fabs(trs.k[615] - 7.500075E+00)/trs.k[615] < 1e-3);
-    assert(fabs(trs.functions[2][615] - 4.521890E+01)/trs.functions[2][615] < 1e-3);
+
+
+    /* Assert that the interpolation works for each function */
+    for (int id_func=0; id_func<trs.n_functions; id_func++) {
+        /* Switch the spline function */
+        tr_interp_switch_func(&trs, id_func);
+
+        /* Check at the known values */
+        for (int i=0; i<trs.nrow; i++) {
+            double k = trs.k[i];
+            double f = trs.functions[id_func][i];
+            double f_interp = tr_func_at_k(k);
+            assert(fabs(f-f_interp)/f_interp < 1e-5);
+        }
+
+        /* Check inbetween the known values */
+        for (int i=0; i<trs.nrow-1; i++) {
+            double k1 = trs.k[i];
+            double k2 = trs.k[i+1];
+            double k_mid = 0.5*(k2 + k1);
+
+            double f1 = trs.functions[id_func][i];
+            double f2 = trs.functions[id_func][i+1];
+            double f_mid = 0.5*(f1 + f2);
+
+            double f_interp = tr_func_at_k(k_mid);
+            assert(fabs(f_mid-f_interp)/f_interp < 1e-2); //within 1% seems reasonable
+        }
+    }
 
     /* Clean up */
+    tr_interp_free(&trs);
     cleanTransfers(&trs);
     cleanParams(&pars);
 
-    sucmsg("test_transfer:\t SUCCESS");
+    sucmsg("test_transfer_interp:\t SUCCESS");
 }

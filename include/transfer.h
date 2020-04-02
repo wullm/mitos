@@ -23,11 +23,11 @@
 #include "input.h"
 
 struct transfer {
-    float *k;
-    float **functions;
+    double *k;
+    double **functions;
     char **titles;
     long int nrow;
-    int ncol;
+    int n_functions;
 };
 
 enum transfer_format {

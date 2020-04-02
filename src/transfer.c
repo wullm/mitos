@@ -25,8 +25,8 @@
 
 static inline char is_comment_line(char *line) {
     /* Lines starting with '#' or that don't begin with a number */
-    float tmp;
-    return line[0] == '#' || (sscanf(line, "%e", &tmp) <= 0);
+    double tmp;
+    return line[0] == '#' || (sscanf(line, "%le", &tmp) <= 0);
 }
 
 void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines) {
@@ -53,8 +53,8 @@ void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines) {
 
     /* On the first non-comment line, count the number of columns */
     int read = 0, bytes;
-    float tmp;
-    while(sscanf(line + read, "%e%n", &tmp, &bytes) > 0) {
+    double tmp;
+    while(sscanf(line + read, "%le%n", &tmp, &bytes) > 0) {
         read += bytes;
         cols += 1;
     }
@@ -144,8 +144,10 @@ int readTransfers(const struct params *pars, const struct units *us,
     int leading_comment_lines;
     countRowsCols(f, &nrow, &ncol, &leading_comment_lines);
 
+    int nfunctions = ncol-1; //1 column is for the k's
+
     trs->nrow = nrow;
-    trs->ncol = ncol;
+    trs->n_functions = nfunctions;
 
     /* Move to the last leading comment line */
     rewind(f);
@@ -166,20 +168,20 @@ int readTransfers(const struct params *pars, const struct units *us,
     }
 
     /* Allocate memory for the transfer function data */
-    trs->k = malloc(nrow * sizeof(float));
-    trs->functions = malloc(ncol * sizeof(float*));
-    for (int i=0; i<ncol; i++) {
-        trs->functions[i] = malloc(nrow * sizeof(float));
+    trs->k = malloc(nrow * sizeof(double));
+    trs->functions = malloc(nfunctions * sizeof(double*));
+    for (int i=0; i<nfunctions; i++) {
+        trs->functions[i] = malloc(nrow * sizeof(double));
     }
 
     /* Read out the data into the arrays */
     int row = 0;
-    float number = 0;
+    double number = 0;
     while (fgets(line, sizeof(line), f)) {
         if (is_comment_line(line)) continue; /* skip comments */
         int read = 0, bytes;
         int col = 0;
-        while(sscanf(line + read, "%e%n", &number, &bytes) > 0) {
+        while(sscanf(line + read, "%le%n", &number, &bytes) > 0) {
             if (col == 0) {
                 trs->k[row] = number;
             } else {
@@ -213,7 +215,7 @@ int readTransfers(const struct params *pars, const struct units *us,
     }
 
     /* Finally, adjust the k-exponent of the transfer functions */
-    for (int i=0; i<ncol; i++) {
+    for (int i=0; i<nfunctions; i++) {
         for (int j=0; j<nrow; j++) {
             trs->functions[i][j] /= pow(trs->k[j], us->Transfer_kExponent + 2);
             trs->functions[i][j] *= us->Transfer_Sign; //an overall sign flip
@@ -236,9 +238,14 @@ int readTransfers(const struct params *pars, const struct units *us,
 
 
 int cleanTransfers(struct transfer *trs) {
-    free(trs->titles);
     free(trs->functions);
     free(trs->k);
+
+    /* Properly close the title strings (+1 for the k column)*/
+    for (int i=0; i<trs->n_functions + 1; i++) {
+        free(trs->titles[i]);
+    }
+    free(trs->titles);
 
     return 0;
 }

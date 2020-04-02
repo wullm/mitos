@@ -17,23 +17,14 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef TRANSFER_INTERP_H
+#define TRANSFER_INTERP_H
 
-#include "input.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
 #include "transfer.h"
-#include "transfer_interp.h"
-#include "particle.h"
-#include "calc_powerspec.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+int tr_interp_init(const struct transfer *tr);
+int tr_interp_switch_func(const struct transfer *tr, int index_func);
+int tr_interp_free(const struct transfer *tr);
+double tr_func_at_k(double k);
 
 #endif
