@@ -62,3 +62,7 @@ all:
 
 	$(GCC) test_titles.c -o test_titles $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_titles
+
+	$(GCC) test_transfer_render.c -o test_transfer_render $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	rm -f test_trr.box
+	@./test_transfer_render
