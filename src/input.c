@@ -30,6 +30,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
      pars->NumParticleTypes = 0; //should not be read, but inferred
      pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
+     pars->SlabSize = ini_getl("Read", "SlabSize", 8000000, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;
@@ -37,10 +38,12 @@ int readParams(struct params *pars, const char *fname) {
      pars->Name = malloc(len);
      pars->TransferFunctionsFile = malloc(len);
      pars->TransferFunctionsFormat = malloc(len);
+     pars->InputFilename = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
      ini_gets("TransferFunctions", "File", "", pars->TransferFunctionsFile, len, fname);
      ini_gets("TransferFunctions", "Format", "Plain", pars->TransferFunctionsFormat, len, fname);
+     ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
 
      return 0;
 }
@@ -87,6 +90,6 @@ int cleanParams(struct params *pars) {
     free(pars->Name);
     free(pars->TransferFunctionsFile);
     free(pars->TransferFunctionsFormat);
-    
+
     return 0;
 }

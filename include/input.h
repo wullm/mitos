@@ -45,6 +45,10 @@ struct params {
 
     /* Output parameters */
     char *OutputDirectory;
+
+    /* Input parameters */
+    char *InputFilename;
+    size_t SlabSize;
 };
 
 struct units {

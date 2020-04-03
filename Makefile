@@ -34,6 +34,7 @@ all:
 	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/calc_powerspec.c -c -o lib/calc_powerspec.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/dexm_read.c -o dexm_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
 minIni:
 	cd parser && make
