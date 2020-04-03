@@ -261,6 +261,11 @@ int main(int argc, char *argv[]) {
 
         printf("Average density %f\n", avg_density);
 
+        if (strcmp(tp.Identifier, "ncdm") == 0) {
+            avg_density = 0.179075;
+            printf("Reset avg_density to %f\n", avg_density);
+        }
+
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
