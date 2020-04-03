@@ -271,7 +271,11 @@ int main(int argc, char *argv[]) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
-                    rho_box[id] = (rho_box[id] - avg_density)/avg_density;
+                    if (strcmp(tp.Identifier, "ncdm") == 0) {
+                        rho_box[id] = rho_box[id]/avg_density;
+                    } else {
+                        rho_box[id] = (rho_box[id] - avg_density)/avg_density;
+                    }
                 }
             }
         }
@@ -282,7 +286,37 @@ int main(int argc, char *argv[]) {
         write_doubles_as_floats(box_fname, rho_box, N*N*N);
         printf("Density grid exported to %s.\n", box_fname);
 
+        int bins = 50;
+        double *k_in_bins = malloc(bins * sizeof(double));
+        double *power_in_bins = malloc(bins * sizeof(double));
+        int *obs_in_bins = calloc(bins, sizeof(int));
+
+        /* Transform back to momentum space */
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, rho_box, fbox, FFTW_ESTIMATE);
+        fft_execute(r2c);
+    	fft_normalize_r2c(fbox,N,boxlen[0]);
+
+        calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+        /* Check that it is right */
+        printf("\n");
+        printf("Example power spectrum:\n");
+        printf("k\t P_measured(k)\t P_input(k)\t observations\n");
+        for (int i=0; i<bins; i++) {
+            if (obs_in_bins[i] == 0) continue; //skip empty bins
+
+            /* The power we observe */
+            double k = k_in_bins[i];
+            double Pk = power_in_bins[i];
+
+            printf("%f\t %e\t %d\n", k_in_bins[i], power_in_bins[i], obs_in_bins[i]);
+        }
+
+        printf("\n");
+
         free(rho_box);
+        fftw_free(fbox);
     }
 
     /* Close the HDF5 file */
