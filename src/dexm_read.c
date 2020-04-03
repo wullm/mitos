@@ -120,18 +120,38 @@ int main(int argc, char *argv[]) {
         int slabs = Npart/max_slab_size;
         hid_t counter = 0;
 
+        /* Close the data and memory spaces */
+        H5Sclose(h_space);
+
+        /* Close the dataset */
+        H5Dclose(h_dat);
+
+        double total_mass = 0; //for this particle type
+
         for (int k=0; k<slabs+1; k++) {
             /* All slabs have the same number of particles, except possibly the last */
             hid_t slab_size = fmin(Npart - counter, max_slab_size);
             counter += slab_size; //the number of particles read
 
             /* Define the hyperslab */
-            hsize_t slab_dims[2], start[2];
+            hsize_t slab_dims[2], start[2]; //for 3-vectors
+            hsize_t slab_dims_one[1], start_one[1]; //for scalars
 
+            /* Slab dimensions for 3-vectors */
             slab_dims[0] = slab_size;
             slab_dims[1] = 3; //(x,y,z)
             start[0] = counter - slab_size;
             start[1] = 0; //start with x
+
+            /* Slab dimensions for scalars */
+            slab_dims_one[0] = slab_size;
+            start_one[0] = counter - slab_size;
+
+            /* Open the coordinates dataset */
+            h_dat = H5Dopen(h_grp, "Coordinates", H5P_DEFAULT);
+
+            /* Find the dataspace (in the file) */
+            h_space = H5Dget_space (h_dat);
 
             /* Select the hyperslab */
             hid_t status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start, NULL,
@@ -147,11 +167,54 @@ int main(int argc, char *argv[]) {
             status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
                              data);
 
+            /* Close the memory space */
+            H5Sclose(h_mems);
+
+            /* Close the data and memory spaces */
+            H5Sclose(h_space);
+
+            /* Close the dataset */
+            H5Dclose(h_dat);
+
+
+            /* Open the masses dataset */
+            h_dat = H5Dopen(h_grp, "Masses", H5P_DEFAULT);
+
+            /* Find the dataspace (in the file) */
+            h_space = H5Dget_space (h_dat);
+
+            /* Select the hyperslab */
+            status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start_one, NULL,
+                                                slab_dims_one, NULL);
+
+            /* Create a memory space */
+            h_mems = H5Screate_simple(1, slab_dims_one, NULL);
+
+            /* Create the data array */
+            double mass_data[slab_size];
+
+            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+                             mass_data);
+
+            /* Close the memory space */
+            H5Sclose(h_mems);
+
+            /* Close the data and memory spaces */
+            H5Sclose(h_space);
+
+            /* Close the dataset */
+            H5Dclose(h_dat);
+
+            double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
+
             /* Assign the particles to the grid with CIC */
             for (int l=0; l<slab_size; l++) {
                 double X = data[l][0] / (boxlen[0]/N);
                 double Y = data[l][1] / (boxlen[1]/N);
                 double Z = data[l][2] / (boxlen[2]/N);
+
+                double M = mass_data[l];
+                total_mass += M;
 
                 // printf("%f %f %f\n", X, Y, Z);
 
@@ -177,27 +240,36 @@ int main(int argc, char *argv[]) {
         					double part_y = fabs(Y - (iY+y+shift)) <= 1 ? 1-fabs(Y - (iY+y+shift)) : 0;
         					double part_z = fabs(Z - (iZ+z+shift)) <= 1 ? 1-fabs(Z - (iZ+z+shift)) : 0;
 
-                            rho_box[row_major(iX+x, iY+y, iZ+z, N)] += 1.0 * (part_x*part_y*part_z);
+                            rho_box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
         				}
         			}
         		}
 
             }
 
-            /* Close the memory space */
-            H5Sclose(h_mems);
 
             printf("Read %lld particles\n", slab_size);
         }
 
-        /* Close the data and memory spaces */
-        H5Sclose(h_space);
-
-        /* Close the dataset */
-        H5Dclose(h_dat);
-
         /* Close the group again */
         H5Gclose(h_grp);
+
+        printf("Total mass: %f\n", total_mass);
+
+        /* The average density */
+        double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2]);
+
+        printf("Average density %f\n", avg_density);
+
+        /* Turn the density field into an overdensity field */
+        for (int x=0; x<N; x++) {
+            for (int y=0; y<N; y++) {
+                for (int z=0; z<N; z++) {
+                    int id = row_major(x, y, z, N);
+                    rho_box[id] = (rho_box[id] - avg_density)/avg_density;
+                }
+            }
+        }
 
         /* Export the density box for testing purposes */
         const char box_fname[40];
