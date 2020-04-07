@@ -49,7 +49,8 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->Mass = ini_getd(seek_str, "Mass", 1.0, fname);
             tp->TotalNumber = ini_getl(seek_str, "TotalNumber", 0, fname);
             tp->CubeRootNumber = ini_getl(seek_str, "CubeRootNumber", 0, fname);
-            tp->Chunks = ini_getl(seek_str, "Chunks", 1, fname);
+            tp->Chunks = ini_getl(seek_str, "Chunks", 0, fname);
+            tp->ChunkSize = ini_getl(seek_str, "ChunkSize", 0, fname);
 
             /* Infer total number from cube root number or vice versa */
             if (tp->TotalNumber == 0 && tp->CubeRootNumber > 0) {
@@ -57,6 +58,16 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
                 tp->TotalNumber = crn * crn * crn;
             } else if (tp->TotalNumber > 0) {
                 tp->CubeRootNumber = ceil(cbrt((double)tp->TotalNumber));
+            }
+
+            /* Make sure that Chunks and ChunkSize match */
+            if (tp->Chunks == 0 && tp->ChunkSize > 0) {
+                tp->Chunks = ceil((double) tp->TotalNumber / tp->ChunkSize);
+            } else if (tp->Chunks > 0 && tp->ChunkSize == 0) {
+                tp->ChunkSize = ceil((double) tp->TotalNumber / tp->Chunks);
+            } else {
+                tp->Chunks = 1;
+                tp->ChunkSize = tp->TotalNumber;
             }
 
             /* Infer Omega from Mass or vice versa */

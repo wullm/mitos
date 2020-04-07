@@ -60,18 +60,18 @@ int main(int argc, char *argv[]) {
     if (pars.Homogeneous) {
         printf("We are in homogeneous mode.\n");
 
-        struct particle **parts = malloc(pars.NumParticleTypes * sizeof(*parts));
-
         /* Allocate enough memory for one chunk */
-        allocParticles(&parts[0], &pars, &types[0]);
+        struct particle *parts;
+        struct particle_type *ptype = &types[0];
+        allocParticles(&parts, &pars, ptype);
 
         for (int chunk=0; chunk<types[0].Chunks; chunk++) {
             printf("Generating chunk %d.\n", chunk);
-            genParticles_FromGrid(&parts[0], &pars, &us, &cosmo, &types[0], chunk);
+            genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk);
         }
 
         /* Clean the particles up */
-        cleanParticles(&parts[0], &pars, &types[0]);
+        cleanParticles(&parts, &pars, ptype);
     }
 
     /* Clean up */

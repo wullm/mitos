@@ -29,6 +29,7 @@ struct particle_type {
     long long int TotalNumber;
     int CubeRootNumber;
     int Chunks;
+    int ChunkSize; //except possibly the last chunk
 };
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);

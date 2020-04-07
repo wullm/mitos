@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <hdf5.h>
+#include <assert.h>
 #include <math.h>
 
 #include "../include/dexm.h"
@@ -70,6 +71,7 @@ int main(int argc, char *argv[]) {
     hid_t h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
     hid_t h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, boxlen);
     H5Aclose(h_attr);
+    assert(h_err >= 0);
 
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;
@@ -154,9 +156,9 @@ int main(int argc, char *argv[]) {
             h_space = H5Dget_space (h_dat);
 
             /* Select the hyperslab */
-            hid_t status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start, NULL,
-                                               slab_dims, NULL);
-
+            hid_t status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
+                                               NULL, slab_dims, NULL);
+            assert(status >= 0);
 
             /* Create a memory space */
             hid_t h_mems = H5Screate_simple(2, slab_dims, NULL);
@@ -216,8 +218,6 @@ int main(int argc, char *argv[]) {
                 double M = mass_data[l];
                 total_mass += M;
 
-                // printf("%f %f %f\n", X, Y, Z);
-
                 int iX = (int) floor(X);
                 int iY = (int) floor(Y);
                 int iZ = (int) floor(Z);
@@ -244,11 +244,9 @@ int main(int argc, char *argv[]) {
         				}
         			}
         		}
-
             }
 
-
-            printf("Read %lld particles\n", slab_size);
+            printf("Read %ld particles\n", slab_size);
         }
 
         /* Close the group again */
@@ -281,7 +279,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* Export the density box for testing purposes */
-        const char box_fname[40];
+        char box_fname[40];
         sprintf(box_fname, "density_%s.box", tp.Identifier);
         write_doubles_as_floats(box_fname, rho_box, N*N*N);
         printf("Density grid exported to %s.\n", box_fname);
@@ -309,8 +307,9 @@ int main(int argc, char *argv[]) {
             /* The power we observe */
             double k = k_in_bins[i];
             double Pk = power_in_bins[i];
+            int obs = obs_in_bins[i];
 
-            printf("%f\t %e\t %d\n", k_in_bins[i], power_in_bins[i], obs_in_bins[i]);
+            printf("%f\t %e\t %d\n", k, Pk, obs);
         }
 
         printf("\n");

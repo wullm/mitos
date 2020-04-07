@@ -50,7 +50,7 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
     int M = ptype->CubeRootNumber;
 
     /* Throw an error if the particle number is not a cube */
-    if (cbrt((double) partnum) != M) {
+    if (M*M*M != partnum) {
         printf("ERROR: Number is not a cube; cannot generate particles from grid.\n");
         return 1;
     }
@@ -60,38 +60,25 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
     float spacing = len / M;
     float mass = ptype->Mass;
 
-    /* Find where the chunk starts */
+    /* Find where the chunk starts and ends */
     long long start = chunk * chunk_size;
-    long long int id = start;
-    int x0,y0,z0;
-    inverse_row_major(start, &x0, &y0, &z0, M);
+    long long end = (long long) fmin(partnum, start + chunk_size);
 
-    for (int x=x0; x<M; x++) {
-        for (int y=y0; y<M; y++) {
-            for (int z=z0; z<M; z++) {
-                if (id >= start + chunk_size) continue; /* we are done */
-                struct particle *part = &(*particles)[id - start];
-                part->X = x * spacing;
-                part->Y = y * spacing;
-                part->Z = z * spacing;
-                part->v_X = 0.f;
-                part->v_Y = 0.f;
-                part->v_Z = 0.f;
-                part->mass = mass;
-                part->id = id;
+    /* Place the particles on a grid */
+    for (long long int id = start; id < end; id++) {
+        int x,y,z;
+        inverse_row_major(id, &x, &y, &z, M);
 
-                id++;
-            }
-            z0 = 0; /* rewind back to the start after the first partial row */
-        }
-        y0 = 0; /* rewind back to the start after the first partial column */
+        struct particle *part = &(*particles)[id - start];
+        part->X = x * spacing;
+        part->Y = y * spacing;
+        part->Z = z * spacing;
+        part->v_X = 0.f;
+        part->v_Y = 0.f;
+        part->v_Z = 0.f;
+        part->mass = mass;
+        part->id = id;
     }
-
-    // for (int i=0; i<chunk_size; i++) {
-    //     struct particle *part = &(*particles)[i];
-    //     printf("%lld\n", part->id);
-    //     part++;
-    // }
 
     return 0;
 }
