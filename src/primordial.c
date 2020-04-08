@@ -19,14 +19,12 @@
 
 #include <math.h>
 #include "../include/primordial.h"
+#include "../include/transfer_interp.h"
 
 const struct cosmology *cosmology;
 
 int initPrimordial(const struct params *pars, const struct cosmology *cosmo) {
     cosmology = cosmo;
-
-    // A_s = 2.215e-9;
-    // k_pivot = 0.05;
 
     return 0;
 }
@@ -39,4 +37,14 @@ double primordialPower(double k) {
     double k_pivot = cosmology->k_pivot;
 
     return A_s * pow(k/k_pivot, n_s);
+}
+
+/* The full power spectrum P(k) = P_primo(k) * Transfer(k)^2 */
+double fullPower(double k) {
+    if (k == 0) return 0;
+
+    double Pr = primordialPower(k);
+    double Tr = tr_func_at_k(k);
+
+    return Pr * Tr * Tr;
 }

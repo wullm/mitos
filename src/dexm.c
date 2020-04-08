@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
         memcpy(fbox, fboxcpy, N*N*(N/2+1)*sizeof(fftw_complex));
 
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, fullPowerSpectrumKernel);
+        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_full_power);
 
         /* Transform to real configuration space */
         fft_execute(c2r);

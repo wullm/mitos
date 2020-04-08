@@ -20,6 +20,7 @@
 #ifndef FFT_KERNELS_H
 #define FFT_KERNELS_H
 
+#include "primordial.h"
 
 static inline void kernel_inv_poisson(struct kernel *the_kernel) {
     double k = the_kernel->k;
@@ -39,6 +40,12 @@ static inline void kernel_dy(struct kernel *the_kernel) {
 static inline void kernel_dz(struct kernel *the_kernel) {
     double kz = the_kernel->kz;
     the_kernel->kern = I*kz;
+}
+
+static inline void kernel_full_power(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double kern = sqrt(fullPower(k));
+    the_kernel->kern = kern;
 }
 
 #endif
