@@ -45,6 +45,7 @@ struct params {
 
     /* Output parameters */
     char *OutputDirectory;
+    char *OutputFilename;
 
     /* Input parameters */
     char *InputFilename;
