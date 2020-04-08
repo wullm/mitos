@@ -66,6 +66,9 @@ struct units {
 
 struct cosmology {
     double h;
+    double n_s;
+    double A_s;
+    double k_pivot;
 };
 
 int readParams(struct params *parser, const char *fname);

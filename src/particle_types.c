@@ -42,7 +42,7 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             struct particle_type *tp = (*tps) + num;
 
             tp->Identifier = malloc(strlen(identifier)+1);
-            tp->ExportName = malloc(20);
+            tp->ExportName = malloc(DEFAULT_STRING_LENGTH);
             ini_gets(seek_str, "Identifier", "", tp->Identifier, 20, fname);
             ini_gets(seek_str, "ExportName", "", tp->ExportName, 20, fname);
             tp->Omega = ini_getd(seek_str, "Omega", 1.0, fname);
@@ -51,6 +51,11 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->CubeRootNumber = ini_getl(seek_str, "CubeRootNumber", 0, fname);
             tp->Chunks = ini_getl(seek_str, "Chunks", 0, fname);
             tp->ChunkSize = ini_getl(seek_str, "ChunkSize", 0, fname);
+
+            /* Further strings */
+            tp->TransferFunctionDensity = malloc(20);
+            ini_gets(seek_str, "TransferFunctionDensity", "", tp->TransferFunctionDensity, 20, fname);
+
 
             /* Infer total number from cube root number or vice versa */
             if (tp->TotalNumber == 0 && tp->CubeRootNumber > 0) {

@@ -30,6 +30,8 @@ struct particle_type {
     int CubeRootNumber;
     int Chunks;
     int ChunkSize; //except possibly the last chunk
+
+    char *TransferFunctionDensity;
 };
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);

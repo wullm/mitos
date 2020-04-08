@@ -22,6 +22,7 @@
 #include <string.h>
 #include <math.h>
 #include <hdf5.h>
+#include <fftw3.h>
 
 #include "../include/dexm.h"
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     /* Read options */
     const char *fname = argv[1];
-    printf("The parameter file is %s\n", fname);
+    printf("The parameter file is '%s'\n", fname);
 
     struct params pars;
     struct units us;
@@ -47,22 +48,104 @@ int main(int argc, char *argv[]) {
     readUnits(&us, fname);
     readCosmology(&cosmo, fname);
     readTypes(&pars, &types, fname);
+    readTransfers(&pars, &us, &cosmo, &trs);
 
-    int err;
-    err = readTransfers(&pars, &us, &cosmo, &trs);
-    if(err) {
-        return 0;
-    }
+    /* Initialize the interpolation splines for the transfer functions */
+    tr_interp_init(&trs);
 
-    printf("Creating initial conditions for: \"%s\".\n", pars.Name);
+    /* Initialize the primordial power spectrum function */
+    initPrimordial(&pars, &cosmo);
+
+    printf("Creating initial conditions for '%s'.\n", pars.Name);
 
     /* Seed the random number generator */
     srand(pars.Seed);
 
+
+    /* Create Gaussian random field */
+    const int N = pars.GridSize;
+    const double boxlen = pars.BoxLen;
+
+    /* Create 3D arrays */
+    double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fboxcpy = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+
+    /* Create FFT plans */
+    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+
+    /* Generate a complex Hermitian Gaussian random field */
+    generate_complex_grf(fbox, N, boxlen);
+
+    /* Copy the complex random field for use later */
+    memcpy(fboxcpy, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
+
+    /* Transform to real configuraiton space */
+    fft_execute(c2r);
+	fft_normalize_c2r(box,N,boxlen);
+
+    /* Export the Gaussian random field for testing purposes */
+    char box_fname[DEFAULT_STRING_LENGTH];
+    sprintf(box_fname, "%s/%s", pars.OutputDirectory, "gaussian_pure.hdf5");
+    write_doubles_as_floats("box.box", box, N*N*N);
+    writeGRF_H5(box, N, boxlen, box_fname);
+    printf("Pure Gaussian random field exported to '%s'.\n", box_fname);
+
+    printf("\n");
+
+    /* For each particle type, create the corresponding density field */
+    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+        /* The current particle type */
+        struct particle_type *ptype = types + pti;
+        const char *Identifier = ptype->Identifier;
+
+        /* The user-defined title of the density transfer function */
+        const char *title = ptype->TransferFunctionDensity;
+
+        /* Find the title among the transfer functions */
+        int trfunc_id = find_title(trs.titles, title, trs.n_functions);
+        if (trfunc_id < 0) {
+            printf("Error: transfer function '%s' not found (%d).\n", title, trfunc_id);
+            exit(1);
+        }
+
+        /* Switch the interpolation spline to this transfer function */
+        tr_interp_switch_func(&trs, trfunc_id);
+
+        /* Restore the original pure complex Gaussian random field */
+        memcpy(fbox, fboxcpy, N*N*(N/2+1)*sizeof(fftw_complex));
+
+        /* Apply the transfer function to fbox */
+        fft_apply_kernel(fbox, fbox, N, boxlen, fullPowerSpectrumKernel);
+
+        /* Transform to real configuration space */
+        fft_execute(c2r);
+    	fft_normalize_c2r(box,N,boxlen);
+
+        /* Write the field to disk */
+        char dbox_fname[DEFAULT_STRING_LENGTH];
+        char dbox_fname2[DEFAULT_STRING_LENGTH];
+        sprintf(dbox_fname, "%s/%s%s%s", pars.OutputDirectory, "density_", Identifier, ".hdf5");
+        sprintf(dbox_fname2, "%s/%s%s%s", pars.OutputDirectory, "density_", Identifier, ".box");
+        write_doubles_as_floats(dbox_fname2, box, N*N*N);
+        writeGRF_H5(box, N, boxlen, dbox_fname);
+        printf("Density field '%s' exported to '%s'.\n", title, dbox_fname);
+    }
+
+    /* Free all the FFT objects */
+    fftw_free(box);
+    fftw_free(fbox);
+    fftw_free(fboxcpy);
+    fftw_destroy_plan(r2c);
+    fftw_destroy_plan(c2r);
+
+    printf("\n");
+
     /* Name of the main output file containing the initial conditions */
     char out_fname[DEFAULT_STRING_LENGTH];
     sprintf(out_fname, "%s/%s", pars.OutputDirectory, pars.OutputFilename);
-    printf("Creating output file \"%s\".\n", out_fname);
+    printf("Creating output file '%s'.\n", out_fname);
 
     /* Create the output file */
     hid_t h_out_file = H5Fcreate(out_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -209,6 +292,7 @@ int main(int argc, char *argv[]) {
     H5Fclose(h_out_file);
 
     /* Clean up */
+    tr_interp_free(&trs);
     cleanTransfers(&trs);
     cleanTypes(&pars, &types);
     cleanParams(&pars);

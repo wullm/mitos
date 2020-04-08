@@ -17,10 +17,27 @@
  *
  ******************************************************************************/
 
-#ifndef TITLES_H
-#define TITLES_H
+#ifndef PRIMORDIAL_H
+#define PRIMORDIAL_H
 
+#include <math.h>
+#include "input.h"
+#include "fft.h"
+#include "transfer_interp.h"
 
-int find_title(char **titles, const char *title, int ntitles);
+int initPrimordial(const struct params *pars, const struct cosmology *cosmo);
+double primordialPower(double k);
+
+static inline double sigma_func(double k) {
+    if (k == 0) return 0;
+
+    return sqrt(primordialPower(k)) * tr_func_at_k(k);
+}
+
+static inline void fullPowerSpectrumKernel(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double kern = sigma_func(k);
+    the_kernel->kern = kern;
+}
 
 #endif

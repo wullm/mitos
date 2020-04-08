@@ -23,6 +23,7 @@ OBJECTS = lib/*.o
 all:
 	make minIni
 	$(GCC) src/input.c -c -o lib/input.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/output.c -c -o lib/output.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/fft.c -c -o lib/fft.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/grf.c -c -o lib/grf.o $(INCLUDES) $(CFLAGS)
@@ -33,6 +34,7 @@ all:
 	$(GCC) src/titles.c -c -o lib/titles.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/calc_powerspec.c -c -o lib/calc_powerspec.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/primordial.c -c -o lib/primordial.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read.c -o dexm_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 

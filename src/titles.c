@@ -23,7 +23,7 @@
 #include "../include/titles.h"
 
 /* Returns the id of the title in the array. Returns -1 if not found */
-int find_title(char **titles, char *title, int ntitles) {
+int find_title(char **titles, const char *title, int ntitles) {
     int len = strlen(title);
     int found = -1;
 

@@ -21,6 +21,7 @@
 #define DEXM_H
 
 #include "input.h"
+#include "output.h"
 #include "random.h"
 #include "fft.h"
 #include "grf.h"
@@ -32,6 +33,7 @@
 #include "titles.h"
 #include "particle.h"
 #include "calc_powerspec.h"
+#include "primordial.h"
 
 #define TXT_RED "\033[31;1m"
 #define TXT_GREEN "\033[32;1m"

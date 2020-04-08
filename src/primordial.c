@@ -17,10 +17,26 @@
  *
  ******************************************************************************/
 
-#ifndef TITLES_H
-#define TITLES_H
+#include <math.h>
+#include "../include/primordial.h"
 
+const struct cosmology *cosmology;
 
-int find_title(char **titles, const char *title, int ntitles);
+int initPrimordial(const struct params *pars, const struct cosmology *cosmo) {
+    cosmology = cosmo;
 
-#endif
+    // A_s = 2.215e-9;
+    // k_pivot = 0.05;
+
+    return 0;
+}
+
+double primordialPower(double k) {
+    if (k == 0) return 0;
+
+    double A_s = cosmology->A_s;
+    double n_s = cosmology->n_s;
+    double k_pivot = cosmology->k_pivot;
+
+    return A_s * pow(k/k_pivot, n_s);
+}

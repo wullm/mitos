@@ -83,6 +83,9 @@ int readUnits(struct units *us, const char *fname) {
 
 int readCosmology(struct cosmology *cosmo, const char *fname) {
      cosmo->h = ini_getd("Cosmology", "h", 0.70, fname);
+     cosmo->n_s = ini_getd("Cosmology", "n_s", 0.97, fname);
+     cosmo->A_s = ini_getd("Cosmology", "A_s", 2.215e-9, fname);
+     cosmo->k_pivot = ini_getd("Cosmology", "k_pivot", 0.05, fname);
 
      return 0;
 }
