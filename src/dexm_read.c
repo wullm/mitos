@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     /* Read the redshift attribute */
     double redshift;
-    h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
+    h_attr = H5Aopen(h_grp, "Redshift", H5P_DEFAULT);
     h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &redshift);
     H5Aclose(h_attr);
     assert(h_err >= 0);
