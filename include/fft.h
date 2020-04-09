@@ -23,7 +23,7 @@
 #include <complex.h>
 #include <fftw3.h>
 
-#define wrap(i,N) (i%N+N)%N
+#define wrap(i,N) ((i)%N+N)%N
 
 /* A structure for calculating kernel functions */
 struct kernel {
