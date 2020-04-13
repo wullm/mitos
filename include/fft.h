@@ -72,6 +72,6 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
 /* Some useful I/O functions for debugging */
 void write_floats(const char *fname, const float *floats, int n);
 void write_doubles_as_floats(const char *fname, const double *doubles, int n);
-
+int fft_c2r_export(fftw_complex *farr, int N, double boxlen, const char *fname);
 
 #endif

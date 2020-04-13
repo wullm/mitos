@@ -26,6 +26,8 @@
 
 #include "../include/dexm.h"
 
+#define outname(s,x) sprintf(s, "%s/%s", pars.OutputDirectory, x);
+
 const char *fname;
 
 int main(int argc, char *argv[]) {
@@ -61,84 +63,30 @@ int main(int argc, char *argv[]) {
     /* Seed the random number generator */
     srand(pars.Seed);
 
-
     /* Create Gaussian random field */
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
 
-    /* Create 3D arrays */
-    double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_complex *fboxcpy = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-
-    /* Create FFT plans */
-    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
-    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+    /* Allocate 3D array */
+    fftw_complex *grf = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Generate a complex Hermitian Gaussian random field */
-    generate_complex_grf(fbox, N, boxlen);
+    generate_complex_grf(grf, N, boxlen);
 
-    /* Copy the complex random field for use later */
-    memcpy(fboxcpy, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
-
-    /* Transform to real configuraiton space */
-    fft_execute(c2r);
-	fft_normalize_c2r(box,N,boxlen);
-
-    /* Export the Gaussian random field for testing purposes */
+    /* Export the real box */
     char box_fname[DEFAULT_STRING_LENGTH];
-    sprintf(box_fname, "%s/%s", pars.OutputDirectory, "gaussian_pure.hdf5");
-    write_doubles_as_floats("box.box", box, N*N*N);
-    writeGRF_H5(box, N, boxlen, box_fname);
-    printf("Pure Gaussian random field exported to '%s'.\n", box_fname);
+    outname(box_fname, "gaussian_pure.hdf5");
+    fft_c2r_export(grf, N, boxlen, box_fname);
 
-    printf("\n");
-
-    /* For each particle type, create the corresponding density field */
-    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
-        /* The current particle type */
-        struct particle_type *ptype = types + pti;
-        const char *Identifier = ptype->Identifier;
-
-        /* The user-defined title of the density transfer function */
-        const char *title = ptype->TransferFunctionDensity;
-
-        /* Find the title among the transfer functions */
-        int trfunc_id = find_title(trs.titles, title, trs.n_functions);
-        if (trfunc_id < 0) {
-            printf("Error: transfer function '%s' not found (%d).\n", title, trfunc_id);
-            exit(1);
-        }
-
-        /* Switch the interpolation spline to this transfer function */
-        tr_interp_switch_func(&trs, trfunc_id);
-
-        /* Restore the original pure complex Gaussian random field */
-        memcpy(fbox, fboxcpy, N*N*(N/2+1)*sizeof(fftw_complex));
-
-        /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_full_power);
-
-        /* Transform to real configuration space */
-        fft_execute(c2r);
-    	fft_normalize_c2r(box,N,boxlen);
-
-        /* Write the field to disk */
-        char dbox_fname[DEFAULT_STRING_LENGTH];
-        char dbox_fname2[DEFAULT_STRING_LENGTH];
-        sprintf(dbox_fname, "%s/%s%s%s", pars.OutputDirectory, "density_", Identifier, ".hdf5");
-        sprintf(dbox_fname2, "%s/%s%s%s", pars.OutputDirectory, "density_", Identifier, ".box");
-        write_doubles_as_floats(dbox_fname2, box, N*N*N);
-        writeGRF_H5(box, N, boxlen, dbox_fname);
-        printf("Density field '%s' exported to '%s'.\n", title, dbox_fname);
+    /* Generate the density grids */
+    int err = generateDensityGrids(&pars, &us, &cosmo, &trs, types, grf);
+    if (err > 0) {
+        printf("Error generating density grids.\n");
+        exit(1);
     }
 
-    /* Free all the FFT objects */
-    fftw_free(box);
-    fftw_free(fbox);
-    fftw_free(fboxcpy);
-    fftw_destroy_plan(r2c);
-    fftw_destroy_plan(c2r);
+    /* Get rid of the random phases field */
+    fftw_free(grf);
 
     printf("\n");
 

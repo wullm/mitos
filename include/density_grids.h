@@ -17,27 +17,18 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef DENSITY_GRIDS_H
+#define DENSITY_GRIDS_H
 
+#include <fftw3.h>
 #include "input.h"
-#include "output.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
 #include "particle_types.h"
 #include "transfer.h"
-#include "transfer_interp.h"
-#include "titles.h"
-#include "particle.h"
-#include "calc_powerspec.h"
-#include "primordial.h"
-#include "density_grids.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+int generateDensityGrids(const struct params *pars, const struct units *us,
+                         const struct cosmology *cosmo,
+                         const struct transfer *trs,
+                         struct particle_type *types,
+                         const fftw_complex *grf);
 
 #endif

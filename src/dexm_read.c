@@ -84,22 +84,20 @@ int main(int argc, char *argv[]) {
     /* Close the Header group again */
     H5Gclose(h_grp);
 
-    /* Open the Cosmology group */
-    h_grp = H5Gopen(h_file, "Cosmology", H5P_DEFAULT);
-
-    /* Read the redshift attribute */
-    double redshift;
-    h_attr = H5Aopen(h_grp, "Redshift", H5P_DEFAULT);
-    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &redshift);
-    H5Aclose(h_attr);
-    assert(h_err >= 0);
-
-    printf("The redshift was %f\n\n", redshift);
-
-    /* Close the Cosmology group */
-    H5Gclose(h_grp);
-
-
+    // /* Open the Cosmology group */
+    // h_grp = H5Gopen(h_file, "Cosmology", H5P_DEFAULT);
+    //
+    // /* Read the redshift attribute */
+    // double redshift;
+    // h_attr = H5Aopen(h_grp, "Redshift", H5P_DEFAULT);
+    // h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &redshift);
+    // H5Aclose(h_attr);
+    // assert(h_err >= 0);
+    //
+    // printf("The redshift was %f\n\n", redshift);
+    //
+    // /* Close the Cosmology group */
+    // H5Gclose(h_grp);
 
     /* Try to open each particle group */
     for (int i=0; i<pars.NumParticleTypes; i++) {
@@ -297,8 +295,9 @@ int main(int argc, char *argv[]) {
 
         /* Export the density box for testing purposes */
         char box_fname[40];
-        sprintf(box_fname, "density_%s.box", tp.Identifier);
-        write_doubles_as_floats(box_fname, rho_box, N*N*N);
+        sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
+        // write_doubles_as_floats(box_fname, rho_box, N*N*N);
+        writeGRF_H5(rho_box, N, box_fname, fname);
         printf("Density grid exported to %s.\n", box_fname);
 
         int bins = 50;
