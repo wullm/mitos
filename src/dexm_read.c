@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
         char box_fname[40];
         sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
         // write_doubles_as_floats(box_fname, rho_box, N*N*N);
-        writeGRF_H5(rho_box, N, box_fname, fname);
+        writeGRF_H5(rho_box, N, boxlen[0], box_fname);
         printf("Density grid exported to %s.\n", box_fname);
 
         int bins = 50;
