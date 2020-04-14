@@ -19,6 +19,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <hdf5.h>
+#include <assert.h>
 #include "../include/input.h"
 
 int readParams(struct params *pars, const char *fname) {
@@ -95,6 +97,71 @@ int cleanParams(struct params *pars) {
     free(pars->Name);
     free(pars->TransferFunctionsFile);
     free(pars->TransferFunctionsFormat);
+
+    return 0;
+}
+
+int readGRF_H5(double **box, int *N, double *box_len, const char *fname) {
+    /* Create the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    /* Create the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
+
+    /* Read the size of the field */
+    hid_t h_attr, h_err;
+    double boxsize[3];
+
+    /* Open and read out the attribute */
+    h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &boxsize);
+    assert(h_err >= 0);
+
+    /* It should be a cube */
+    assert(boxsize[0] == boxsize[1]);
+    assert(boxsize[1] == boxsize[2]);
+    *box_len = boxsize[0];
+
+    printf("We found %f\n\n\n", *box_len);
+
+    /* Close the attribute, and the Header group */
+    H5Aclose(h_attr);
+    H5Gclose(h_grp);
+
+    /* Open the Field group */
+    h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Open the dataspace and fetch the grid dimensions */
+    hid_t h_space = H5Dget_space(h_data);
+    int ndims = H5Sget_simple_extent_ndims(h_space);
+    hsize_t *dims = malloc(ndims * sizeof(hsize_t));
+    H5Sget_simple_extent_dims(h_space, dims, NULL);
+
+    /* We should be in 3D */
+    assert(ndims == 3);
+    /* It should be a cube */
+    assert(dims[0] == dims[1]);
+    assert(dims[1] == dims[2]);
+    *N = dims[0];
+
+    /* Allocate the array */
+    *box = malloc(dims[0] * dims[1] * dims[2] * sizeof(double));
+
+    /* Read out the data */
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, *box);
+
+    /* Close the dataspace and dataset */
+    H5Sclose(h_space);
+    H5Dclose(h_data);
+
+    /* Close the Field group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
 
     return 0;
 }

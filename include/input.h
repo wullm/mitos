@@ -77,4 +77,6 @@ int readCosmology(struct cosmology *cosmo, const char *fname);
 
 int cleanParams(struct params *parser);
 
+int readGRF_H5(double **box, int *N, double *box_len, const char *fname);
+
 #endif
