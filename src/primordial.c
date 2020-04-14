@@ -29,6 +29,7 @@ int initPrimordial(const struct params *pars, const struct cosmology *cosmo) {
     return 0;
 }
 
+/* The bare primordial power spectrum, without transfer functions */
 double primordialPower(double k) {
     if (k == 0) return 0;
 
@@ -44,7 +45,17 @@ double fullPower(double k) {
     if (k == 0) return 0;
 
     double Pr = primordialPower(k);
-    double Tr = tr_func_at_k(k);
+    double Tr = transferFunction(k);
 
     return Pr * Tr * Tr;
+}
+
+/* Only the transfer function part */
+double transferFunction(double k) {
+    if (k == 0) return 0;
+
+    /* Use the interpolation spline. Should only be called here. */
+    double Tr = tr_func_at_k(k);
+
+    return Tr;
 }

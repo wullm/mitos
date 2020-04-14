@@ -48,4 +48,16 @@ static inline void kernel_full_power(struct kernel *the_kernel) {
     the_kernel->kern = kern;
 }
 
+static inline void kernel_power_no_transfer(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double kern = sqrt(primordialPower(k));
+    the_kernel->kern = kern;
+}
+
+static inline void kernel_transfer_function(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double kern = transferFunction(k);
+    the_kernel->kern = kern;
+}
+
 #endif

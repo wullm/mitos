@@ -68,7 +68,7 @@ int generateDensityGrids(const struct params *pars, const struct units *us,
         memcpy(fbox, grf, N*N*(N/2+1)*sizeof(fftw_complex));
 
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_full_power);
+        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function);
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];

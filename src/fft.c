@@ -20,6 +20,7 @@
 #include <hdf5.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../include/fft.h"
 #include "../include/output.h"
@@ -91,8 +92,12 @@ int fft_c2r_export(fftw_complex *farr, int N, double boxlen, const char *fname) 
     /* Create configuration space array */
     double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
 
+    /* Copy the complex array, to prevent in-place calculation */
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    memcpy(fbox, farr, N*N*(N/2+1)*sizeof(fftw_complex));
+
     /* Create FFT plan */
-    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, farr, box, FFTW_ESTIMATE);
+    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
 
     /* Execute and normalize */
     fft_execute(c2r);
@@ -104,6 +109,7 @@ int fft_c2r_export(fftw_complex *farr, int N, double boxlen, const char *fname) 
     /* Free */
     fftw_destroy_plan(c2r);
     fftw_free(box);
+    fftw_free(fbox);
 
     return 0;
 }

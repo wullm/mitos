@@ -73,6 +73,9 @@ int main(int argc, char *argv[]) {
     /* Generate a complex Hermitian Gaussian random field */
     generate_complex_grf(grf, N, boxlen);
 
+    /* Apply the bare power spectrum, without any transfer functions */
+    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer);
+
     /* Export the real box */
     char box_fname[DEFAULT_STRING_LENGTH];
     outname(box_fname, "gaussian_pure.hdf5");
