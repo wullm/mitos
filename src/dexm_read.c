@@ -84,20 +84,26 @@ int main(int argc, char *argv[]) {
     /* Close the Header group again */
     H5Gclose(h_grp);
 
-    // /* Open the Cosmology group */
-    // h_grp = H5Gopen(h_file, "Cosmology", H5P_DEFAULT);
-    //
-    // /* Read the redshift attribute */
-    // double redshift;
-    // h_attr = H5Aopen(h_grp, "Redshift", H5P_DEFAULT);
-    // h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &redshift);
-    // H5Aclose(h_attr);
-    // assert(h_err >= 0);
-    //
-    // printf("The redshift was %f\n\n", redshift);
-    //
-    // /* Close the Cosmology group */
-    // H5Gclose(h_grp);
+    /* Check if the Cosmology group exists */
+    hid_t h_status = H5Gget_objinfo(h_file, "/Cosmology", 0, NULL);
+
+    /* If the group exists. */
+    if (h_status == 0) {
+        /* Open the Cosmology group */
+        h_grp = H5Gopen(h_file, "Cosmology", H5P_DEFAULT);
+
+        /* Read the redshift attribute */
+        double redshift;
+        h_attr = H5Aopen(h_grp, "Redshift", H5P_DEFAULT);
+        h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &redshift);
+        H5Aclose(h_attr);
+        assert(h_err >= 0);
+
+        printf("The redshift was %f\n\n", redshift);
+
+        /* Close the Cosmology group */
+        H5Gclose(h_grp);
+    }
 
     /* Try to open each particle group */
     for (int i=0; i<pars.NumParticleTypes; i++) {
