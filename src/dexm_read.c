@@ -85,7 +85,8 @@ int main(int argc, char *argv[]) {
     H5Gclose(h_grp);
 
     /* Check if the Cosmology group exists */
-    hid_t h_status = H5Gget_objinfo(h_file, "/Cosmology", 0, NULL);
+    hid_t h_status = H5Eset_auto1(NULL, NULL);  //turn off error printing
+    h_status = H5Gget_objinfo(h_file, "/Cosmology", 0, NULL);
 
     /* If the group exists. */
     if (h_status == 0) {
