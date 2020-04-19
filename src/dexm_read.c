@@ -106,6 +106,9 @@ int main(int argc, char *argv[]) {
         H5Gclose(h_grp);
     }
 
+    /* We will copy the Fourier transform CDM density into here later */
+    fftw_complex *fbox_c = NULL;
+
     /* Try to open each particle group */
     for (int i=0; i<pars.NumParticleTypes; i++) {
         struct particle_type tp = types[i];
@@ -318,6 +321,11 @@ int main(int argc, char *argv[]) {
         fft_execute(r2c);
     	fft_normalize_r2c(fbox,N,boxlen[0]);
 
+        if (strcmp(tp.Identifier, "cdm") == 0) {
+            fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            memcpy(fbox_c, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
+        }
+
         calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
 
         /* Check that it is right */
@@ -337,6 +345,47 @@ int main(int argc, char *argv[]) {
 
         printf("\n");
 
+
+
+        if (strcmp(tp.Identifier, "ncdm") == 0) {
+            /* Calculate the cross spectrum */
+            printf("Doing the (c,nu) cross spectrum.\n");
+
+            /* Reset the bins */
+            for (int i=0; i<bins; i++) {
+                k_in_bins[i] = 0;
+                power_in_bins[i] = 0;
+                obs_in_bins[i] = 0;
+            }
+
+            /* Cross spectrum of cdm and ncdm */
+            calc_cross_powerspec(N, boxlen[0], fbox_c, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+            /* Print the results */
+            printf("k\t P_measured(k)\t P_input(k)\t observations\n");
+            for (int i=0; i<bins; i++) {
+                if (obs_in_bins[i] == 0) continue; //skip empty bins
+
+                /* The power we observe */
+                double k = k_in_bins[i];
+                double Pk = power_in_bins[i];
+                int obs = obs_in_bins[i];
+
+                printf("%f\t %e\t %d\n", k, Pk, obs);
+            }
+
+            printf("\n");
+
+            free(k_in_bins);
+            free(power_in_bins);
+            free(obs_in_bins);
+        }
+
+
+
+
+
+
         free(rho_box);
         fftw_free(fbox);
     }
@@ -346,10 +395,9 @@ int main(int argc, char *argv[]) {
 
 
 
-
     /* Clean up */
     cleanTransfers(&trs);
     cleanTypes(&pars, &types);
     cleanParams(&pars);
-
+    fftw_free(fbox_c);
 }
