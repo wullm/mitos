@@ -34,6 +34,10 @@ struct params {
     /* Box parameters */
     int GridSize;
     double BoxLen;
+    int Splits; //for folding & position dependent power spectra
+    int GridX; //for position dependent power spectra
+    int GridY; //for position dependent power spectra
+    int GridZ; //for position dependent power spectra
 
     /* Simulation parameters */
     char *Name;

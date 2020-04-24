@@ -28,6 +28,10 @@ int readParams(struct params *pars, const char *fname) {
 
      pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
+     pars->Splits = ini_getl("Box", "Splits", 1, fname);
+     pars->GridX = ini_getl("Box", "GridX", 0, fname);
+     pars->GridY = ini_getl("Box", "GridY", 0, fname);
+     pars->GridZ = ini_getl("Box", "GridZ", 0, fname);
 
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
      pars->NumParticleTypes = 0; //should not be read, but inferred
