@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
         H5Dclose(h_dat);
 
         double total_mass = 0; //for this particle type
+        double total_mass_subvol = 0; //just for this subvolume
 
         for (int k=0; k<slabs+1; k++) {
             /* All slabs have the same number of particles, except possibly the last */
@@ -260,6 +261,8 @@ int main(int argc, char *argv[]) {
                     double Y = fmod(data[l][1], boxlen[1]) / (boxlen[1]/N);
                     double Z = fmod(data[l][2], boxlen[2]) / (boxlen[2]/N);
 
+                    total_mass_subvol += M;
+
                     int iX = (int) floor(X);
                     int iY = (int) floor(Y);
                     int iZ = (int) floor(Z);
@@ -296,6 +299,7 @@ int main(int argc, char *argv[]) {
         H5Gclose(h_grp);
 
         printf("Total mass: %f\n", total_mass);
+        printf("Total mass in subvolume: %f\n", total_mass_subvol);
 
         /* The average density */
         double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2] * splits*splits*splits);
