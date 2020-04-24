@@ -248,6 +248,9 @@ int main(int argc, char *argv[]) {
 
             /* Assign the particles to the grid with CIC */
             for (int l=0; l<slab_size; l++) {
+                double M = mass_data[l];
+                total_mass += M;
+
                 double gridx = floor(fmod(data[l][0] , boxlen[2]*splits) / boxlen[0]);
                 double gridy = floor(fmod(data[l][1] , boxlen[2]*splits) / boxlen[1]);
                 double gridz = floor(fmod(data[l][2] , boxlen[2]*splits) / boxlen[2]);
@@ -256,9 +259,6 @@ int main(int argc, char *argv[]) {
                     double X = fmod(data[l][0], boxlen[0]) / (boxlen[0]/N);
                     double Y = fmod(data[l][1], boxlen[1]) / (boxlen[1]/N);
                     double Z = fmod(data[l][2], boxlen[2]) / (boxlen[2]/N);
-
-                    double M = mass_data[l];
-                    total_mass += M;
 
                     int iX = (int) floor(X);
                     int iY = (int) floor(Y);
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
         printf("Total mass: %f\n", total_mass);
 
         /* The average density */
-        double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2]);
+        double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2] * splits*splits*splits);
 
         printf("Average density %f\n", avg_density);
 
