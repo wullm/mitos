@@ -126,8 +126,6 @@ int readGRF_H5(double **box, int *N, double *box_len, const char *fname) {
     assert(boxsize[1] == boxsize[2]);
     *box_len = boxsize[0];
 
-    printf("We found %f\n\n\n", *box_len);
-
     /* Close the attribute, and the Header group */
     H5Aclose(h_attr);
     H5Gclose(h_grp);
