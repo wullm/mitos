@@ -29,100 +29,9 @@ static inline char is_comment_line(char *line) {
     return line[0] == '#' || (sscanf(line, "%le", &tmp) <= 0);
 }
 
-void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines) {
-    char line[2000];
+void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines);
+void readTitles(char *line, enum transfer_format format, char **titles);
 
-    /* Local counters */
-    int rows = 0;
-    int cols = 0;
-    int comments = 0;
-
-    /* Count the number of rows with data */
-    while (fgets(line, sizeof(line), f)) {
-        if (is_comment_line(line)) continue; /* skip comments */
-        rows++;
-    }
-
-    /* Go back to the start */
-    rewind(f);
-
-    /* Count the number of leading comment lines */
-    while (fgets(line, sizeof(line), f) && is_comment_line(line)) {
-        comments++;
-    }
-
-    /* On the first non-comment line, count the number of columns */
-    int read = 0, bytes;
-    double tmp;
-    while(sscanf(line + read, "%le%n", &tmp, &bytes) > 0) {
-        read += bytes;
-        cols += 1;
-    }
-
-    /* Update the counters */
-    *nrow = rows;
-    *ncol = cols;
-    *leading_comment_lines = comments;
-}
-
-
-void readTitles(char *line, enum transfer_format format, char **titles) {
-    if (format == Plain) {
-        /* The Plain format is "# k name name name " */
-        /* We want to read out the column names */
-
-        /* Skip the first character, which should be '#' */
-        char title[50];
-        int j = 0, read = 0, bytes;
-
-        /* Read the column titles & count the # of bytes read */
-        while(sscanf(line + read, "%s%n", title, &bytes) > 0) {
-            /* Skip the first title, corresponding to the "k" column */
-            if (j > 0) {
-                titles[j-1] = malloc(strlen(title) + 1);
-                strcpy(titles[j-1], title);
-            }
-
-            read += bytes;
-            j++;
-        }
-    } else if (format == CLASS) {
-        /* The CLASS format is "# 1:k    2:name     3:name    4:name ...." */
-        /* We want to read out the column names */
-
-        /* Skip the first character, which should be '#' */
-        char string[50];
-        int j = 0, read = 1, bytes;
-
-        /* Read string until encountering a colon & count the # of bytes read */
-        while(sscanf(line + read, "%[^:]%n", string, &bytes) > 0) {
-            /* Parse the title from the full string */
-            int string_read = 0, string_bytes; //second counter within string
-            char part[50], title[50];
-            strcpy(title, "");
-            /* Read words (separated by spaces) until encountering a number */
-            while (sscanf(string + string_read, "%s%n", part, &string_bytes) > 0
-                   && !isdigit(part[0])) {
-                strcat(title, part);
-                strcat(title, " ");
-                string_read += string_bytes;
-            }
-
-            /* If we found a non-empty title, store it */
-            if (strlen(title) > 0) {
-                /* Skip the first title, corresponding to the "k" column */
-                if (j > 0) {
-                    title[strlen(title)-1] = '\0'; /* delete trailing whitespace */
-                    titles[j-1] = malloc(strlen(title) + 1);
-                    strcpy(titles[j-1], title);
-                }
-                j++;
-            }
-
-            read += bytes + 1;
-        }
-    }
-}
 
 int readTransfers(const struct params *pars, const struct units *us,
                   const struct cosmology *cosmo, struct transfer *trs) {
@@ -254,4 +163,99 @@ int cleanTransfers(struct transfer *trs) {
     free(trs->titles);
 
     return 0;
+}
+
+void countRowsCols(FILE *f, int *nrow, int *ncol, int *leading_comment_lines) {
+    char line[2000];
+
+    /* Local counters */
+    int rows = 0;
+    int cols = 0;
+    int comments = 0;
+
+    /* Count the number of rows with data */
+    while (fgets(line, sizeof(line), f)) {
+        if (is_comment_line(line)) continue; /* skip comments */
+        rows++;
+    }
+
+    /* Go back to the start */
+    rewind(f);
+
+    /* Count the number of leading comment lines */
+    while (fgets(line, sizeof(line), f) && is_comment_line(line)) {
+        comments++;
+    }
+
+    /* On the first non-comment line, count the number of columns */
+    int read = 0, bytes;
+    double tmp;
+    while(sscanf(line + read, "%le%n", &tmp, &bytes) > 0) {
+        read += bytes;
+        cols += 1;
+    }
+
+    /* Update the counters */
+    *nrow = rows;
+    *ncol = cols;
+    *leading_comment_lines = comments;
+}
+
+
+void readTitles(char *line, enum transfer_format format, char **titles) {
+    if (format == Plain) {
+        /* The Plain format is "# k name name name " */
+        /* We want to read out the column names */
+
+        /* Skip the first character, which should be '#' */
+        char title[50];
+        int j = 0, read = 0, bytes;
+
+        /* Read the column titles & count the # of bytes read */
+        while(sscanf(line + read, "%s%n", title, &bytes) > 0) {
+            /* Skip the first title, corresponding to the "k" column */
+            if (j > 0) {
+                titles[j-1] = malloc(strlen(title) + 1);
+                strcpy(titles[j-1], title);
+            }
+
+            read += bytes;
+            j++;
+        }
+    } else if (format == CLASS) {
+        /* The CLASS format is "# 1:k    2:name     3:name    4:name ...." */
+        /* We want to read out the column names */
+
+        /* Skip the first character, which should be '#' */
+        char string[50];
+        int j = 0, read = 1, bytes;
+
+        /* Read string until encountering a colon & count the # of bytes read */
+        while(sscanf(line + read, "%[^:]%n", string, &bytes) > 0) {
+            /* Parse the title from the full string */
+            int string_read = 0, string_bytes; //second counter within string
+            char part[50], title[50];
+            strcpy(title, "");
+            /* Read words (separated by spaces) until encountering a number */
+            while (sscanf(string + string_read, "%s%n", part, &string_bytes) > 0
+                   && !isdigit(part[0])) {
+                strcat(title, part);
+                strcat(title, " ");
+                string_read += string_bytes;
+            }
+
+            /* If we found a non-empty title, store it */
+            if (strlen(title) > 0) {
+                /* Skip the first title, corresponding to the "k" column */
+                if (j > 0) {
+                    title[strlen(title)-1] = '\0'; /* delete trailing whitespace */
+                    titles[j-1] = malloc(strlen(title) + 1);
+                    strcpy(titles[j-1], title);
+                }
+                j++;
+            }
+
+            read += bytes + 1;
+        }
+    }
 }
