@@ -63,6 +63,9 @@ int main(int argc, char *argv[]) {
     /* Seed the random number generator */
     srand(pars.Seed);
 
+
+
+
     /* Create Gaussian random field */
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
@@ -81,17 +84,23 @@ int main(int argc, char *argv[]) {
     outname(box_fname, "gaussian_pure.hdf5");
     fft_c2r_export(grf, N, boxlen, box_fname);
 
+
+
+
+
     /* Generate the density grids */
     int err = generateDensityGrids(&pars, &us, &cosmo, &trs, types, grf);
-    if (err > 0) {
-        printf("Error generating density grids.\n");
-        exit(1);
-    }
+    if (err > 0) exit(1);
+    printf("\n");
 
     /* Get rid of the random phases field */
     fftw_free(grf);
 
+    /* Generate the potential grids */
+    err = computePotentialGrids(&pars, &us, &cosmo, types);
+    if (err > 0) exit(1);
     printf("\n");
+
 
     /* Name of the main output file containing the initial conditions */
     char out_fname[DEFAULT_STRING_LENGTH];

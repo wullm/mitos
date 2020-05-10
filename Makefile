@@ -36,10 +36,12 @@ all:
 	$(GCC) src/calc_powerspec.c -c -o lib/calc_powerspec.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/primordial.c -c -o lib/primordial.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/density_grids.c -c -o lib/density_grids.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/poisson.c -c -o lib/poisson.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read.c -o dexm_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read_posdep.c -o dexm_read_posdep $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read_folded.c -o dexm_read_folded $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/dexm_read_boxes.c -o dexm_read_boxes $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
 minIni:
 	cd parser && make
