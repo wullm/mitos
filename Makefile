@@ -37,6 +37,7 @@ all:
 	$(GCC) src/primordial.c -c -o lib/primordial.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/density_grids.c -c -o lib/density_grids.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/poisson.c -c -o lib/poisson.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/elpt.c -c -o lib/elpt.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read.c -o dexm_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/dexm_read_posdep.c -o dexm_read_posdep $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)

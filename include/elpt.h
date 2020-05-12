@@ -17,29 +17,12 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef ELPT_H
+#define ELPT_H
 
+#include <fftw3.h>
 #include "input.h"
-#include "output.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
-#include "transfer.h"
-#include "transfer_interp.h"
-#include "titles.h"
-#include "particle.h"
-#include "calc_powerspec.h"
-#include "primordial.h"
-#include "density_grids.h"
-#include "poisson.h"
-#include "elpt.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+int elpt(double *phi, const double *f, int N, double boxlen);
 
 #endif
