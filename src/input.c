@@ -21,7 +21,9 @@
 #include <string.h>
 #include <hdf5.h>
 #include <assert.h>
+#include <math.h>
 #include "../include/input.h"
+#include "../include/fft.h"
 
 int readParams(struct params *pars, const char *fname) {
      pars->Seed = ini_getl("Random", "Seed", 1, fname);
@@ -160,6 +162,105 @@ int readGRF_H5(double **box, int *N, double *box_len, const char *fname) {
     H5Dclose(h_data);
 
     /* Close the Field group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+/* Read the box without any checks, assuming we have sufficient memory
+ * allocated. */
+int readGRF_inPlace_H5(double *box, const char *fname) {
+    /* Create the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    /* Open the Field group */
+    hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Open the dataspace and fetch the grid dimensions */
+    hid_t h_space = H5Dget_space(h_data);
+    int ndims = H5Sget_simple_extent_ndims(h_space);
+    hsize_t *dims = malloc(ndims * sizeof(hsize_t));
+    H5Sget_simple_extent_dims(h_space, dims, NULL);
+
+    /* Read out the data */
+    hid_t h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, box);
+
+    /* Close the dataspace and dataset */
+    H5Sclose(h_space);
+    H5Dclose(h_data);
+
+    /* Close the Field group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+
+int readFieldChunk_H5(double *chunk_data, int N, int num_chunks, int chunk_id,
+                      const char *fname) {
+
+    /* Number of chunks along one dimension */
+    int L = cbrt(num_chunks);
+
+    /* Size of a chunk along one dimension */
+    int M = N/L;
+
+    /* Verify chunking dimensions */
+    if (L*L*L != num_chunks || M*L != N) {
+        printf("Error: chunk dimensions do not divide grid dimensions.\n");
+        return 1;
+    }
+
+    /* Open the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDWR, H5P_DEFAULT);
+
+    /* Open the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Get the file dataspace */
+    hid_t h_space = H5Dget_space(h_data);
+
+    /* The chunk in question */
+    const hsize_t chunk_rank = 3;
+    const hsize_t chunk_dims[3] = {M, M, M}; //3D space
+
+    /* The chunk position */
+    int chunk_x, chunk_y, chunk_z;
+    inverse_row_major(chunk_id, &chunk_x, &chunk_y, &chunk_z, L);
+
+    /* Offset of the chunk inside the grid */
+    const hsize_t chunk_offset[3] = {chunk_x * M, chunk_y * M, chunk_z * M};
+
+    printf("%lld %lld %lld\n", chunk_offset[0], chunk_offset[1], chunk_offset[2]);
+    printf("%lld %lld %lld\n", chunk_offset[0]+chunk_dims[0], chunk_offset[1]+chunk_dims[1], chunk_offset[2]+chunk_dims[2]);
+
+    /* Create memory space for the chunk */
+    hid_t h_memspace = H5Screate_simple(chunk_rank, chunk_dims, NULL);
+    H5Sselect_hyperslab(h_space, H5S_SELECT_SET, chunk_offset, NULL, chunk_dims, NULL);
+
+    /* Read the data */
+    hid_t h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, chunk_data);
+    if (h_err < 0) {
+        printf("Error: reading chunk of hdf5 data.\n");
+        return 1;
+    }
+
+    /* Close the dataset, corresponding dataspace, and the Field group */
+    H5Dclose(h_data);
+    H5Sclose(h_space);
+    H5Sclose(h_memspace);
     H5Gclose(h_grp);
 
     /* Close the file */

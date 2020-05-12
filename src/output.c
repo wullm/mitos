@@ -18,9 +18,11 @@
  ******************************************************************************/
 
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <hdf5.h>
 #include "../include/output.h"
+#include "../include/fft.h"
 
 int writeGRF_H5(const double *box, int N, double boxlen, const char *fname) {
     /* Create the hdf5 file */
@@ -61,6 +63,173 @@ int writeGRF_H5(const double *box, int N, double boxlen, const char *fname) {
     /* Close the dataset, corresponding dataspace, and the Field group */
     H5Dclose(h_data);
     H5Sclose(h_fspace);
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+/* Create hdf5 file for a 3-dimensional grid, without writing any data */
+int writeFieldHeader_H5(int N, double boxlen, int chunks, const char *fname) {
+    /* Number of chunks along one dimension */
+    int L = cbrt(chunks);
+
+    /* Size of a chunk along one dimension */
+    int M = N/L;
+
+    /* Verify chunking dimensions */
+    if (L*L*L != chunks || M*L != N) {
+        printf("Error: chunk dimensions do not divide grid dimensions.\n");
+        return 1;
+    }
+
+    /* Create the hdf5 file */
+    hid_t h_file = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create the Header group */
+    hid_t h_grp = H5Gcreate(h_file, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create dataspace for BoxSize attribute */
+    const hsize_t arank = 1;
+    const hsize_t adims[1] = {3}; //3D space
+    hid_t h_aspace = H5Screate_simple(arank, adims, NULL);
+
+    /* Create the BoxSize attribute and write the data */
+    hid_t h_attr = H5Acreate1(h_grp, "BoxSize", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    double boxsize[3] = {boxlen, boxlen, boxlen};
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
+
+    /* Close the attribute, corresponding dataspace, and the Header group */
+    H5Aclose(h_attr);
+    H5Sclose(h_aspace);
+    H5Gclose(h_grp);
+
+    /* Create the Field group */
+    h_grp = H5Gcreate(h_file, "/Field", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create dataspace for the field */
+    const hsize_t frank = 3;
+    const hsize_t fdims[3] = {N, N, N}; //3D space
+    hid_t h_fspace = H5Screate_simple(frank, fdims, NULL);
+
+    /* Create property list for chunking (if needed) */
+    hid_t h_prop;
+    if (chunks > 1) {
+        const hsize_t chunk_rank = 3;
+        const hsize_t chunk_dims[3] = {M, M, M}; //3D space
+        h_prop = H5Pcreate(H5P_DATASET_CREATE);
+        H5Pset_chunk(h_prop, chunk_rank, chunk_dims);
+    } else {
+        /* Not chunked, use default properties */
+        h_prop = H5P_DEFAULT;
+    }
+
+    /* Create the dataset for the field */
+    hid_t h_data = H5Dcreate(h_grp, "Field", H5T_NATIVE_DOUBLE, h_fspace, H5P_DEFAULT, h_prop, H5P_DEFAULT);
+
+    /* Close the dataset, corresponding dataspace, property list, and the Field group */
+    H5Dclose(h_data);
+    H5Sclose(h_fspace);
+    H5Pclose(h_prop);
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+
+/* Write 3-dimensional grid data in an existing hdf5 file, without any checks,
+ * and assuming the dataspace is correct. */
+int writeField_H5(const double *box, const char *fname) {
+    /* Open the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDWR, H5P_DEFAULT);
+
+    /* Open the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Get the file dataspace */
+    hid_t h_space = H5Dget_space(h_data);
+
+    /* Write the data */
+    hid_t h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_space, h_space, H5P_DEFAULT, box);
+
+    if (h_err < 0) {
+        printf("Error: writing hdf5 data.\n");
+        return 1;
+    }
+
+    /* Close the dataset, corresponding dataspace, and the Field group */
+    H5Dclose(h_data);
+    H5Sclose(h_space);
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+
+int writeFieldChunk_H5(const double *chunk_data, int N, int num_chunks,
+                       int chunk_id, const char *fname) {
+
+    /* Number of chunks along one dimension */
+    int L = cbrt(num_chunks);
+
+    /* Size of a chunk along one dimension */
+    int M = N/L;
+
+    /* Verify chunking dimensions */
+    if (L*L*L != num_chunks || M*L != N) {
+        printf("Error: chunk dimensions do not divide grid dimensions.\n");
+        return 1;
+    }
+
+    /* Open the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDWR, H5P_DEFAULT);
+
+    /* Open the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Get the file dataspace */
+    hid_t h_space = H5Dget_space(h_data);
+
+    /* The chunk in question */
+    const hsize_t chunk_rank = 3;
+    const hsize_t chunk_dims[3] = {M, M, M}; //3D space
+
+    /* The chunk position */
+    int chunk_x, chunk_y, chunk_z;
+    inverse_row_major(chunk_id, &chunk_x, &chunk_y, &chunk_z, L);
+
+    /* Offset of the chunk inside the grid */
+    const hsize_t chunk_offset[3] = {chunk_x * M, chunk_y * M, chunk_z * M};
+
+    /* Create memory space for the chunk */
+    hid_t h_memspace = H5Screate_simple(chunk_rank, chunk_dims, NULL);
+    H5Sselect_hyperslab(h_space, H5S_SELECT_SET, chunk_offset, NULL, chunk_dims, NULL);
+
+    /* Write the data */
+    hid_t h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, chunk_data);
+    if (h_err < 0) {
+        printf("Error: writing chunk of hdf5 data.\n");
+        return 1;
+    }
+
+    /* Close the dataset, corresponding dataspace, and the Field group */
+    H5Dclose(h_data);
+    H5Sclose(h_space);
+    H5Sclose(h_memspace);
     H5Gclose(h_grp);
 
     /* Close the file */

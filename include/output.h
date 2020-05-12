@@ -22,4 +22,8 @@
 
 int writeGRF_H5(const double *box, int N, double box_len, const char *fname);
 
+int writeFieldHeader_H5(int N, double boxlen, int chunks, const char *fname);
+int writeField_H5(const double *box, const char *fname);
+int writeFieldChunk_H5(const double *chunk_data, int N, int num_chunks,
+                       int chunk_id, const char *fname);
 #endif

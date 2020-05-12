@@ -82,5 +82,8 @@ int readCosmology(struct cosmology *cosmo, const char *fname);
 int cleanParams(struct params *parser);
 
 int readGRF_H5(double **box, int *N, double *box_len, const char *fname);
+int readGRF_inPlace_H5(double *box, const char *fname);
+int readFieldChunk_H5(double *chunk_data, int N, int num_chunks, int chunk_id,
+                      const char *fname);
 
 #endif
