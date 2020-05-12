@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
     initPrimordial(&pars, &cosmo);
 
     printf("Creating initial conditions for '%s'.\n", pars.Name);
+    printf("\n");
 
     /* Seed the random number generator */
     srand(pars.Seed);
@@ -101,6 +102,14 @@ int main(int argc, char *argv[]) {
     if (err > 0) exit(1);
     printf("\n");
 
+    /* Compute derivatives of the potential grids */
+    err = computePotentialDerivatives(&pars, &us, &cosmo, types);
+    if (err > 0) exit(1);
+    printf("\n");
+
+
+
+
 
     /* Name of the main output file containing the initial conditions */
     char out_fname[DEFAULT_STRING_LENGTH];
@@ -109,6 +118,9 @@ int main(int argc, char *argv[]) {
 
     /* Create the output file */
     hid_t h_out_file = H5Fcreate(out_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+
+
 
 
     /* For each user-defined particle type */
@@ -156,6 +168,26 @@ int main(int argc, char *argv[]) {
         struct particle *parts;
         allocParticles(&parts, &pars, ptype);
 
+        /* Load displacement grids */
+        double *displacement_x = malloc(N*N*N * sizeof(double));
+        double *displacement_y = malloc(N*N*N * sizeof(double));
+        double *displacement_z = malloc(N*N*N * sizeof(double));
+
+        char dbox_fname_x[DEFAULT_STRING_LENGTH];
+        char dbox_fname_y[DEFAULT_STRING_LENGTH];
+        char dbox_fname_z[DEFAULT_STRING_LENGTH];
+        sprintf(dbox_fname_x, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'x', ptype->Identifier, ".hdf5");
+        sprintf(dbox_fname_y, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'y', ptype->Identifier, ".hdf5");
+        sprintf(dbox_fname_z, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'z', ptype->Identifier, ".hdf5");
+        printf("Displacement field read from '%s'.\n", dbox_fname_x);
+        readGRF_inPlace_H5(displacement_x, dbox_fname_x);
+        printf("Displacement field read from '%s'.\n", dbox_fname_y);
+        readGRF_inPlace_H5(displacement_y, dbox_fname_y);
+        printf("Displacement field read from '%s'.\n", dbox_fname_z);
+        readGRF_inPlace_H5(displacement_z, dbox_fname_z);
+
+
+
         /* For each chunk, generate and store the particles */
         for (int chunk=0; chunk<ptype->Chunks; chunk++) {
             /* The dimensions of this chunk */
@@ -166,8 +198,23 @@ int main(int argc, char *argv[]) {
             printf("Generating chunk %d.\n", chunk);
             genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk);
 
-            /* Do all imaginable manipulations to these particles */
-            /* (...) */
+            /* Displace the particles */
+            for (int i=0; i<chunk_size; i++) {
+                /* Find the pre-initial (e.g. grid) locations */
+                double x = parts[i].X;
+                double y = parts[i].Y;
+                double z = parts[i].Z;
+
+                /* Find the displacements */
+                double disp_x = gridTSC(displacement_x, N, boxlen, x, y, z);
+                double disp_y = gridTSC(displacement_y, N, boxlen, x, y, z);
+                double disp_z = gridTSC(displacement_z, N, boxlen, x, y, z);
+
+                /* Displace the particles */
+                parts[i].X += disp_x;
+                parts[i].Y += disp_y;
+                parts[i].Z += disp_z;
+            }
 
             /* Unit conversions */
             /* (...) */
@@ -236,6 +283,10 @@ int main(int argc, char *argv[]) {
             H5Sclose(h_ch_vspace);
             H5Sclose(h_ch_sspace);
         }
+
+        free(displacement_x);
+        free(displacement_y);
+        free(displacement_z);
 
         /* Close the scalar and vector dataspaces */
         H5Sclose(h_vspace);

@@ -112,3 +112,64 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
 
     return 0;
 }
+
+/* Compute derivatives of the potential grids */
+int computePotentialDerivatives(const struct params *pars, const struct units *us,
+                                const struct cosmology *cosmo,
+                                struct particle_type *types) {
+
+    /* Grid dimensions */
+    const int N = pars->GridSize;
+    const double boxlen = pars->BoxLen;
+
+    /* Arrays and FFT plans */
+    double *box =  calloc(N*N*N, sizeof(double));
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+
+    /* We calculate derivatives using FFT kernels */
+    const kernel_func derivatives[] = {kernel_dx, kernel_dy, kernel_dz};
+    const char letters[] = {'x', 'y', 'z'};
+
+    /* For each particle type, create the corresponding density field */
+    for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+
+        /* The current particle type */
+        struct particle_type *ptype = types + pti;
+        const char *Identifier = ptype->Identifier;
+
+        /* Filename of the density grid (should have been stored earlier) */
+        char box_fname[DEFAULT_STRING_LENGTH];
+        sprintf(box_fname, "%s/%s%s%s", pars->OutputDirectory, "potential_", Identifier, ".hdf5");
+
+        /* We need all three derivatives */
+        for (int i=0; i<3; i++) {
+            printf("Reading potential field '%s'.\n", box_fname);
+
+            /* Read the potential field from file */
+            readGRF_inPlace_H5(box, box_fname);
+
+            /* Compute the derivative */
+            fft_execute(r2c);
+            fft_normalize_r2c(fbox, N, boxlen);
+            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i]);
+            fft_execute(c2r);
+            fft_normalize_c2r(box, N, boxlen);
+
+            /* Filename of the potential grid */
+            char dbox_fname[DEFAULT_STRING_LENGTH];
+            sprintf(dbox_fname, "%s/%s_%c_%s%s", pars->OutputDirectory, "displacement", letters[i], Identifier, ".hdf5");
+            printf("Displacement field written to '%s'.\n", dbox_fname);
+            writeGRF_H5(box, N, boxlen, dbox_fname);
+        }
+    }
+
+    /* Free up memory */
+    free(box);
+    free(fbox);
+    fftw_destroy_plan(c2r);
+    fftw_destroy_plan(r2c);
+
+    return 0;
+}
