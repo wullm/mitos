@@ -250,21 +250,28 @@ int main(int argc, char *argv[]) {
                 double shift = 0;
 
                 //The search window with respect to the top-left-upper corner
-        		int lookLftX = (int) floor((X-iX) - 1 + shift);
-        		int lookRgtX = (int) floor((X-iX) + 1 + shift);
-        		int lookLftY = (int) floor((Y-iY) - 1 + shift);
-        		int lookRgtY = (int) floor((Y-iY) + 1 + shift);
-        		int lookLftZ = (int) floor((Z-iZ) - 1 + shift);
-        		int lookRgtZ = (int) floor((Z-iZ) + 1 + shift);
+        		int lookLftX = (int) floor((X-iX) - 1.5 + shift);
+        		int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
+        		int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
+        		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
+        		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
+        		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
 
                 //Do the mass assignment
         		for (int x=lookLftX; x<=lookRgtX; x++) {
         			for (int y=lookLftY; y<=lookRgtY; y++) {
         				for (int z=lookLftZ; z<=lookRgtZ; z++) {
-        					double part_x = fabs(X - (iX+x+shift)) <= 1 ? 1-fabs(X - (iX+x+shift)) : 0;
-        					double part_y = fabs(Y - (iY+y+shift)) <= 1 ? 1-fabs(Y - (iY+y+shift)) : 0;
-        					double part_z = fabs(Z - (iZ+z+shift)) <= 1 ? 1-fabs(Z - (iZ+z+shift)) : 0;
+                            double xx = fabs(X - (iX+x+shift));
+                            double yy = fabs(Y - (iY+y+shift));
+                            double zz = fabs(Z - (iZ+z+shift));
 
+                            double part_x = xx < 0.5 ? (0.75-xx*xx)
+                                                    : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
+            				double part_y = yy < 0.5 ? (0.75-yy*yy)
+                                                    : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
+            				double part_z = zz < 0.5 ? (0.75-zz*zz)
+                                                    : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
+                                                    
                             rho_box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
         				}
         			}
