@@ -17,30 +17,10 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef GRIDS_INTERP_H
+#define GRIDS_INTERP_H
 
-#include "input.h"
-#include "output.h"
-#include "random.h"
-#include "fft.h"
-#include "grf.h"
-#include "fft_kernels.h"
-#include "derivatives.h"
-#include "particle_types.h"
-#include "transfer.h"
-#include "transfer_interp.h"
-#include "titles.h"
-#include "particle.h"
-#include "calc_powerspec.h"
-#include "primordial.h"
-#include "density_grids.h"
-#include "poisson.h"
-#include "elpt.h"
-#include "grids_interp.h"
-
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_RESET "\033[0m"
+double gridCIC(const double *box, int N, double boxlen, double x, double y, double z);
+double gridTSC(const double *box, int N, double boxlen, double x, double y, double z);
 
 #endif
