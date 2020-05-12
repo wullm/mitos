@@ -119,7 +119,37 @@ int main(int argc, char *argv[]) {
     /* Create the output file */
     hid_t h_out_file = H5Fcreate(out_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
+    /* Create the Header group */
+    hid_t h_grp = H5Gcreate(h_out_file, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
+    /* Create dataspace for BoxSize attribute */
+    const hsize_t arank = 1;
+    const hsize_t adims[1] = {3}; //3D space
+    hid_t h_aspace = H5Screate_simple(arank, adims, NULL);
+
+    /* Create the BoxSize attribute and write the data */
+    hid_t h_attr = H5Acreate1(h_grp, "BoxSize", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    double boxsize[3] = {boxlen, boxlen, boxlen};
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
+    H5Aclose(h_attr);
+    H5Sclose(h_aspace);
+
+
+    /* Create dataspace for BoxSize attribute */
+    const hsize_t adims2[1] = {6}; //6 particle types
+    h_aspace = H5Screate_simple(arank, adims2, NULL);
+
+    /* Create the BoxSize attribute and write the data */
+    h_attr = H5Acreate1(h_grp, "NumPart_Total", H5T_NATIVE_LONG, h_aspace, H5P_DEFAULT);
+    long long int numparts[6] = {0, 0, 0, 0, 0, 0};
+    H5Awrite(h_attr, H5T_NATIVE_LONG, numparts);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
+    H5Aclose(h_attr);
+    H5Sclose(h_aspace);
+
+
+    /* Close the Header group */
+    H5Gclose(h_grp);
 
 
 
@@ -211,9 +241,9 @@ int main(int argc, char *argv[]) {
                 double disp_z = gridTSC(displacement_z, N, boxlen, x, y, z);
 
                 /* Displace the particles */
-                parts[i].X += disp_x;
-                parts[i].Y += disp_y;
-                parts[i].Z += disp_z;
+                parts[i].X -= disp_x;
+                parts[i].Y -= disp_y;
+                parts[i].Z -= disp_z;
             }
 
             /* Unit conversions */
