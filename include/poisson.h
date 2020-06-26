@@ -25,7 +25,7 @@
 #include "particle_types.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
-int solvePoisson(double *phi, const double *f, int N, double boxlen);
+int solvePoisson(double *phi, double *f, int N, double boxlen);
 
 /* Solve the Poisson equation for each density grid */
 int computePotentialGrids(const struct params *pars, const struct units *us,

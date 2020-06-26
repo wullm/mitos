@@ -28,17 +28,13 @@
 #include "../include/output.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
-int solvePoisson(double *phi, const double *f, int N, double boxlen) {
+int solvePoisson(double *phi, double *f, int N, double boxlen) {
 
     /* Create 3D arrays for the source function and its Fourier transform */
-    double *box =  (double*) fftw_malloc(N*N*N*sizeof(double));
     fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
-    /* Copy the source function into the new array, so as to not destroy it */
-    memcpy(box, f, N*N*N*sizeof(double));
-
     /* Create FFT plans */
-    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, f, fbox, FFTW_ESTIMATE);
     fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, phi, FFTW_ESTIMATE);
 
     /* Execute and normalize */
@@ -54,7 +50,6 @@ int solvePoisson(double *phi, const double *f, int N, double boxlen) {
 
     /* Free all the FFT objects */
     fftw_free(fbox);
-    fftw_free(box);
     fftw_destroy_plan(r2c);
     fftw_destroy_plan(c2r);
 
@@ -70,12 +65,10 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
     const int N = pars->GridSize;
     const double boxlen = pars->BoxLen;
 
-    /* Create 3D arrays */
-    double *rho = malloc(N*N*N*sizeof(double));
-    double *phi = malloc(N*N*N*sizeof(double));
-
     /* For each particle type, create the corresponding density field */
     for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+        /* We will read the density into this array and do in-place calculations */
+        double *rho;
 
         /* The current particle type */
         struct particle_type *ptype = types + pti;
@@ -96,19 +89,18 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
             return 1;
         }
 
-        /* Solve Poisson's equation */
-        solvePoisson(phi, rho, N, boxlen);
+        /* Solve Poisson's equation and store the result back in rho */
+        solvePoisson(rho, rho, N, boxlen);
 
         /* Filename of the potential grid */
         char pbox_fname[DEFAULT_STRING_LENGTH];
         sprintf(pbox_fname, "%s/%s%s%s", pars->OutputDirectory, "potential_", Identifier, ".hdf5");
         printf("Potential field written to '%s'.\n", pbox_fname);
-        writeGRF_H5(phi, N, boxlen, pbox_fname);
-    }
+        writeGRF_H5(rho, N, boxlen, pbox_fname);
 
-    /* Free up memory */
-    free(rho);
-    free(phi);
+        /* Free up memory */
+        free(rho);
+    }
 
     return 0;
 }

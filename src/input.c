@@ -106,6 +106,9 @@ int cleanParams(struct params *pars) {
     free(pars->Name);
     free(pars->TransferFunctionsFile);
     free(pars->TransferFunctionsFormat);
+    free(pars->InputFilename);
+    free(pars->OutputFilename);
+    free(pars->PerturbFile);
 
     return 0;
 }
@@ -170,6 +173,9 @@ int readGRF_H5(double **box, int *N, double *box_len, const char *fname) {
     /* Close the file */
     H5Fclose(h_file);
 
+    /* Free memory */
+    free(dims);
+
     return 0;
 }
 
@@ -193,6 +199,7 @@ int readGRF_inPlace_H5(double *box, const char *fname) {
 
     /* Read out the data */
     hid_t h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, box);
+    assert(h_err >= 0);
 
     /* Close the dataspace and dataset */
     H5Sclose(h_space);
@@ -203,6 +210,9 @@ int readGRF_inPlace_H5(double *box, const char *fname) {
 
     /* Close the file */
     H5Fclose(h_file);
+
+    /* Free memory */
+    free(dims);
 
     return 0;
 }

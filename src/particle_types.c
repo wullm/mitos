@@ -32,10 +32,10 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
     /* Read out the particle types */
     int num = 0;
     for (int i=0; i<max_num; i++) {
-        char seek_str[20];
-        char identifier[20];
+        char seek_str[40];
+        char identifier[40];
         sprintf(seek_str, "ParticleType_%d", i);
-        ini_gets(seek_str, "Identifier", "", identifier, 20, fname);
+        ini_gets(seek_str, "Identifier", "", identifier, 40, fname);
 
         /* Have we found a non-empty identifier? */
         if (identifier[0] != '\0') {
@@ -92,6 +92,7 @@ int cleanTypes(struct params *pars, struct particle_type **tps) {
         struct particle_type *tp = *(tps) + i;
         free(tp->Identifier);
         free(tp->ExportName);
+        free(tp->TransferFunctionDensity);
     }
     free(*tps);
     return 0;

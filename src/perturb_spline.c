@@ -173,7 +173,7 @@ double perturbSplineInterp0(const struct perturb_spline *spline, double k,
                             double log_tau, int index_src) {
 
     /* Indices in the k and tau directions */
-    int k_index, tau_index;
+    int k_index = 0, tau_index = 0;
     /* Spacing (0 <= u <= 1) between subsequent indices in both directions */
     double u_k, u_tau;
 
@@ -187,7 +187,7 @@ double perturbSplineInterp0(const struct perturb_spline *spline, double k,
 
 double perturbRedshiftAtLogTau(const struct perturb_spline *spline, double log_tau) {
     /* Indices in the tau directions */
-    int tau_index;
+    int tau_index = 0;
     /* Spacing (0 <= u <= 1) between subsequent indices */
     double u_tau;
 

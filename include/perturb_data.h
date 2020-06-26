@@ -51,7 +51,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt);
 int cleanPerturb(struct perturb_data *pt);
 
 /* Unit conversion factor for transfer functions, depending on the title. */
-double unitConversionFactor(char *title, double unit_length_factor,
+double unitConversionFactor(const char *title, double unit_length_factor,
                             double unit_time_factor);
 
 #endif

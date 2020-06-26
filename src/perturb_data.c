@@ -169,7 +169,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     /* Perform unit conversions for the transfer functions */
     for (int i=0; i<pt->n_functions; i++) {
         /* Determine the unit conversion factor */
-        char *title = pt->titles[i];
+        const char *title = pt->titles[i];
         double unit_factor = unitConversionFactor(title, unit_length_factor, unit_time_factor);
 
         if (fabs(unit_factor - 1) > 1e-5 ) {
@@ -189,11 +189,11 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
 }
 
 /* Unit conversion factor for transfer functions, depending on the title. */
-double unitConversionFactor(char *title, double unit_length_factor,
+double unitConversionFactor(const char *title, double unit_length_factor,
                             double unit_time_factor) {
 
     /* Note the difference between strcmp and strncmp! */
-    char *title_end = &title[strlen(title)];
+    const char *title_end = &title[strlen(title)];
 
     /* Most transfer functions are dimensionless, (e.g. overdensities) */
     double factor = 1.0;
@@ -205,9 +205,9 @@ double unitConversionFactor(char *title, double unit_length_factor,
     }
 
     /* Functions that are time derivatives have dimension inverse time */
-    if (strncmp(title_end-12, "_prime_prime", 12) == 0) {
+    if (strlen(title) >= 13 && strncmp(title_end-12, "_prime_prime", 12) == 0) {
         factor /= pow(unit_time_factor, 2);
-    } else if (strncmp(title_end-6, "_prime", 6) == 0) {
+    } else if (strlen(title) >= 7 && strncmp(title_end-6, "_prime", 6) == 0) {
         factor /= unit_time_factor;
     }
 

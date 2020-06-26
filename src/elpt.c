@@ -56,7 +56,7 @@ static inline double det3(double *M) {
 }
 
 /* Solve the Poisson equation D.phi = f using FFT */
-int elpt(double *phi, const double *f, int N, double boxlen) {
+int elpt(double *phi, double *f, int N, double boxlen) {
 
     /* Create 3D arrays for the source function and its Fourier transform */
     double *box =  calloc(N*N*N, sizeof(double));
@@ -227,7 +227,7 @@ int elpt(double *phi, const double *f, int N, double boxlen) {
 }
 
 /* Solve the Poisson equation D.phi = f using FFT */
-int elptChunked(double *phi, const double *f, int N, double boxlen) {
+int elptChunked(double *phi, double *f, int N, double boxlen) {
 
     /* Arrays and FFT plans */
     double *box =  calloc(N*N*N, sizeof(double));

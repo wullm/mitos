@@ -69,11 +69,12 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                       void *params) {
     const double dk = 2 * M_PI / len;
 
-    double kx,ky,kz,k;
+    // #pragma omp parallel for
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 /* Calculate the wavevector */
+                double kx,ky,kz,k;
                 fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* Compute the kernel */
@@ -89,7 +90,7 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
 }
 
 /* Perform real-to-complex FFT and export, then free the memory */
-int fft_c2r_export(fftw_complex *farr, int N, double boxlen, const char *fname) {
+int fft_c2r_export(const fftw_complex *farr, int N, double boxlen, const char *fname) {
     /* Create configuration space array */
     double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
 

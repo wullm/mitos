@@ -23,6 +23,7 @@
 #include <math.h>
 #include <hdf5.h>
 #include <fftw3.h>
+#include <sys/time.h>
 
 #include "../include/dexm.h"
 
@@ -42,6 +43,11 @@ int main(int argc, char *argv[]) {
     printheader("DEXM Initial Condition Generator");
     printf("The parameter file is '%s'\n", fname);
 
+    /* Timer */
+    struct timeval stop, start;
+    gettimeofday(&start, NULL);
+
+    /* DEXM structures */
     struct params pars;
     struct units us;
     struct particle_type *types = NULL;
@@ -160,15 +166,11 @@ int main(int argc, char *argv[]) {
     h_attr = H5Acreate1(h_grp, "NumPart_Total", H5T_NATIVE_LONG, h_aspace, H5P_DEFAULT);
     long long int numparts[6] = {0, 0, 0, 0, 0, 0};
     H5Awrite(h_attr, H5T_NATIVE_LONG, numparts);
-    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
     H5Aclose(h_attr);
     H5Sclose(h_aspace);
 
-
     /* Close the Header group */
     H5Gclose(h_grp);
-
-
 
     /* For each user-defined particle type */
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
@@ -214,25 +216,8 @@ int main(int argc, char *argv[]) {
         struct particle *parts;
         allocParticles(&parts, &pars, ptype);
 
-        /* Load displacement grids */
-        double *displacement_x = malloc(N*N*N * sizeof(double));
-        double *displacement_y = malloc(N*N*N * sizeof(double));
-        double *displacement_z = malloc(N*N*N * sizeof(double));
-
-        char dbox_fname_x[DEFAULT_STRING_LENGTH];
-        char dbox_fname_y[DEFAULT_STRING_LENGTH];
-        char dbox_fname_z[DEFAULT_STRING_LENGTH];
-        sprintf(dbox_fname_x, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'x', ptype->Identifier, ".hdf5");
-        sprintf(dbox_fname_y, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'y', ptype->Identifier, ".hdf5");
-        sprintf(dbox_fname_z, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", 'z', ptype->Identifier, ".hdf5");
-        printf("Displacement field read from '%s'.\n", dbox_fname_x);
-        readGRF_inPlace_H5(displacement_x, dbox_fname_x);
-        printf("Displacement field read from '%s'.\n", dbox_fname_y);
-        readGRF_inPlace_H5(displacement_y, dbox_fname_y);
-        printf("Displacement field read from '%s'.\n", dbox_fname_z);
-        readGRF_inPlace_H5(displacement_z, dbox_fname_z);
-
-
+        /* Allocate memory for the displacement grids */
+        double *displacement = malloc(N*N*N * sizeof(double));
 
         /* For each chunk, generate and store the particles */
         for (int chunk=0; chunk<ptype->Chunks; chunk++) {
@@ -244,22 +229,35 @@ int main(int argc, char *argv[]) {
             printf("Generating chunk %d.\n", chunk);
             genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk);
 
-            /* Displace the particles */
-            for (int i=0; i<chunk_size; i++) {
-                /* Find the pre-initial (e.g. grid) locations */
-                double x = parts[i].X;
-                double y = parts[i].Y;
-                double z = parts[i].Z;
 
-                /* Find the displacements */
-                double disp_x = gridTSC(displacement_x, N, boxlen, x, y, z);
-                double disp_y = gridTSC(displacement_y, N, boxlen, x, y, z);
-                double disp_z = gridTSC(displacement_z, N, boxlen, x, y, z);
+            /* For x, y, and z */
+            const char letters[] = {'x', 'y', 'z'};
+            for (int dir=0; dir<3; dir++) {
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", letters[dir], ptype->Identifier, ".hdf5");
+                printf("Displacement field read from '%s'.\n", dbox_fname);
+                readGRF_inPlace_H5(displacement, dbox_fname);
 
-                /* Displace the particles */
-                parts[i].X -= disp_x;
-                parts[i].Y -= disp_y;
-                parts[i].Z -= disp_z;
+                /* Displace the particles in this chunk */
+                // #pragma omp parallel for
+                for (int i=0; i<chunk_size; i++) {
+                    /* Find the pre-initial (e.g. grid) locations */
+                    double x = parts[i].X;
+                    double y = parts[i].Y;
+                    double z = parts[i].Z;
+
+                    /* Find the displacement */
+                    double disp = gridTSC(displacement, N, boxlen, x, y, z);
+
+                    /* Displace the particles */
+                    if (dir == 0) {
+                        parts[i].X -= disp;
+                    } else if (dir == 1) {
+                        parts[i].Y -= disp;
+                    } else {
+                        parts[i].Z -= disp;
+                    }
+                }
             }
 
             /* Unit conversions */
@@ -328,11 +326,11 @@ int main(int argc, char *argv[]) {
             /* Close the chunk-sized scalar and vector dataspaces */
             H5Sclose(h_ch_vspace);
             H5Sclose(h_ch_sspace);
+
         }
 
-        free(displacement_x);
-        free(displacement_y);
-        free(displacement_z);
+        /* Free memory of the displacement grids */
+        free(displacement);
 
         /* Close the scalar and vector dataspaces */
         H5Sclose(h_vspace);
@@ -348,14 +346,18 @@ int main(int argc, char *argv[]) {
     /* Close the output file */
     H5Fclose(h_out_file);
 
+
     /* Clean up */
-    // tr_interp_free(&trs);
-    // cleanTransfers(&trs);
     cleanTypes(&pars, &types);
     cleanParams(&pars);
     cleanPerturb(&ptdat);
 
     /* Release the interpolation splines */
     cleanPerturbSpline(&spline);
+
+    /* Timer */
+    gettimeofday(&stop, NULL);
+    long unsigned microsec = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
+    printf("\nTime elapsed: %.3f ms\n", microsec/1000.);
 
 }

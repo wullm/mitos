@@ -247,6 +247,8 @@ int main(int argc, char *argv[]) {
                 int iY = (int) floor(Y);
                 int iZ = (int) floor(Z);
 
+                printf("%f\n", M);
+
                 double shift = 0;
 
                 //The search window with respect to the top-left-upper corner
@@ -271,7 +273,7 @@ int main(int argc, char *argv[]) {
                                                     : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
             				double part_z = zz < 0.5 ? (0.75-zz*zz)
                                                     : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
-                                                    
+
                             rho_box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
         				}
         			}

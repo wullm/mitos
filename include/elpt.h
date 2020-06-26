@@ -23,6 +23,6 @@
 #include <fftw3.h>
 #include "input.h"
 
-int elpt(double *phi, const double *f, int N, double boxlen);
+int elpt(double *phi, double *f, int N, double boxlen);
 
 #endif
