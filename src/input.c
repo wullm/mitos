@@ -31,9 +31,6 @@ int readParams(struct params *pars, const char *fname) {
      pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
      pars->Splits = ini_getl("Box", "Splits", 1, fname);
-     pars->GridX = ini_getl("Box", "GridX", 0, fname);
-     pars->GridY = ini_getl("Box", "GridY", 0, fname);
-     pars->GridZ = ini_getl("Box", "GridZ", 0, fname);
 
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
      pars->NumParticleTypes = 0; //should not be read, but inferred
@@ -44,15 +41,11 @@ int readParams(struct params *pars, const char *fname) {
      int len = DEFAULT_STRING_LENGTH;
      pars->OutputDirectory = malloc(len);
      pars->Name = malloc(len);
-     pars->TransferFunctionsFile = malloc(len);
-     pars->TransferFunctionsFormat = malloc(len);
      pars->InputFilename = malloc(len);
      pars->OutputFilename = malloc(len);
      pars->PerturbFile = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
-     ini_gets("TransferFunctions", "File", "", pars->TransferFunctionsFile, len, fname);
-     ini_gets("TransferFunctions", "Format", "Plain", pars->TransferFunctionsFormat, len, fname);
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
      ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
@@ -104,8 +97,6 @@ int readCosmology(struct cosmology *cosmo, const char *fname) {
 int cleanParams(struct params *pars) {
     free(pars->OutputDirectory);
     free(pars->Name);
-    free(pars->TransferFunctionsFile);
-    free(pars->TransferFunctionsFormat);
     free(pars->InputFilename);
     free(pars->OutputFilename);
     free(pars->PerturbFile);
