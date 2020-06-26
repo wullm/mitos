@@ -32,6 +32,8 @@ struct kernel {
     double k;
     /* Value of the kernel at this k */
     double complex kern;
+    /* Optional extra parameters */
+    void *params;
 };
 
 static inline int row_major(int i, int j, int k, int N) {
@@ -67,7 +69,8 @@ void fft_normalize_c2r(double *arr, int N, double boxlen);
 void fft_execute(fftw_plan plan);
 
 void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, void (*kern)(struct kernel* the_kernel));
+                      double len, void (*kern)(struct kernel* the_kernel),
+                      void *params);
 
 /* Some useful I/O functions for debugging */
 void write_floats(const char *fname, const float *floats, int n);

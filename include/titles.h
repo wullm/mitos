@@ -21,6 +21,6 @@
 #define TITLES_H
 
 
-int find_title(char **titles, const char *title, int ntitles);
+int findTitle(char **titles, const char *title, int ntitles);
 
 #endif

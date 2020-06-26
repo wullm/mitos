@@ -108,23 +108,23 @@ int elpt(double *phi, const double *f, int N, double boxlen) {
         memcpy(fbox_yz, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
         memcpy(fbox_zz, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
 
-        fft_apply_kernel(fbox_xx, fbox_xx, N, boxlen, kernel_dx);
-        fft_apply_kernel(fbox_xx, fbox_xx, N, boxlen, kernel_dx);
+        fft_apply_kernel(fbox_xx, fbox_xx, N, boxlen, kernel_dx, NULL);
+        fft_apply_kernel(fbox_xx, fbox_xx, N, boxlen, kernel_dx, NULL);
 
-        fft_apply_kernel(fbox_xy, fbox_xy, N, boxlen, kernel_dx);
-        fft_apply_kernel(fbox_xy, fbox_xy, N, boxlen, kernel_dy);
+        fft_apply_kernel(fbox_xy, fbox_xy, N, boxlen, kernel_dx, NULL);
+        fft_apply_kernel(fbox_xy, fbox_xy, N, boxlen, kernel_dy, NULL);
 
-        fft_apply_kernel(fbox_xz, fbox_xz, N, boxlen, kernel_dx);
-        fft_apply_kernel(fbox_xz, fbox_xz, N, boxlen, kernel_dz);
+        fft_apply_kernel(fbox_xz, fbox_xz, N, boxlen, kernel_dx, NULL);
+        fft_apply_kernel(fbox_xz, fbox_xz, N, boxlen, kernel_dz, NULL);
 
-        fft_apply_kernel(fbox_yy, fbox_yy, N, boxlen, kernel_dy);
-        fft_apply_kernel(fbox_yy, fbox_yy, N, boxlen, kernel_dy);
+        fft_apply_kernel(fbox_yy, fbox_yy, N, boxlen, kernel_dy, NULL);
+        fft_apply_kernel(fbox_yy, fbox_yy, N, boxlen, kernel_dy, NULL);
 
-        fft_apply_kernel(fbox_yz, fbox_yz, N, boxlen, kernel_dy);
-        fft_apply_kernel(fbox_yz, fbox_yz, N, boxlen, kernel_dz);
+        fft_apply_kernel(fbox_yz, fbox_yz, N, boxlen, kernel_dy, NULL);
+        fft_apply_kernel(fbox_yz, fbox_yz, N, boxlen, kernel_dz, NULL);
 
-        fft_apply_kernel(fbox_zz, fbox_zz, N, boxlen, kernel_dz);
-        fft_apply_kernel(fbox_zz, fbox_zz, N, boxlen, kernel_dz);
+        fft_apply_kernel(fbox_zz, fbox_zz, N, boxlen, kernel_dz, NULL);
+        fft_apply_kernel(fbox_zz, fbox_zz, N, boxlen, kernel_dz, NULL);
 
         fft_execute(c2r_xx);
         fft_normalize_c2r(box_xx, N, boxlen);
@@ -266,8 +266,8 @@ int elptChunked(double *phi, const double *f, int N, double boxlen) {
             fft_execute(r2c);
             fft_normalize_r2c(fbox, N, boxlen);
 
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_a[j]]);
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_b[j]]);
+            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_a[j]], NULL);
+            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_b[j]], NULL);
 
             fft_execute(c2r);
             fft_normalize_c2r(box, N, boxlen);

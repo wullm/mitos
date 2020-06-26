@@ -43,9 +43,9 @@ int main() {
     assert(strcmp(trs.titles[25], "t_tot") == 0);
 
     /* Assert that we can find titles */
-    int d_cdm_id = find_title(trs.titles, "d_cdm", Nf);
-    int d_ncdm_2_id = find_title(trs.titles, "t_ncdm[2]", Nf);
-    int t_tot_id = find_title(trs.titles, "t_tot", Nf);
+    int d_cdm_id = findTitle(trs.titles, "d_cdm", Nf);
+    int d_ncdm_2_id = findTitle(trs.titles, "t_ncdm[2]", Nf);
+    int t_tot_id = findTitle(trs.titles, "t_tot", Nf);
 
     assert(d_cdm_id == 2);
     assert(d_ncdm_2_id == 24);

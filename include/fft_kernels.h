@@ -21,6 +21,7 @@
 #define FFT_KERNELS_H
 
 #include "primordial.h"
+#include "perturb_spline.h"
 
 typedef void (*kernel_func)(struct kernel *the_kernel);
 
@@ -61,5 +62,39 @@ static inline void kernel_transfer_function(struct kernel *the_kernel) {
     double kern = transferFunction(k);
     the_kernel->kern = kern;
 }
+
+struct spline_params {
+    const struct perturb_spline *spline;
+    int index_src; //index of the source function
+    int tau_index; //index along the time direction
+    double u_tau; //spacing between nearest indices in the time direction
+};
+
+static inline void kernel_tr_func(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+
+    if (k == 0) {
+        /* Ignore the DC mode */
+        the_kernel->kern = 0.f;
+    } else {
+        /* Unpack the spline parameters */
+        struct spline_params *sp = (struct spline_params *) the_kernel->params;
+        const struct perturb_spline *spline = sp->spline;
+        int index_src = sp->index_src;
+
+        /* Retrieve the tau index and spacing (same for the entire grid) */
+        int tau_index = sp->tau_index;
+        double u_tau = sp->u_tau;
+
+        /* Find the k index and spacing for this wavevector */
+        int k_index;
+        double u_k;
+        perturbSplineFindK(sp->spline, k, &k_index, &u_k);
+
+        /* Evaluate the transfer function for this tau and k */
+        the_kernel->kern = perturbSplineInterp(spline, k_index, tau_index, u_k, u_tau, index_src);
+    }
+}
+
 
 #endif

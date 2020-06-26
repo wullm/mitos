@@ -23,11 +23,13 @@
 #include <fftw3.h>
 #include "input.h"
 #include "particle_types.h"
+#include "perturb_spline.h"
 #include "transfer.h"
 
 int generateDensityGrids(const struct params *pars, const struct units *us,
                          const struct cosmology *cosmo,
                          const struct transfer *trs,
+                         const struct perturb_spline *spline,
                          struct particle_type *types,
                          const fftw_complex *grf);
 

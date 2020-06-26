@@ -38,9 +38,13 @@
 #include "poisson.h"
 #include "elpt.h"
 #include "grids_interp.h"
+#include "perturb_data.h"
+#include "perturb_interp.h"
+#include "perturb_spline.h"
 
 #define TXT_RED "\033[31;1m"
 #define TXT_GREEN "\033[32;1m"
+#define TXT_BLUE "\033[34;1m"
 #define TXT_RESET "\033[0m"
 
 #endif

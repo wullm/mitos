@@ -48,11 +48,13 @@ int readParams(struct params *pars, const char *fname) {
      pars->TransferFunctionsFormat = malloc(len);
      pars->InputFilename = malloc(len);
      pars->OutputFilename = malloc(len);
+     pars->PerturbFile = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
      ini_gets("TransferFunctions", "File", "", pars->TransferFunctionsFile, len, fname);
      ini_gets("TransferFunctions", "Format", "Plain", pars->TransferFunctionsFormat, len, fname);
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
+     ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
 
      return 0;
@@ -94,6 +96,7 @@ int readCosmology(struct cosmology *cosmo, const char *fname) {
      cosmo->n_s = ini_getd("Cosmology", "n_s", 0.97, fname);
      cosmo->A_s = ini_getd("Cosmology", "A_s", 2.215e-9, fname);
      cosmo->k_pivot = ini_getd("Cosmology", "k_pivot", 0.05, fname);
+     cosmo->z_ini = ini_getd("Cosmology", "z_ini", 40.0, fname);
 
      return 0;
 }

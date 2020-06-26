@@ -65,7 +65,8 @@ void fft_execute(fftw_plan plan) {
 
 /* Apply a kernel to a 3D array after transforming to momentum space */
 void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, void (*compute)(struct kernel* the_kernel)) {
+                      double len, void (*compute)(struct kernel* the_kernel),
+                      void *params) {
     const double dk = 2 * M_PI / len;
 
     double kx,ky,kz,k;
@@ -76,7 +77,7 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                 fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* Compute the kernel */
-                struct kernel the_kernel = {kx, ky, kz, k, 0.f};
+                struct kernel the_kernel = {kx, ky, kz, k, 0.f, params};
                 compute(&the_kernel);
 
                 /* Apply the kernel */

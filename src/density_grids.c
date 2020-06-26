@@ -35,12 +35,19 @@
 int generateDensityGrids(const struct params *pars, const struct units *us,
                          const struct cosmology *cosmo,
                          const struct transfer *trs,
+                         const struct perturb_spline *spline,
                          struct particle_type *types,
                          const fftw_complex *grf) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
     const double boxlen = pars->BoxLen;
+
+    /* Find the interpolation index along the time dimension */
+    double log_tau = cosmo->log_tau_ini; //log of conformal time
+    int tau_index; //greatest lower bound bin index
+    double u_tau; //spacing between subsequent bins
+    perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
 
     /* Create complex 3D arrays */
     fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
@@ -55,20 +62,20 @@ int generateDensityGrids(const struct params *pars, const struct units *us,
         const char *title = ptype->TransferFunctionDensity;
 
         /* Find the title among the transfer functions */
-        int trfunc_id = find_title(trs->titles, title, trs->n_functions);
-        if (trfunc_id < 0) {
-            printf("Error: transfer function '%s' not found (%d).\n", title, trfunc_id);
+        int index_src = findTitle(spline->ptdat->titles, title, spline->ptdat->n_functions);
+        if (index_src < 0) {
+            printf("Error: transfer function '%s' not found (%d).\n", title, index_src);
             return 1;
         }
-
-        /* Switch the interpolation spline to this transfer function */
-        tr_interp_switch_func(trs, trfunc_id);
 
         /* Copy the complex random field into the complex array */
         memcpy(fbox, grf, N*N*(N/2+1)*sizeof(fftw_complex));
 
+        /* Package the spline parameters */
+        struct spline_params sp = {spline, index_src, tau_index, u_tau};
+
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function);
+        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_tr_func, &sp);
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];

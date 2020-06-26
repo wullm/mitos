@@ -27,6 +27,7 @@
 #include "../include/dexm.h"
 
 #define outname(s,x) sprintf(s, "%s/%s", pars.OutputDirectory, x);
+#define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
 
 const char *fname;
 
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
 
     /* Read options */
     const char *fname = argv[1];
+    printheader("DEXM Initial Condition Generator");
     printf("The parameter file is '%s'\n", fname);
 
     struct params pars;
@@ -45,26 +47,47 @@ int main(int argc, char *argv[]) {
     struct particle_type *types = NULL;
     struct cosmology cosmo;
     struct transfer trs;
+    struct perturb_data ptdat;
+    struct perturb_spline spline;
 
+    /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, fname);
-    readTypes(&pars, &types, fname);
-    readTransfers(&pars, &us, &cosmo, &trs);
 
-    /* Initialize the interpolation splines for the transfer functions */
-    tr_interp_init(&trs);
+    printf("The output directory is '%s'.\n", pars.OutputDirectory);
+    printf("Creating initial conditions for '%s'.\n", pars.Name);
+
+    /* Read out particle types from the parameter file */
+    readTypes(&pars, &types, fname);
+
+    /* Read the perturbation data file */
+    readPerturb(&pars, &us, &ptdat);
+
+    /* Initialize the interpolation spline for the perturbation data */
+    initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
     /* Initialize the primordial power spectrum function */
     initPrimordial(&pars, &cosmo);
 
-    printf("Creating initial conditions for '%s'.\n", pars.Name);
-    printf("\n");
-
     /* Seed the random number generator */
     srand(pars.Seed);
 
+    /* Determine the starting conformal time */
+    cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
 
+    printheader("Settings");
+    printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
+    printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+    printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
+    printf("\n");
+
+    printf("%s%s%s\n", TXT_BLUE, "Requested Particle Types", TXT_RESET);
+    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+        /* The current particle type */
+        struct particle_type *ptype = types + pti;
+        printf("Particle type '%s' (N^3 = %d^3).\n", ptype->Identifier, ptype->CubeRootNumber);
+    }
 
 
     /* Create Gaussian random field */
@@ -75,43 +98,38 @@ int main(int argc, char *argv[]) {
     fftw_complex *grf = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Generate a complex Hermitian Gaussian random field */
+    printheader("Generating Primordial Fluctuations");
     generate_complex_grf(grf, N, boxlen);
 
     /* Apply the bare power spectrum, without any transfer functions */
-    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer);
+    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, NULL);
 
     /* Export the real box */
     char box_fname[DEFAULT_STRING_LENGTH];
     outname(box_fname, "gaussian_pure.hdf5");
     fft_c2r_export(grf, N, boxlen, box_fname);
-
-
-
-
+    printf("Pure Gaussian Random Field exported to '%s'.\n", box_fname);
 
     /* Generate the density grids */
-    int err = generateDensityGrids(&pars, &us, &cosmo, &trs, types, grf);
+    printheader("Generating Density Fields");
+    int err = generateDensityGrids(&pars, &us, &cosmo, &trs, &spline, types, grf);
     if (err > 0) exit(1);
-    printf("\n");
 
     /* Get rid of the random phases field */
     fftw_free(grf);
 
-    /* Generate the potential grids */
+    /* Compute the potential grids */
+    printheader("Computing Gravitational Potentials");
     err = computePotentialGrids(&pars, &us, &cosmo, types);
     if (err > 0) exit(1);
-    printf("\n");
 
     /* Compute derivatives of the potential grids */
+    printheader("Computing Potential Derivatives");
     err = computePotentialDerivatives(&pars, &us, &cosmo, types);
     if (err > 0) exit(1);
-    printf("\n");
-
-
-
-
 
     /* Name of the main output file containing the initial conditions */
+    printheader("Initializing Output File");
     char out_fname[DEFAULT_STRING_LENGTH];
     sprintf(out_fname, "%s/%s", pars.OutputDirectory, pars.OutputFilename);
     printf("Creating output file '%s'.\n", out_fname);
@@ -191,8 +209,7 @@ int main(int argc, char *argv[]) {
         h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         H5Dclose(h_data);
 
-        printf("\n");
-        printf("Particle type '%s'.\n", ptype->Identifier);
+        printf("\n%s%s%s%s%s\n", TXT_BLUE, "Generating Particle Type '", ptype->Identifier, "'.", TXT_RESET);
 
         /* Allocate enough memory for one chunk of particles */
         struct particle *parts;
@@ -333,9 +350,13 @@ int main(int argc, char *argv[]) {
     H5Fclose(h_out_file);
 
     /* Clean up */
-    tr_interp_free(&trs);
-    cleanTransfers(&trs);
+    // tr_interp_free(&trs);
+    // cleanTransfers(&trs);
     cleanTypes(&pars, &types);
     cleanParams(&pars);
+    cleanPerturb(&ptdat);
+
+    /* Release the interpolation splines */
+    cleanPerturbSpline(&spline);
 
 }

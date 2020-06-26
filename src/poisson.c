@@ -46,7 +46,7 @@ int solvePoisson(double *phi, const double *f, int N, double boxlen) {
     fft_normalize_r2c(fbox, N, boxlen);
 
     /* Apply the inverse Poisson kernel 1/k^2 */
-    fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_poisson);
+    fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_poisson, NULL);
 
     /* FFT back */
     fft_execute(c2r);
@@ -153,7 +153,7 @@ int computePotentialDerivatives(const struct params *pars, const struct units *u
             /* Compute the derivative */
             fft_execute(r2c);
             fft_normalize_r2c(fbox, N, boxlen);
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i]);
+            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i], NULL);
             fft_execute(c2r);
             fft_normalize_c2r(box, N, boxlen);
 

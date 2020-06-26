@@ -22,6 +22,7 @@ OBJECTS = lib/*.o
 
 all:
 	make minIni
+	mkdir -p lib
 	$(GCC) src/input.c -c -o lib/input.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/output.c -c -o lib/output.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
@@ -29,8 +30,6 @@ all:
 	$(GCC) src/grf.c -c -o lib/grf.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/derivatives.c -c -o lib/derivatives.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle_types.c -c -o lib/particle_types.o $(INCLUDES) $(CFLAGS)
-	$(GCC) src/transfer.c -c -o lib/transfer.o $(INCLUDES) $(CFLAGS)
-	$(GCC) src/transfer_interp.c -c -o lib/transfer_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/titles.c -c -o lib/titles.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/calc_powerspec.c -c -o lib/calc_powerspec.o $(INCLUDES) $(CFLAGS)
@@ -38,12 +37,12 @@ all:
 	$(GCC) src/density_grids.c -c -o lib/density_grids.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/poisson.c -c -o lib/poisson.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/elpt.c -c -o lib/elpt.o $(INCLUDES) $(CFLAGS)
+
+	$(GCC) src/perturb_data.c -c -o lib/perturb_data.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
+
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/dexm_read.c -o dexm_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/dexm_read_posdep.c -o dexm_read_posdep $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/dexm_read_folded.c -o dexm_read_folded $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/dexm_read_boxes.c -o dexm_read_boxes $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
 minIni:
 	cd parser && make

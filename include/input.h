@@ -45,6 +45,7 @@ struct params {
     int NumParticleTypes;
     char *TransferFunctionsFile;
     char *TransferFunctionsFormat;
+    char *PerturbFile;
     char Homogeneous;
 
     /* Output parameters */
@@ -73,6 +74,8 @@ struct cosmology {
     double n_s;
     double A_s;
     double k_pivot;
+    double z_ini;
+    double log_tau_ini; //conformal time
 };
 
 int readParams(struct params *parser, const char *fname);
