@@ -32,6 +32,7 @@ struct particle_type {
     int ChunkSize; //except possibly the last chunk
 
     char *TransferFunctionDensity;
+    char *TransferFunctionVelocity;
 };
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);

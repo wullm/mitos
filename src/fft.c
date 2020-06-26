@@ -69,7 +69,7 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                       void *params) {
     const double dk = 2 * M_PI / len;
 
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {

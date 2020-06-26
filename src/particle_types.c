@@ -54,7 +54,9 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
 
             /* Further strings */
             tp->TransferFunctionDensity = malloc(20);
+            tp->TransferFunctionVelocity = malloc(20);
             ini_gets(seek_str, "TransferFunctionDensity", "", tp->TransferFunctionDensity, 20, fname);
+            ini_gets(seek_str, "TransferFunctionVelocity", "", tp->TransferFunctionVelocity, 20, fname);
 
 
             /* Infer total number from cube root number or vice versa */
@@ -93,6 +95,7 @@ int cleanTypes(struct params *pars, struct particle_type **tps) {
         free(tp->Identifier);
         free(tp->ExportName);
         free(tp->TransferFunctionDensity);
+        free(tp->TransferFunctionVelocity);
     }
     free(*tps);
     return 0;

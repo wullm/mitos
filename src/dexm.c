@@ -120,6 +120,11 @@ int main(int argc, char *argv[]) {
     int err = generateDensityGrids(&pars, &us, &cosmo, &spline, types, grf);
     if (err > 0) exit(1);
 
+    /* Generate the energy flux (velocity divergence theta) grids */
+    printheader("Generating Energy Flux Fields");
+    err = generateEnergyFluxGrids(&pars, &us, &cosmo, &spline, types, grf);
+    if (err > 0) exit(1);
+
     /* Get rid of the random phases field */
     fftw_free(grf);
 
@@ -239,7 +244,7 @@ int main(int argc, char *argv[]) {
                 readGRF_inPlace_H5(displacement, dbox_fname);
 
                 /* Displace the particles in this chunk */
-                // #pragma omp parallel for
+                #pragma omp parallel for
                 for (int i=0; i<chunk_size; i++) {
                     /* Find the pre-initial (e.g. grid) locations */
                     double x = parts[i].X;
