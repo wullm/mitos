@@ -17,7 +17,7 @@ const double k_pivot = 0.05;
 static inline double sigma_func(double k) {
     if (k == 0) return 0;
 
-    return sqrt(A_s * pow(k/k_pivot, n_s)) * tr_func_at_k(k);
+    return sqrt(A_s * pow(k/k_pivot, n_s)) * kernel_transfer_function(k);
 }
 
 static inline void compute(struct kernel *the_kernel) {
@@ -65,7 +65,7 @@ int main() {
     /* Switch the spline function */
     tr_interp_switch_func(&trs, id_d_cdm);
 
-    printf("Hieron %d %f\n", id_d_cdm, tr_func_at_k(1));
+    printf("Hieron %d %f\n", id_d_cdm, kernel_transfer_function(1));
 
     /* Seed the random number generator */
     srand(pars.Seed);

@@ -74,7 +74,7 @@ int generateDensityGrids(const struct params *pars, const struct units *us,
         struct spline_params sp = {spline, index_src, tau_index, u_tau};
 
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_tr_func, &sp);
+        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];
@@ -142,7 +142,7 @@ int generateEnergyFluxGrids(const struct params *pars, const struct units *us,
         struct spline_params sp = {spline, index_src, tau_index, u_tau};
 
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_tr_func, &sp);
+        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];

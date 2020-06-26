@@ -54,7 +54,7 @@ int main() {
         for (int i=0; i<trs.nrow; i++) {
             double k = trs.k[i];
             double f = trs.functions[id_func][i];
-            double f_interp = tr_func_at_k(k);
+            double f_interp = kernel_transfer_function(k);
             assert(fabs(f-f_interp)/f_interp < 1e-5);
         }
 
@@ -68,7 +68,7 @@ int main() {
             double f2 = trs.functions[id_func][i+1];
             double f_mid = 0.5*(f1 + f2);
 
-            double f_interp = tr_func_at_k(k_mid);
+            double f_interp = kernel_transfer_function(k_mid);
             assert(fabs(f_mid-f_interp)/f_interp < 1e-2); //within 1% seems reasonable
         }
     }

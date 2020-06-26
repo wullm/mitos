@@ -57,12 +57,6 @@ static inline void kernel_power_no_transfer(struct kernel *the_kernel) {
     the_kernel->kern = kern;
 }
 
-static inline void kernel_transfer_function(struct kernel *the_kernel) {
-    double k = the_kernel->k;
-    double kern = transferFunction(k);
-    the_kernel->kern = kern;
-}
-
 struct spline_params {
     const struct perturb_spline *spline;
     int index_src; //index of the source function
@@ -70,7 +64,7 @@ struct spline_params {
     double u_tau; //spacing between nearest indices in the time direction
 };
 
-static inline void kernel_tr_func(struct kernel *the_kernel) {
+static inline void kernel_transfer_function(struct kernel *the_kernel) {
     double k = the_kernel->k;
 
     if (k == 0) {
