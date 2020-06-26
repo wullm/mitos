@@ -82,7 +82,7 @@ int perturbSplineFindTau(const struct perturb_spline *spline, double log_tau,
         *u = 0.f;
         return 0;
     } else if (log_tau >= spline->ptdat->log_tau[tau_size - 1]) {
-        *index = tau_size - 1;
+        *index = tau_size - 2;
         *u = 1.f;
         return 0;
     }
@@ -116,7 +116,7 @@ int perturbSplineFindK(const struct perturb_spline *spline, double k, int *index
     double k_max = spline->ptdat->k[k_size-1];
 
     if (k > k_max) {
-      *index = k_size - 1;
+      *index = k_size - 2;
       *u = 1.0;
       return 0;
     }
