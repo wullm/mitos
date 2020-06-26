@@ -46,8 +46,9 @@ static inline void kernel_dz(struct kernel *the_kernel) {
 }
 
 static inline void kernel_power_no_transfer(struct kernel *the_kernel) {
+    const struct cosmology *cosmo = (const struct cosmology *) the_kernel->params;
     double k = the_kernel->k;
-    double kern = sqrt(primordialPower(k));
+    double kern = sqrt(primordialPower(k, cosmo));
     the_kernel->kern = kern;
 }
 

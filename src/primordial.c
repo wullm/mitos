@@ -20,21 +20,13 @@
 #include <math.h>
 #include "../include/primordial.h"
 
-const struct cosmology *cosmology;
-
-int initPrimordial(const struct params *pars, const struct cosmology *cosmo) {
-    cosmology = cosmo;
-
-    return 0;
-}
-
 /* The bare primordial power spectrum, without transfer functions */
-double primordialPower(double k) {
+double primordialPower(double k, const struct cosmology *cosmo) {
     if (k == 0) return 0;
 
-    double A_s = cosmology->A_s;
-    double n_s = cosmology->n_s;
-    double k_pivot = cosmology->k_pivot;
+    double A_s = cosmo->A_s;
+    double n_s = cosmo->n_s;
+    double k_pivot = cosmo->k_pivot;
 
     return A_s * pow(k/k_pivot, n_s);
 }

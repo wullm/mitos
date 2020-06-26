@@ -72,9 +72,6 @@ int main(int argc, char *argv[]) {
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
-    /* Initialize the primordial power spectrum function */
-    initPrimordial(&pars, &cosmo);
-
     /* Seed the random number generator */
     srand(pars.Seed);
 
@@ -107,7 +104,7 @@ int main(int argc, char *argv[]) {
     generate_complex_grf(grf, N, boxlen);
 
     /* Apply the bare power spectrum, without any transfer functions */
-    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, NULL);
+    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
 
     /* Export the real box */
     char box_fname[DEFAULT_STRING_LENGTH];

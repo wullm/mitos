@@ -23,7 +23,6 @@
 #include <math.h>
 #include "input.h"
 
-int initPrimordial(const struct params *pars, const struct cosmology *cosmo);
-double primordialPower(double k);
+double primordialPower(double k, const struct cosmology *cosmo);
 
 #endif
