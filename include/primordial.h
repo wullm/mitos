@@ -25,7 +25,5 @@
 
 int initPrimordial(const struct params *pars, const struct cosmology *cosmo);
 double primordialPower(double k);
-double fullPower(double k);
-double transferFunction(double k);
 
 #endif

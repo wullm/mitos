@@ -45,12 +45,6 @@ static inline void kernel_dz(struct kernel *the_kernel) {
     the_kernel->kern = I*kz;
 }
 
-static inline void kernel_full_power(struct kernel *the_kernel) {
-    double k = the_kernel->k;
-    double kern = sqrt(fullPower(k));
-    the_kernel->kern = kern;
-}
-
 static inline void kernel_power_no_transfer(struct kernel *the_kernel) {
     double k = the_kernel->k;
     double kern = sqrt(primordialPower(k));

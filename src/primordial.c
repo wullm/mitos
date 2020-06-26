@@ -38,23 +38,3 @@ double primordialPower(double k) {
 
     return A_s * pow(k/k_pivot, n_s);
 }
-
-// /* The full power spectrum P(k) = P_primo(k) * Transfer(k)^2 */
-// double fullPower(double k) {
-//     if (k == 0) return 0;
-//
-//     double Pr = primordialPower(k);
-//     double Tr = transferFunction(k);
-//
-//     return Pr * Tr * Tr;
-// }
-//
-// /* Only the transfer function part */
-// double transferFunction(double k) {
-//     if (k == 0) return 0;
-//
-//     /* Use the interpolation spline. Should only be called here. */
-//     double Tr = tr_func_at_k(k);
-//
-//     return Tr;
-// }
