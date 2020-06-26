@@ -182,6 +182,14 @@ int main(int argc, char *argv[]) {
         /* The current particle type */
         struct particle_type *ptype = types + pti;
 
+        printf("\n%s%s%s%s%s\n", TXT_BLUE, "Generating Particle Type '", ptype->Identifier, "'.", TXT_RESET);
+
+        /* Skip empty particle types */
+        if (ptype->TotalNumber <= 0) {
+            printf("No particles requested.\n");
+            continue;
+        }
+
         /* Create the particle group in the output file */
         char *gname = ptype->ExportName;
         hid_t h_grp = H5Gcreate(h_out_file, gname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -214,8 +222,6 @@ int main(int argc, char *argv[]) {
         /* Particle IDs (use scalar space) */
         h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         H5Dclose(h_data);
-
-        printf("\n%s%s%s%s%s\n", TXT_BLUE, "Generating Particle Type '", ptype->Identifier, "'.", TXT_RESET);
 
         /* Allocate enough memory for one chunk of particles */
         struct particle *parts;
