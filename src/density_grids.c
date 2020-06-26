@@ -27,14 +27,12 @@
 #include "../include/fft_kernels.h"
 #include "../include/output.h"
 #include "../include/titles.h"
-#include "../include/transfer_interp.h"
 
 /* Generate a density grid for each particle type by applying the power
  * spectrum to the random phases. The necessary transfer functions are in trs.
  */
 int generateDensityGrids(const struct params *pars, const struct units *us,
                          const struct cosmology *cosmo,
-                         const struct transfer *trs,
                          const struct perturb_spline *spline,
                          struct particle_type *types,
                          const fftw_complex *grf) {

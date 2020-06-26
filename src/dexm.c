@@ -46,7 +46,6 @@ int main(int argc, char *argv[]) {
     struct units us;
     struct particle_type *types = NULL;
     struct cosmology cosmo;
-    struct transfer trs;
     struct perturb_data ptdat;
     struct perturb_spline spline;
 
@@ -112,7 +111,7 @@ int main(int argc, char *argv[]) {
 
     /* Generate the density grids */
     printheader("Generating Density Fields");
-    int err = generateDensityGrids(&pars, &us, &cosmo, &trs, &spline, types, grf);
+    int err = generateDensityGrids(&pars, &us, &cosmo, &spline, types, grf);
     if (err > 0) exit(1);
 
     /* Get rid of the random phases field */

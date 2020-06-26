@@ -28,8 +28,6 @@
 #include "fft_kernels.h"
 #include "derivatives.h"
 #include "particle_types.h"
-#include "transfer.h"
-#include "transfer_interp.h"
 #include "titles.h"
 #include "particle.h"
 #include "calc_powerspec.h"
@@ -39,7 +37,6 @@
 #include "elpt.h"
 #include "grids_interp.h"
 #include "perturb_data.h"
-#include "perturb_interp.h"
 #include "perturb_spline.h"
 
 #define TXT_RED "\033[31;1m"

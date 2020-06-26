@@ -23,7 +23,6 @@
 #include <fftw3.h>
 #include "input.h"
 #include "particle_types.h"
-#include "transfer.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
 int solvePoisson(double *phi, const double *f, int N, double boxlen);
