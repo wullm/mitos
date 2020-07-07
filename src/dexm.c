@@ -201,6 +201,9 @@ int main(int argc, char *argv[]) {
     /* Close the Header group */
     H5Gclose(h_grp);
 
+    /* Counter of total number of particle stored */
+    long long int grand_counter = 0;
+
     /* For each user-defined particle type */
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
         /* The current particle type */
@@ -213,6 +216,10 @@ int main(int argc, char *argv[]) {
             printf("No particles requested.\n");
             continue;
         }
+
+        /* ID of the first particle of this type */
+        const long long int id_first_particle = grand_counter;
+        grand_counter += ptype->TotalNumber;
 
         /* Create the particle group in the output file */
         char *gname = ptype->ExportName;
@@ -262,7 +269,7 @@ int main(int argc, char *argv[]) {
             const hsize_t chunk_size = (hsize_t) fmin(ptype->ChunkSize, remaining);
 
             printf("Generating chunk %d.\n", chunk);
-            genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk);
+            genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk, id_first_particle);
 
             /* Interpolating displacements at the pre-initial particle locations */
             /* For x, y, and z */

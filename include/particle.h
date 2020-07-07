@@ -37,6 +37,7 @@ int cleanParticles(struct particle **particles, const struct params *pars,
 
 int genParticles_FromGrid(struct particle **particles, const struct params *pars,
                           const struct units *us, const struct cosmology *cosmo,
-                          const struct particle_type *ptype, int chunk);
+                          const struct particle_type *ptype, int chunk,
+                          long long int id_first_particle);
 
 #endif

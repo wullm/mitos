@@ -43,7 +43,8 @@ int allocParticles(struct particle **particles, const struct params *pars,
 
 int genParticles_FromGrid(struct particle **particles, const struct params *pars,
                           const struct units *us, const struct cosmology *cosmo,
-                          const struct particle_type *ptype, int chunk) {
+                          const struct particle_type *ptype, int chunk,
+                          long long int id_first_particle) {
 
     long long int partnum = ptype->TotalNumber;
     long long int chunk_size = ceil((double) partnum / ptype->Chunks);
@@ -77,7 +78,7 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
         part->v_Y = 0.f;
         part->v_Z = 0.f;
         part->mass = mass;
-        part->id = id;
+        part->id = id + id_first_particle;
     }
 
     return 0;
