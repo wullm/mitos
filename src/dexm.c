@@ -251,8 +251,8 @@ int main(int argc, char *argv[]) {
         struct particle *parts;
         allocParticles(&parts, &pars, ptype);
 
-        /* Allocate memory for the displacement grids */
-        double *displacement = malloc(N*N*N * sizeof(double));
+        /* Allocate memory for the displacement and velocity grids */
+        double *grid = malloc(N*N*N * sizeof(double));
 
         /* For each chunk, generate and store the particles */
         for (int chunk=0; chunk<ptype->Chunks; chunk++) {
@@ -264,14 +264,14 @@ int main(int argc, char *argv[]) {
             printf("Generating chunk %d.\n", chunk);
             genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk);
 
-
+            /* Interpolating displacements at the pre-initial particle locations */
             /* For x, y, and z */
             const char letters[] = {'x', 'y', 'z'};
             for (int dir=0; dir<3; dir++) {
                 char dbox_fname[DEFAULT_STRING_LENGTH];
                 sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
                 printf("Displacement field read from '%s'.\n", dbox_fname);
-                int err = readGRF_inPlace_H5(displacement, dbox_fname);
+                int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
                 /* Displace the particles in this chunk */
@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
                     double z = parts[i].Z;
 
                     /* Find the displacement */
-                    double disp = gridTSC(displacement, N, boxlen, x, y, z);
+                    double disp = gridTSC(grid, N, boxlen, x, y, z);
 
                     /* Displace the particles */
                     if (dir == 0) {
@@ -295,6 +295,38 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+
+            /* Interpolating velocities at the displaced particle locations */
+            /* For x, y, and z */
+            for (int dir=0; dir<3; dir++) {
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_VELOCITY, letters[dir], ptype->Identifier, ".hdf5");
+                printf("Velocity field read from '%s'.\n", dbox_fname);
+                int err = readGRF_inPlace_H5(grid, dbox_fname);
+                if (err > 0) exit(1);
+
+                /* Displace the particles in this chunk */
+                #pragma omp parallel for
+                for (int i=0; i<chunk_size; i++) {
+                    /* Find the displaceed particle location */
+                    double x = parts[i].X;
+                    double y = parts[i].Y;
+                    double z = parts[i].Z;
+
+                    /* Find the velocity in the given direction */
+                    double vel = gridTSC(grid, N, boxlen, x, y, z);
+
+                    /* Displace the particles */
+                    if (dir == 0) {
+                        parts[i].v_X = vel;
+                    } else if (dir == 1) {
+                        parts[i].v_Y = vel;
+                    } else {
+                        parts[i].v_Z = vel;
+                    }
+                }
+            }
+
 
             /* Unit conversions */
             /* (...) */
@@ -365,8 +397,8 @@ int main(int argc, char *argv[]) {
 
         }
 
-        /* Free memory of the displacement grids */
-        free(displacement);
+        /* Free memory of the displacement and velocity grids */
+        free(grid);
 
         /* Close the scalar and vector dataspaces */
         H5Sclose(h_vspace);
