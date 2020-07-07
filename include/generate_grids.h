@@ -17,8 +17,8 @@
  *
  ******************************************************************************/
 
-#ifndef DENSITY_GRIDS_H
-#define DENSITY_GRIDS_H
+#ifndef GENERATE_GRIDS_H
+#define GENERATE_GRIDS_H
 
 #include <fftw3.h>
 #include "input.h"

@@ -32,7 +32,7 @@
 #include "particle.h"
 #include "calc_powerspec.h"
 #include "primordial.h"
-#include "density_grids.h"
+#include "generate_grids.h"
 #include "poisson.h"
 #include "elpt.h"
 #include "grids_interp.h"

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/density_grids.h"
+#include "../include/generate_grids.h"
 #include "../include/dexm.h"
 
 /* Generate a perturbation theory grid for each particle type by applying the
