@@ -108,6 +108,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     pt->log_tau = calloc(pt->tau_size, sizeof(double));
     pt->redshift = calloc(pt->tau_size, sizeof(double));
     pt->delta = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
+    pt->Omega = malloc(pt->n_functions * pt->tau_size * sizeof(double));
     // pt->dydt = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
 
     /* Dataspace */
@@ -133,12 +134,17 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->redshift);
     H5Dclose(h_data);
 
+    /* Read the background densities */
+    h_data = H5Dopen2(h_grp, "Omegas", H5P_DEFAULT);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->Omega);
+    H5Dclose(h_data);
+
     /* Read the transfer functions */
     h_data = H5Dopen2(h_grp, "Transfer functions", H5P_DEFAULT);
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->delta);
     H5Dclose(h_data);
 
-    if (h_err < 0 || pt->k[0] == 0 || pt->log_tau[0] == 0) {
+    if (h_err < 0 || pt->k[0] == 0 || pt->log_tau[0] == 0 || pt->Omega[0] == 0) {
         printf("ERROR: problem with reading the perturbation data.\n");
         return 1;
     }
@@ -231,6 +237,7 @@ int cleanPerturb(struct perturb_data *pt) {
     free(pt->log_tau);
     free(pt->redshift);
     free(pt->delta);
+    free(pt->Omega);
     for (int i=0; i<pt->n_functions; i++) {
         free(pt->titles[i]);
     }

@@ -66,4 +66,9 @@ double perturbRedshiftAtLogTau(const struct perturb_spline *spline, double log_t
 /* Linear interpolation of the log_tau vector */
 double perturbLogTauAtRedshift(const struct perturb_spline *spline, double redshift);
 
+/* Linear interpolation of the background density vector */
+double perturbDensityAtLogTau(const struct perturb_spline *spline, double log_tau,
+                              int index_src);
+
+
 #endif

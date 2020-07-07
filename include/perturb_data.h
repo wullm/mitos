@@ -42,6 +42,8 @@ struct perturb_data {
     double *redshift;
     /* Titles of the transfer functions */
     char **titles;
+    /* Vector of background densities (tau_size * n_functions) */
+    double *Omega;
 };
 
 /* Read the perturbation data from file */

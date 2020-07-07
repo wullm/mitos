@@ -226,3 +226,26 @@ double perturbLogTauAtRedshift(const struct perturb_spline *spline, double redsh
     return (1 - u) * spline->ptdat->log_tau[index]
               + u  * spline->ptdat->log_tau[index + 1];
 }
+
+/* Linear interpolation of the background density vector */
+double perturbDensityAtLogTau(const struct perturb_spline *spline, double log_tau,
+                              int index_src) {
+
+    /* Number of tau indices */
+    int tau_size = spline->ptdat->tau_size;
+
+    /* Indices in the tau directions */
+    int tau_index = 0;
+    /* Spacing (0 <= u <= 1) between subsequent indices */
+    double u_tau;
+
+    /* Find the index and spacing */
+    perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
+
+    /* Select the desired background density vector */
+    double *arr = spline->ptdat->Omega + index_src * tau_size;
+
+    return (1 - u_tau) * arr[tau_index]
+               + u_tau * arr[tau_index + 1];
+
+}
