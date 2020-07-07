@@ -44,6 +44,11 @@ all:
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
+	make analyse_tools
+
+analyse_tools:
+	cd analyse && make
+
 minIni:
 	cd parser && make
 

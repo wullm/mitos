@@ -59,6 +59,7 @@ struct spline_params {
     double u_tau; //spacing between nearest indices in the time direction
 };
 
+/* Multiply by the transfer function */
 static inline void kernel_transfer_function(struct kernel *the_kernel) {
     double k = the_kernel->k;
 
@@ -82,6 +83,33 @@ static inline void kernel_transfer_function(struct kernel *the_kernel) {
 
         /* Evaluate the transfer function for this tau and k */
         the_kernel->kern = perturbSplineInterp(spline, k_index, tau_index, u_k, u_tau, index_src);
+    }
+}
+
+/* Divide by the transfer function */
+static inline void kernel_inv_transfer_function(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+
+    if (k == 0) {
+        /* Ignore the DC mode */
+        the_kernel->kern = 0.f;
+    } else {
+        /* Unpack the spline parameters */
+        struct spline_params *sp = (struct spline_params *) the_kernel->params;
+        const struct perturb_spline *spline = sp->spline;
+        int index_src = sp->index_src;
+
+        /* Retrieve the tau index and spacing (same for the entire grid) */
+        int tau_index = sp->tau_index;
+        double u_tau = sp->u_tau;
+
+        /* Find the k index and spacing for this wavevector */
+        int k_index;
+        double u_k;
+        perturbSplineFindK(sp->spline, k, &k_index, &u_k);
+
+        /* Evaluate the transfer function for this tau and k */
+        the_kernel->kern = 1.0 / perturbSplineInterp(spline, k_index, tau_index, u_k, u_tau, index_src);
     }
 }
 

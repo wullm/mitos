@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "../include/dexm.h"
+#include "../../include/dexm.h"
 
 const char *fname;
 
@@ -42,18 +42,11 @@ int main(int argc, char *argv[]) {
     struct units us;
     struct particle_type *types = NULL;
     struct cosmology cosmo;
-    struct transfer trs;
 
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, fname);
     readTypes(&pars, &types, fname);
-
-    int err;
-    err = readTransfers(&pars, &us, &cosmo, &trs);
-    if(err) {
-        return 0;
-    }
 
     printf("Creating initial conditions for: \"%s\".\n", pars.Name);
 
@@ -232,6 +225,38 @@ int main(int argc, char *argv[]) {
             /* Close the dataset */
             H5Dclose(h_dat);
 
+
+            /* Open the velocities dataset */
+            h_dat = H5Dopen(h_grp, "Velocities", H5P_DEFAULT);
+
+            /* Find the dataspace (in the file) */
+            h_space = H5Dget_space (h_dat);
+
+            /* Select the hyperslab */
+            status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
+                                         NULL, slab_dims, NULL);
+            assert(status >= 0);
+
+            /* Create a memory space */
+            h_mems = H5Screate_simple(2, slab_dims, NULL);
+
+            /* Create the data array */
+            double velocities_data[slab_size][3];
+
+            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+                             velocities_data);
+
+            /* Close the memory space */
+            H5Sclose(h_mems);
+
+            /* Close the data and memory spaces */
+            H5Sclose(h_space);
+
+            /* Close the dataset */
+            H5Dclose(h_dat);
+
+
+
             double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
 
             /* Assign the particles to the grid with CIC */
@@ -240,14 +265,16 @@ int main(int argc, char *argv[]) {
                 double Y = data[l][1] / (boxlen[1]/N);
                 double Z = data[l][2] / (boxlen[2]/N);
 
-                double M = mass_data[l];
+                double V_X = velocities_data[l][0];
+                double V_Y = velocities_data[l][1];
+                double V_Z = velocities_data[l][2];
+
+                double M = mass_data[l] * V_X;
                 total_mass += M;
 
                 int iX = (int) floor(X);
                 int iY = (int) floor(Y);
                 int iZ = (int) floor(Z);
-
-                printf("%f\n", M);
 
                 double shift = 0;
 
@@ -402,10 +429,7 @@ int main(int argc, char *argv[]) {
     /* Close the HDF5 file */
     H5Fclose(h_file);
 
-
-
     /* Clean up */
-    cleanTransfers(&trs);
     cleanTypes(&pars, &types);
     cleanParams(&pars);
     fftw_free(fbox_c);
