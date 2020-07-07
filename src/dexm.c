@@ -153,8 +153,13 @@ int main(int argc, char *argv[]) {
     if (err > 0) exit(1);
 
     /* Compute derivatives of the potential grids */
-    printheader("Computing Potential Derivatives");
+    printheader("Computing Potential Derivatives (Displacements)");
     err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_DISPLACEMENT);
+    if (err > 0) exit(1);
+
+    /* Compute derivatives of the energy flux grids */
+    printheader("Computing Energy Flux Derivatives (Velocities)");
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_VELOCITY);
     if (err > 0) exit(1);
 
     /* Name of the main output file containing the initial conditions */
