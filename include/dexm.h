@@ -26,7 +26,6 @@
 #include "fft.h"
 #include "grf.h"
 #include "fft_kernels.h"
-#include "derivatives.h"
 #include "particle_types.h"
 #include "titles.h"
 #include "particle.h"

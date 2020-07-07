@@ -24,10 +24,11 @@ all:
 	@#$(GCC) test_minIni.c -o test_minIni $(INI_PARSER)
 	@#@./test_minIni
 
-		$(GCC) test_transfer_render.c -o test_transfer_render $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
-		rm -f test_trr.box
-		@./test_transfer_render
-		
+
+	$(GCC) test_transfer_render.c -o test_transfer_render $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	rm -f test_trr.box
+	@./test_transfer_render
+
 	$(GCC) test_input.c -o test_input $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_input
 
@@ -41,7 +42,8 @@ all:
 	$(GCC) test_poisson.c -o test_poisson $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	@./test_poisson
 
-	$(GCC) test_calc_powerspec.c -o test_calc_powerspec $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
+	$(GCC) derivatives.c -c -o derivatives.o $(INCLUDES) $(CFLAGS)
+	$(GCC) test_calc_powerspec.c -o test_calc_powerspec derivatives.o $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(INCLUDES)
 	rm -f test_ps.box
 	@./test_calc_powerspec
 
