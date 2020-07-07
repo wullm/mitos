@@ -23,9 +23,7 @@
 #include <string.h>
 
 #include "../include/poisson.h"
-#include "../include/fft.h"
-#include "../include/fft_kernels.h"
-#include "../include/output.h"
+#include "../include/dexm.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
 int solvePoisson(double *phi, double *f, int N, double boxlen) {
@@ -94,7 +92,7 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
 
         /* Filename of the potential grid */
         char pbox_fname[DEFAULT_STRING_LENGTH];
-        sprintf(pbox_fname, "%s/%s%s%s", pars->OutputDirectory, "potential_", Identifier, ".hdf5");
+        sprintf(pbox_fname, "%s/%s_%s%s", pars->OutputDirectory, GRID_NAME_POTENTIAL, Identifier, ".hdf5");
         printf("Potential field written to '%s'.\n", pbox_fname);
         writeGRF_H5(rho, N, boxlen, pbox_fname);
 
@@ -105,10 +103,11 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
     return 0;
 }
 
-/* Compute derivatives of the potential grids */
-int computePotentialDerivatives(const struct params *pars, const struct units *us,
-                                const struct cosmology *cosmo,
-                                struct particle_type *types) {
+/* For each particle type, compute derivatives of a certain grid type */
+int computeGridDerivatives(const struct params *pars, const struct units *us,
+                           const struct cosmology *cosmo,
+                           struct particle_type *types, const char *grid_name,
+                           const char *out_grid_name) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
@@ -124,23 +123,24 @@ int computePotentialDerivatives(const struct params *pars, const struct units *u
     const kernel_func derivatives[] = {kernel_dx, kernel_dy, kernel_dz};
     const char letters[] = {'x', 'y', 'z'};
 
-    /* For each particle type, create the corresponding density field */
+    /* For each particle type, read the desired field and compute derivatives */
     for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
 
         /* The current particle type */
         struct particle_type *ptype = types + pti;
         const char *Identifier = ptype->Identifier;
 
-        /* Filename of the density grid (should have been stored earlier) */
+        /* Filename of the desired grid (should have been stored earlier) */
         char box_fname[DEFAULT_STRING_LENGTH];
-        sprintf(box_fname, "%s/%s%s%s", pars->OutputDirectory, "potential_", Identifier, ".hdf5");
+        sprintf(box_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
 
         /* We need all three derivatives */
         for (int i=0; i<3; i++) {
-            printf("Reading potential field '%s'.\n", box_fname);
+            printf("Reading input field '%s'.\n", box_fname);
 
             /* Read the potential field from file */
-            readGRF_inPlace_H5(box, box_fname);
+            int err = readGRF_inPlace_H5(box, box_fname);
+            if (err > 0) return err;
 
             /* Compute the derivative */
             fft_execute(r2c);
@@ -151,8 +151,8 @@ int computePotentialDerivatives(const struct params *pars, const struct units *u
 
             /* Filename of the potential grid */
             char dbox_fname[DEFAULT_STRING_LENGTH];
-            sprintf(dbox_fname, "%s/%s_%c_%s%s", pars->OutputDirectory, "displacement", letters[i], Identifier, ".hdf5");
-            printf("Displacement field written to '%s'.\n", dbox_fname);
+            sprintf(dbox_fname, "%s/%s_%c_%s%s", pars->OutputDirectory, out_grid_name, letters[i], Identifier, ".hdf5");
+            printf("Derivative field written to '%s'.\n", dbox_fname);
             writeGRF_H5(box, N, boxlen, dbox_fname);
         }
     }

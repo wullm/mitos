@@ -27,7 +27,6 @@
 
 #include "../include/dexm.h"
 
-#define outname(s,x) sprintf(s, "%s/%s", pars.OutputDirectory, x);
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
 
 const char *fname;
@@ -106,21 +105,44 @@ int main(int argc, char *argv[]) {
     /* Apply the bare power spectrum, without any transfer functions */
     fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
 
-    /* Export the real box */
+    /* Convert from complex phases to real Gaussian variates and export the box */
     char box_fname[DEFAULT_STRING_LENGTH];
-    outname(box_fname, "gaussian_pure.hdf5");
+    sprintf(box_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
     fft_c2r_export(grf, N, boxlen, box_fname);
     printf("Pure Gaussian Random Field exported to '%s'.\n", box_fname);
 
+
+    /* For each particle type, fetch the user-defined density function title */
+    printheader("Fetching Density Perturbations");
+    char **function_titles = malloc(pars.NumParticleTypes * sizeof(char*));
+    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+        struct particle_type *ptype = types + pti;
+        const char *Identifier = ptype->Identifier;
+        function_titles[pti] = ptype->TransferFunctionDensity;
+        printf("Particle type '%s' uses density vector '%s'.\n", Identifier, function_titles[pti]);
+    }
+
     /* Generate the density grids */
-    printheader("Generating Density Fields");
-    int err = generateDensityGrids(&pars, &us, &cosmo, &spline, types, grf);
+    printheader("Generating Density Grids");
+    int err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, grf, function_titles, GRID_NAME_DENSITY);
     if (err > 0) exit(1);
+
+    /* For each particle type, fetch the user-defined energy flux function title */
+    printheader("Fetching Energy Flux Perturbations");
+    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+        struct particle_type *ptype = types + pti;
+        const char *Identifier = ptype->Identifier;
+        function_titles[pti] = ptype->TransferFunctionVelocity;
+        printf("Particle type '%s' uses energy flux vector '%s'.\n", Identifier, function_titles[pti]);
+    }
 
     /* Generate the energy flux (velocity divergence theta) grids */
     printheader("Generating Energy Flux Fields");
-    err = generateEnergyFluxGrids(&pars, &us, &cosmo, &spline, types, grf);
+    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, grf, function_titles, GRID_NAME_THETA);
     if (err > 0) exit(1);
+
+    /* Get rid of the perturbation vector function titles */
+    free(function_titles);
 
     /* Get rid of the random phases field */
     fftw_free(grf);
@@ -132,7 +154,7 @@ int main(int argc, char *argv[]) {
 
     /* Compute derivatives of the potential grids */
     printheader("Computing Potential Derivatives");
-    err = computePotentialDerivatives(&pars, &us, &cosmo, types);
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_DISPLACEMENT);
     if (err > 0) exit(1);
 
     /* Name of the main output file containing the initial conditions */
@@ -242,9 +264,10 @@ int main(int argc, char *argv[]) {
             const char letters[] = {'x', 'y', 'z'};
             for (int dir=0; dir<3; dir++) {
                 char dbox_fname[DEFAULT_STRING_LENGTH];
-                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, "displacement", letters[dir], ptype->Identifier, ".hdf5");
+                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
                 printf("Displacement field read from '%s'.\n", dbox_fname);
-                readGRF_inPlace_H5(displacement, dbox_fname);
+                int err = readGRF_inPlace_H5(displacement, dbox_fname);
+                if (err > 0) exit(1);
 
                 /* Displace the particles in this chunk */
                 #pragma omp parallel for

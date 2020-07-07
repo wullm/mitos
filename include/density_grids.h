@@ -25,17 +25,12 @@
 #include "particle_types.h"
 #include "perturb_spline.h"
 
-/* Generate the density grids */
-int generateDensityGrids(const struct params *pars, const struct units *us,
-                         const struct cosmology *cosmo,
-                         const struct perturb_spline *spline,
-                         struct particle_type *types,
-                         const fftw_complex *grf);
-
-/* Generate the energy flux (theta = div.velocity) grids */
-int generateEnergyFluxGrids(const struct params *pars, const struct units *us,
-                            const struct cosmology *cosmo,
-                            const struct perturb_spline *spline,
-                            struct particle_type *types,
-                            const fftw_complex *grf);
+/* Generate perturbation theory grids by applying transfer functions to
+ * the random phases. */
+int generatePerturbationGrids(const struct params *pars, const struct units *us,
+                              const struct cosmology *cosmo,
+                              const struct perturb_spline *spline,
+                              struct particle_type *types,
+                              const fftw_complex *grf, char **titles,
+                              const char *grid_name);
 #endif

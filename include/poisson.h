@@ -31,9 +31,10 @@ int solvePoisson(double *phi, double *f, int N, double boxlen);
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
                           struct particle_type *types);
-/* Compute derivatives of the potential grids */
-int computePotentialDerivatives(const struct params *pars, const struct units *us,
-                                const struct cosmology *cosmo,
-                                struct particle_type *types);
+/* For each particle type, compute derivatives of a certain grid type */
+int computeGridDerivatives(const struct params *pars, const struct units *us,
+                           const struct cosmology *cosmo,
+                           struct particle_type *types, const char *grid_name,
+                           const char *out_grid_name);
 
 #endif

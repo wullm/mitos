@@ -23,20 +23,18 @@
 #include <string.h>
 
 #include "../include/density_grids.h"
-#include "../include/fft.h"
-#include "../include/fft_kernels.h"
-#include "../include/output.h"
-#include "../include/titles.h"
+#include "../include/dexm.h"
 
-/* Generate a density grid for each particle type by applying the transfer
- * function to the random phases. The spline struct is used to interpolate
- * the transfer functions.
+/* Generate a perturbation theory grid for each particle type by applying the
+ * desired transfer function (given by the titles array) to the random phases.
+ * The spline struct is used to interpolate the transfer functions.
  */
-int generateDensityGrids(const struct params *pars, const struct units *us,
-                         const struct cosmology *cosmo,
-                         const struct perturb_spline *spline,
-                         struct particle_type *types,
-                         const fftw_complex *grf) {
+int generatePerturbationGrids(const struct params *pars, const struct units *us,
+                              const struct cosmology *cosmo,
+                              const struct perturb_spline *spline,
+                              struct particle_type *types,
+                              const fftw_complex *grf, char **titles,
+                              const char *grid_name) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
@@ -58,75 +56,10 @@ int generateDensityGrids(const struct params *pars, const struct units *us,
         const char *Identifier = ptype->Identifier;
 
         /* The user-defined title of the density transfer function */
-        const char *title = ptype->TransferFunctionDensity;
+        const char *title = titles[pti];
 
-        /* Find the title among the transfer functions */
-        int index_src = findTitle(spline->ptdat->titles, title, spline->ptdat->n_functions);
-        if (index_src < 0) {
-            printf("Error: transfer function '%s' not found (%d).\n", title, index_src);
-            return 1;
-        }
-
-        /* Copy the complex random field into the complex array */
-        memcpy(fbox, grf, N*N*(N/2+1)*sizeof(fftw_complex));
-
-        /* Package the spline parameters */
-        struct spline_params sp = {spline, index_src, tau_index, u_tau};
-
-        /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
-
-        /* Export the real box */
-        char dbox_fname[DEFAULT_STRING_LENGTH];
-        sprintf(dbox_fname, "%s/%s%s%s", pars->OutputDirectory, "density_", Identifier, ".hdf5");
-        fft_c2r_export(fbox, N, boxlen, dbox_fname);
-        printf("Density field '%s' exported to '%s'.\n", title, dbox_fname);
-    }
-
-    /* Free all the FFT objects */
-    fftw_free(fbox);
-
-    return 0;
-}
-
-/* Generate an energy flux grid for each particle type by applying the transfer
- * function to the random phases. The spline struct is used to interpolate
- * the transfer functions. The energy flux is theta = div.velocity.
- */
-int generateEnergyFluxGrids(const struct params *pars, const struct units *us,
-                           const struct cosmology *cosmo,
-                           const struct perturb_spline *spline,
-                           struct particle_type *types,
-                           const fftw_complex *grf) {
-
-    /* Grid dimensions */
-    const int N = pars->GridSize;
-    const double boxlen = pars->BoxLen;
-
-    /* How many grids have we computed? */
-    int counter = 0;
-
-    /* Find the interpolation index along the time dimension */
-    double log_tau = cosmo->log_tau_ini; //log of conformal time
-    int tau_index; //greatest lower bound bin index
-    double u_tau; //spacing between subsequent bins
-    perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
-
-    /* Create complex 3D arrays */
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-
-    /* For each particle type, create the corresponding density field */
-    for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
-        /* The current particle type */
-        struct particle_type *ptype = types + pti;
-        const char *Identifier = ptype->Identifier;
-
-        /* The user-defined title of the velocity transfer function */
-        const char *title = ptype->TransferFunctionVelocity;
-
-        /* Skip if not specified. We will use Zel'dovich instead. */
+        /* Skip if not specified */
         if (strcmp("", title) == 0) continue;
-        counter++;
 
         /* Find the title among the transfer functions */
         int index_src = findTitle(spline->ptdat->titles, title, spline->ptdat->n_functions);
@@ -146,17 +79,13 @@ int generateEnergyFluxGrids(const struct params *pars, const struct units *us,
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];
-        sprintf(dbox_fname, "%s/%s%s%s", pars->OutputDirectory, "theta_", Identifier, ".hdf5");
+        sprintf(dbox_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
         fft_c2r_export(fbox, N, boxlen, dbox_fname);
-        printf("Energy flux field '%s' exported to '%s'.\n", title, dbox_fname);
+        printf("Perturbation field '%s' exported to '%s'.\n", title, dbox_fname);
     }
 
     /* Free all the FFT objects */
     fftw_free(fbox);
-
-    if (counter == 0) {
-        printf("No velocity fields requested (specify TransferFunctionVelocity).\n");
-    }
 
     return 0;
 }

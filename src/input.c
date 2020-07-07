@@ -190,7 +190,10 @@ int readGRF_inPlace_H5(double *box, const char *fname) {
 
     /* Read out the data */
     hid_t h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, box);
-    assert(h_err >= 0);
+    if (h_err < 0) {
+        printf("Error reading hdf5 file '%s' in place.\n", fname);
+        return 1;
+    }
 
     /* Close the dataspace and dataset */
     H5Sclose(h_space);

@@ -44,4 +44,11 @@
 #define TXT_BLUE "\033[34;1m"
 #define TXT_RESET "\033[0m"
 
+#define GRID_NAME_GAUSSIAN "gaussian_pure"      // the Gaussian random field
+#define GRID_NAME_DENSITY "density"             // energy density
+#define GRID_NAME_THETA "theta"                 // energy flux theta
+#define GRID_NAME_POTENTIAL "potential"         // Newtonian potential
+#define GRID_NAME_DISPLACEMENT "displacement"   // displacement_{x,y,z} fields
+#define GRID_NAME_VELOCITY "velocity"           // velocity_{x,y,z} fields
+
 #endif
