@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
 
         double total_mass = 0; //for this particle type
 
+        int slab_counter = 0;
+
         for (int k=0; k<slabs+1; k++) {
             /* All slabs have the same number of particles, except possibly the last */
             hid_t slab_size = fmin(Npart - counter, max_slab_size);
@@ -269,7 +271,7 @@ int main(int argc, char *argv[]) {
                 double V_Y = velocities_data[l][1];
                 double V_Z = velocities_data[l][2];
 
-                double M = mass_data[l] * V_X;
+                double M = mass_data[l];
                 total_mass += M;
 
                 int iX = (int) floor(X);
@@ -307,7 +309,8 @@ int main(int argc, char *argv[]) {
         		}
             }
 
-            printf("Read %ld particles\n", slab_size);
+            printf("%d) Read %ld particles\n", slab_counter, slab_size);
+            slab_counter++;
         }
 
         /* Close the group again */
@@ -367,7 +370,7 @@ int main(int argc, char *argv[]) {
         /* Check that it is right */
         printf("\n");
         printf("Example power spectrum:\n");
-        printf("k\t P_measured(k)\t P_input(k)\t observations\n");
+        printf("k P_measured(k) observations\n");
         for (int i=0; i<bins; i++) {
             if (obs_in_bins[i] == 0) continue; //skip empty bins
 
@@ -376,7 +379,7 @@ int main(int argc, char *argv[]) {
             double Pk = power_in_bins[i];
             int obs = obs_in_bins[i];
 
-            printf("%f\t %e\t %d\n", k, Pk, obs);
+            printf("%f %e %d\n", k, Pk, obs);
         }
 
         printf("\n");
@@ -398,7 +401,7 @@ int main(int argc, char *argv[]) {
             calc_cross_powerspec(N, boxlen[0], fbox_c, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
 
             /* Print the results */
-            printf("k\t P_measured(k)\t P_input(k)\t observations\n");
+            printf("k P_measured(k) observations\n");
             for (int i=0; i<bins; i++) {
                 if (obs_in_bins[i] == 0) continue; //skip empty bins
 
@@ -407,7 +410,7 @@ int main(int argc, char *argv[]) {
                 double Pk = power_in_bins[i];
                 int obs = obs_in_bins[i];
 
-                printf("%f\t %e\t %d\n", k, Pk, obs);
+                printf("%f %e %d\n", k, Pk, obs);
             }
 
             printf("\n");
