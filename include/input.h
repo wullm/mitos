@@ -61,6 +61,8 @@ struct units {
     double UnitLengthMetres;
     double UnitTimeSeconds;
     double UnitMassKilogram;
+    double UnitTemperatureKelvin;
+    double UnitCurrentAmpere;
 
     /* Units for the transfer function input data */
     double TransferUnitLengthMetres;

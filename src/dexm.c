@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
     hid_t h_out_file = H5Fcreate(out_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     /* Writing attributes into the Header & Cosmology groups */
-    err = writeHeaderAttributes(&pars, &cosmo, &types, h_out_file);
+    err = writeHeaderAttributes(&pars, &cosmo, &us, &types, h_out_file);
     if (err > 0) exit(1);
 
     /* Counter of total number of particle stored */

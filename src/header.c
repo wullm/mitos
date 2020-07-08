@@ -22,7 +22,8 @@
 #include "../include/header.h"
 
 int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
-                          struct particle_type **types, hid_t h_file) {
+                          struct units *us, struct particle_type **types,
+                          hid_t h_file) {
 
     /* Create the Header group */
     hid_t h_grp = H5Gcreate(h_file, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -47,6 +48,11 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
     int dimension = 3;
     h_attr = H5Acreate1(h_grp, "Dimension", H5T_NATIVE_INT, h_aspace, H5P_DEFAULT);
     H5Awrite(h_attr, H5T_NATIVE_INT, &dimension);
+    H5Aclose(h_attr);
+
+    /* Create the Redshift attribute and write the data */
+    h_attr = H5Acreate1(h_grp, "Redshift", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &cosmo->z_ini);
     H5Aclose(h_attr);
 
     /* Create the Flag_Entropy_ICs attribute and write the data */
@@ -120,6 +126,47 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
 
     /* Close the Cosmology group */
     H5Gclose(h_grp);
+
+    /* Create the Units group */
+    h_grp = H5Gcreate(h_file, "/Units", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create dataspace for scalar value attributes */
+    h_aspace = H5Screate_simple(arank, adims_single, NULL);
+
+    /* Determine the units used */
+    double unit_mass_cgs = us->UnitMassKilogram * 1000;
+    double unit_length_cgs = us->UnitLengthMetres * 100;
+    double unit_time_cgs = us->UnitTimeSeconds;
+    double unit_temperature_cgs = us->UnitTemperatureKelvin;
+    double unit_current_cgs = us->UnitCurrentAmpere;
+
+    /* Write the internal unit system */
+    h_attr = H5Acreate1(h_grp, "Unit mass in cgs (U_M)", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &unit_mass_cgs);
+    H5Aclose(h_attr);
+
+    h_attr = H5Acreate1(h_grp, "Unit length in cgs (U_L)", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &unit_length_cgs);
+    H5Aclose(h_attr);
+
+    h_attr = H5Acreate1(h_grp, "Unit time in cgs (U_t)", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &unit_time_cgs);
+    H5Aclose(h_attr);
+
+    h_attr = H5Acreate1(h_grp, "Unit temperature in cgs (U_T)", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &unit_temperature_cgs);
+    H5Aclose(h_attr);
+
+    h_attr = H5Acreate1(h_grp, "Unit current in cgs (U_I)", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &unit_current_cgs);
+    H5Aclose(h_attr);
+
+    /* Close the attribute dataspace */
+    H5Sclose(h_aspace);
+
+    /* Close the Cosmology group */
+    H5Gclose(h_grp);
+
 
     return 0;
 }

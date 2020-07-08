@@ -25,6 +25,7 @@
 #include "particle_types.h"
 
 int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
-                          struct particle_type **types, hid_t h_file);
+                          struct units *us, struct particle_type **types,
+                          hid_t h_file);
 
 #endif

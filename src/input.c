@@ -59,6 +59,8 @@ int readUnits(struct units *us, const char *fname) {
     us->UnitLengthMetres = ini_getd("Units", "UnitLengthMetres", 1.0, fname);
     us->UnitTimeSeconds = ini_getd("Units", "UnitTimeSeconds", 1.0, fname);
     us->UnitMassKilogram = ini_getd("Units", "UnitMassKilogram", 1.0, fname);
+    us->UnitTemperatureKelvin = ini_getd("Units", "UnitTemperatureKelvin", 1.0, fname);
+    us->UnitCurrentAmpere = ini_getd("Units", "UnitCurrentAmpere", 1.0, fname);
 
     /* Get the transfer functions format */
     char format[DEFAULT_STRING_LENGTH];
