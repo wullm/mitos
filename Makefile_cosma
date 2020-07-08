@@ -28,6 +28,7 @@ all:
 	make minIni
 	mkdir -p lib
 	$(GCC) src/input.c -c -o lib/input.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/output.c -c -o lib/output.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/fft.c -c -o lib/fft.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/grf.c -c -o lib/grf.o $(INCLUDES) $(CFLAGS)
@@ -45,6 +46,11 @@ all:
 
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+
+	make analyse_tools
+
+analyse_tools:
+	cd analyse && make
 
 minIni:
 	cd parser && make
