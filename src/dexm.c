@@ -570,6 +570,6 @@ int main(int argc, char *argv[]) {
     /* Timer */
     gettimeofday(&stop, NULL);
     long unsigned microsec = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
-    printf("\nTime elapsed: %.3f ms\n", microsec/1000.);
+    printf("\nTime elapsed: %.5f s\n", microsec/1e6);
 
 }

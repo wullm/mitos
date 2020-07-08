@@ -20,7 +20,7 @@ HDF5_LIBRARIES += -L/cosma/local/parmetis/gnu_7.3.0_ompi_3.0.1/4.0.3/lib -Wl,-rp
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
-CFLAGS = -Wall
+CFLAGS = -Wall -fopenmp -march=native -O4
 
 OBJECTS = ../lib/*.o
 
