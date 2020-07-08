@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
     /* Create the beginning of a SWIFT parameter file */
     printheader("Creating SWIFT Parameter File");
     char out_par_fname[DEFAULT_STRING_LENGTH];
-    sprintf(out_par_fname, "%s/%s", pars.OutputDirectory, "swift_parameters.yml");
+    sprintf(out_par_fname, "%s/%s", pars.OutputDirectory, pars.SwiftParamFilename);
     printf("Creating output file '%s'.\n", out_par_fname);
     writeSwiftParameterFile(&pars, &cosmo, &us, &types, &ptpars, out_par_fname);
 

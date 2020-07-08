@@ -45,11 +45,14 @@ int readParams(struct params *pars, const char *fname) {
      pars->InputFilename = malloc(len);
      pars->OutputFilename = malloc(len);
      pars->PerturbFile = malloc(len);
+     pars->SwiftParamFilename = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
+     ini_gets("Output", "SwiftParamFilename", "swift_params.hdf5", pars->SwiftParamFilename, len, fname);
      ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
+
 
      return 0;
 }

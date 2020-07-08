@@ -54,6 +54,7 @@ struct params {
     /* Output parameters */
     char *OutputDirectory;
     char *OutputFilename;
+    char *SwiftParamFilename;
 
     /* Input parameters */
     char *InputFilename;

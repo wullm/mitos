@@ -247,6 +247,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     double delta_time = 1.25;
     int compression = 4;
     char snapshot_basename[10] = "box";
+    double delta_hours = 1.0;
 
     fprintf(f, "Snapshots:\n");
     fprintf(f, "  scale_factor_first:\t%.10f # z = %f\n", a_first, cosmo->z_ini);
@@ -257,6 +258,9 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "Statistics:\n");
     fprintf(f, "  scale_factor_first:\t%.10f # z = %f\n", a_first, cosmo->z_ini);
     fprintf(f, "  delta_time:\t\t%.4f\n", delta_time);
+    fprintf(f, "\n");
+    fprintf(f, "Restarts:\n");
+    fprintf(f, "  delta_hours:\t%.2f\n", delta_hours);
     fprintf(f, "\n");
 
     /* Some reasonable SWIFT parameters that can be easily changed */
