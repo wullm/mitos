@@ -271,6 +271,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     double eta = 0.025;
     double theta = 0.5;
     char MAC[10] = "geometric";
+    double rebuild_freq = 0; //always
 
     fprintf(f, "InitialConditions:\n");
     fprintf(f, "  file_name:\t%s\n", pars->OutputFilename);
@@ -282,6 +283,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "  MAC:\t\t\t%s\n", MAC);
     fprintf(f, "  eta:\t\t\t%.5f\n", eta);
     fprintf(f, "  theta_cr:\t\t%.5f\n", theta);
+    fprintf(f, "  rebuild_frequency:\t%.2f # rebuild always\n", rebuild_freq);
 
     /* Collect the number of particles per ExportNames */
     long long int numparts[7] = {0, 0, 0, 0, 0, 0, 0};
