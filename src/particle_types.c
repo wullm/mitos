@@ -48,6 +48,7 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             ini_gets(seek_str, "ExportName", "", tp->ExportName, 20, fname);
             // tp->Omega = ini_getd(seek_str, "Omega", 1.0, fname);
             // tp->Mass = ini_getd(seek_str, "Mass", 1.0, fname);
+            tp->Multiplicity = ini_getd(seek_str, "Multiplicity", 1.0, fname);
             tp->TotalNumber = ini_getl(seek_str, "TotalNumber", 0, fname);
             tp->CubeRootNumber = ini_getl(seek_str, "CubeRootNumber", 0, fname);
             tp->Chunks = ini_getl(seek_str, "Chunks", 0, fname);
@@ -137,10 +138,11 @@ int retrieveDensities(struct params *pars, struct cosmology *cosmo,
 
         /* Find the present-day density, as fraction of the critical density */
         double Omega = ptdat->Omega[tau_size * index_src + tau_index];
-        double rho = Omega * cosmo->rho_crit;
+        double rho = Omega * cosmo->rho_crit * ptype->Multiplicity;
         double Mass = rho * box_vol / ptype->TotalNumber;
 
-        printf("Particle type '%s' has [Omega, Mass] \t = [%f, %f]\n", Identifier, Omega, Mass);
+        printf("Particle type '%s' has [Omega, Multiplicity, Mass] \t = " \
+               "[%f, %.2f, %f U_M]\n", Identifier, Omega, ptype->Multiplicity, Mass);
 
         /* Store in the particle-type structure */
         ptype->Omega = Omega;

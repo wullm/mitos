@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat);
 
-    /* Merge cdm & baryons into one function if desired (replacing cdm) */
+    /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
     if (pars.MergeDarkMatterBaryons) {
         printheader("Merging cdm & baryon transfer functions, replacing cdm.");
 

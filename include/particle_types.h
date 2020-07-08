@@ -27,6 +27,7 @@ struct particle_type {
     char *Identifier;
     char *ExportName;
     double Omega, Mass;
+    double Multiplicity;
     long long int TotalNumber;
     int CubeRootNumber;
     int Chunks;
