@@ -24,6 +24,7 @@
 #include <hdf5.h>
 #include <fftw3.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include "../include/dexm.h"
 
@@ -70,6 +71,12 @@ int main(int argc, char *argv[]) {
     readPerturb(&pars, &us, &ptdat);
     readPerturbParams(&pars, &us, &ptpars);
 
+    /* Do a sanity check */
+    if (fabs(cosmo.h - ptpars.h) / cosmo.h > 1e-5) {
+        printf("ERROR: h from parameter file does not match perturbation file.\n");
+        exit (1);
+    }
+
     /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
     if (pars.MergeDarkMatterBaryons) {
         printheader("Merging cdm & baryon transfer functions, replacing cdm.");
@@ -82,6 +89,9 @@ int main(int argc, char *argv[]) {
         int today_index = ptdat.tau_size - 1; // today corresponds to the last index
         double Omega_cdm = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
         double Omega_b = ptdat.Omega[ptdat.tau_size * index_b + today_index];
+
+        /* Do a sanity check */
+        assert(fabs(Omega_b - ptpars.Omega_b) / Omega_b < 1e-5);
 
         /* Use the present-day densities as weights */
         double weight_cdm = Omega_cdm / (Omega_cdm + Omega_b);
