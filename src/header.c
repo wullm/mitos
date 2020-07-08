@@ -228,10 +228,12 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     /* Some reasonable SWIFT parameters that can be easily changed */
     double dt_min = 1e-10;
     double dt_max = 1e-2;
+    double dt_switch_neutrino = 100;
 
     fprintf(f, "TimeIntegration:\n");
     fprintf(f, "  dt_min:\t%.4e\n", dt_min);
     fprintf(f, "  dt_max:\t%.4e\n", dt_max);
+    fprintf(f, "  neutrino_dt_switch_threshold:\t %.5e\n", dt_switch_neutrino);
     fprintf(f, "\n");
 
     /* Some reasonable SWIFT parameters that can be easily changed */
