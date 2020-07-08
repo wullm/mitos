@@ -57,7 +57,8 @@ int solvePoisson(double *phi, double *f, int N, double boxlen) {
 /* Solve the Poisson equation for each density grid */
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
-                          struct particle_type *types) {
+                          struct particle_type *types, const char *grid_name,
+                          const char *out_grid_name) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
@@ -74,7 +75,7 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
 
         /* Filename of the density grid (should have been stored earlier) */
         char dbox_fname[DEFAULT_STRING_LENGTH];
-        sprintf(dbox_fname, "%s/%s%s%s", pars->OutputDirectory, "density_", Identifier, ".hdf5");
+        sprintf(dbox_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
         printf("Reading density field '%s'.\n", dbox_fname);
 
         /* Read the density field from file */
@@ -92,7 +93,7 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
 
         /* Filename of the potential grid */
         char pbox_fname[DEFAULT_STRING_LENGTH];
-        sprintf(pbox_fname, "%s/%s_%s%s", pars->OutputDirectory, GRID_NAME_POTENTIAL, Identifier, ".hdf5");
+        sprintf(pbox_fname, "%s/%s_%s%s", pars->OutputDirectory, out_grid_name, Identifier, ".hdf5");
         printf("Potential field written to '%s'.\n", pbox_fname);
         writeGRF_H5(rho, N, boxlen, pbox_fname);
 

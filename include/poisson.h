@@ -30,7 +30,8 @@ int solvePoisson(double *phi, double *f, int N, double boxlen);
 /* Solve the Poisson equation for each density grid */
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
-                          struct particle_type *types);
+                          struct particle_type *types, const char *grid_name,
+                          const char *out_grid_name);
 /* For each particle type, compute derivatives of a certain grid type */
 int computeGridDerivatives(const struct params *pars, const struct units *us,
                            const struct cosmology *cosmo,

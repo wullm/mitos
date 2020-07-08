@@ -49,5 +49,6 @@
 #define GRID_NAME_POTENTIAL "potential"         // Newtonian potential
 #define GRID_NAME_DISPLACEMENT "displacement"   // displacement_{x,y,z} fields
 #define GRID_NAME_VELOCITY "velocity"           // velocity_{x,y,z} fields
+#define GRID_NAME_THETA_POTENTIAL "theta_potential" //-theta/k^2 
 
 #endif

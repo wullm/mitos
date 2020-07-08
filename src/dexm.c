@@ -178,17 +178,22 @@ int main(int argc, char *argv[]) {
 
     /* Compute the potential grids */
     printheader("Computing Gravitational Potentials");
-    err = computePotentialGrids(&pars, &us, &cosmo, types);
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the potential grids */
     printheader("Computing Potential Derivatives (Displacements)");
-    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_DISPLACEMENT);
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT);
+    if (err > 0) exit(1);
+
+    /* Compute the energy flux potential grids */
+    printheader("Computing Energy Flux Potentials");
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_THETA_POTENTIAL);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the energy flux grids */
     printheader("Computing Energy Flux Derivatives (Velocities)");
-    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_VELOCITY);
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY);
     if (err > 0) exit(1);
 
     /* Name of the main output file containing the initial conditions */
@@ -306,7 +311,7 @@ int main(int argc, char *argv[]) {
             for (int dir=0; dir<3; dir++) {
                 char dbox_fname[DEFAULT_STRING_LENGTH];
                 sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
-                printf("Displacement field read from '%s'.\n", dbox_fname);
+                // printf("Displacement field read from '%s'.\n", dbox_fname);
                 int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
@@ -337,7 +342,7 @@ int main(int argc, char *argv[]) {
             for (int dir=0; dir<3; dir++) {
                 char dbox_fname[DEFAULT_STRING_LENGTH];
                 sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_VELOCITY, letters[dir], ptype->Identifier, ".hdf5");
-                printf("Velocity field read from '%s'.\n", dbox_fname);
+                // printf("Velocity field read from '%s'.\n", dbox_fname);
                 int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
@@ -365,6 +370,8 @@ int main(int argc, char *argv[]) {
 
 
             /* Unit conversions */
+
+
             /* (...) */
 
             /* Before writing particle data to disk, we need to choose the
