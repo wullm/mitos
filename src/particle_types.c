@@ -57,8 +57,10 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             /* Further strings */
             tp->TransferFunctionDensity = malloc(20);
             tp->TransferFunctionVelocity = malloc(20);
+            tp->ThermalMotionType = malloc(20);
             ini_gets(seek_str, "TransferFunctionDensity", "", tp->TransferFunctionDensity, 20, fname);
             ini_gets(seek_str, "TransferFunctionVelocity", "", tp->TransferFunctionVelocity, 20, fname);
+            ini_gets(seek_str, "ThermalMotionType", "", tp->ThermalMotionType, 20, fname);
 
 
             /* Infer total number from cube root number or vice versa */
@@ -147,6 +149,49 @@ int retrieveDensities(struct params *pars, struct cosmology *cosmo,
         /* Store in the particle-type structure */
         ptype->Omega = Omega;
         ptype->Mass = Mass;
+    }
+
+    return 0;
+}
+
+int retrieveMicroMasses(struct params *pars, struct cosmology *cosmo,
+                        struct particle_type **tps, struct perturb_params *ptpars) {
+
+
+    /* For each particle type, fetch the user-defined density function title */
+    for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+        /* The current particle type */
+        struct particle_type *ptype = *tps + pti;
+        const char *Identifier = ptype->Identifier;
+
+        /* The user-defined title of the density transfer function */
+        const char *title = ptype->TransferFunctionDensity;
+
+        /* Skip if not specified */
+        if (strcmp("", title) == 0) continue;
+
+        /* Check if it matches the format "d_ncdm[%d]" */
+        int n_ncdm = -1;
+
+        for (int i=0; i<ptpars->N_ncdm; i++) {
+            char check[20];
+            sprintf(check, "d_ncdm[%d]", i);
+            if (strcmp(check, title) == 0) {
+                n_ncdm = i;
+            }
+        }
+
+        /* Skip if the match is unsuccessful */
+        if (n_ncdm < 0) continue;
+
+        /* Retrieve the microscopic mass in electronvolts */
+        ptype->MicroscopicMass_eV = ptpars->M_ncdm_eV[n_ncdm];
+
+        /* Also retrieve the temperature */
+        ptype->MicroscopyTemperature = ptpars->T_ncdm[n_ncdm] * ptpars->T_CMB;
+
+        printf("Particle type '%s' has microscopic [M, T] = [%f eV, %f U_T].\n",
+                Identifier, ptype->MicroscopicMass_eV, ptype->MicroscopyTemperature);
     }
 
     return 0;

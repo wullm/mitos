@@ -23,6 +23,11 @@
 #define SEARCH_TABLE_LENGTH 1000
 #define NUMERICAL_CDF_SAMPLES 1000
 
+#define THERMAL_MIN_MOMENTUM 1e-10 //don't use exactly zero
+#define THERMAL_MAX_MOMENTUM 15.0
+#define FERMION_TYPE "fermion"
+#define BOSON_TYPE "boson"
+
 /* We allow for user-defined pdf's */
 typedef double (*pdf)(double x, void *params);
 
@@ -70,6 +75,7 @@ static inline int compareByLeft(const void *a, const void *b) {
 
 double sampleNorm();
 double fd_pdf(double x, void *params);
+double be_pdf(double x, void *params);
 double numericalCDF(double xl, double xr, int samples, pdf f, void *params);
 int initSampler(struct sampler *s, pdf f, double xl, double xr, void *params);
 int splitInterval(struct sampler *s, int current_interval_id);

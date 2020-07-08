@@ -34,6 +34,7 @@ double sampleNorm() {
     return z0;
 }
 
+/* Fermi-Dirac function */
 double fd_pdf(double x, void *params) {
     /* Unpack the parameters */
     double *pars = (double*) params;
@@ -41,9 +42,20 @@ double fd_pdf(double x, void *params) {
     double mu = pars[1];
 
     /* Calculate the unnormalized Fermi-Dirac density function */
-    return (x+0.281)*(x+0.281) + 1.5*(x+0.281) - 0.5;
     return (x <= 0) ? 0 : x*x/(exp((x - mu)/T) + 1);
 }
+
+/* Bose-Einstein function */
+double be_pdf(double x, void *params) {
+    /* Unpack the parameters */
+    double *pars = (double*) params;
+    double T = pars[0];
+    double mu = pars[1];
+
+    /* Calculate the unnormalized Fermi-Dirac density function */
+    return (x <= 0) ? 0 : x*x/(exp((x - mu)/T) - 1);
+}
+
 
 double numericalCDF(double xl, double xr, int samples, pdf f, void *params) {
     /* Midpoint rule integration */

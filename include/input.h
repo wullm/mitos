@@ -27,6 +27,9 @@
 
 #define SPEED_OF_LIGHT_METRES_SECONDS 2.99792e8
 #define GRAVITY_G_SI_UNITS 6.67428e-11 // m^3 / kg / s^2
+#define PLANCK_CONST_SI_UNITS 6.62607015e-34 //J s
+#define BOLTZMANN_CONST_SI_UNITS 1.380649e-23 //J / K
+#define ELECTRONVOLT_SI_UNITS 1.602176634e-19 // J
 
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"
@@ -73,6 +76,9 @@ struct units {
     /* Physical constants in internal units */
     double SpeedOfLight;
     double GravityG;
+    double hPlanck;
+    double kBoltzmann;
+    double ElectronVolt;
 };
 
 struct cosmology {

@@ -88,8 +88,16 @@ int readUnits(struct units *us, const char *fname) {
     us->SpeedOfLight = SPEED_OF_LIGHT_METRES_SECONDS * us->UnitTimeSeconds
                         / us->UnitLengthMetres;
     us->GravityG = GRAVITY_G_SI_UNITS * us->UnitTimeSeconds * us->UnitTimeSeconds
-                 / us->UnitLengthMetres / us->UnitLengthMetres / us->UnitLengthMetres
-                 * us->UnitMassKilogram; // m^3 / kg / s^2 to internal
+                    / us->UnitLengthMetres / us->UnitLengthMetres / us->UnitLengthMetres
+                    * us->UnitMassKilogram; // m^3 / kg / s^2 to internal
+    us->hPlanck = PLANCK_CONST_SI_UNITS / us->UnitMassKilogram / us->UnitLengthMetres
+                    / us->UnitLengthMetres * us->UnitTimeSeconds; //J*s = kg*m^2/s
+    us->kBoltzmann = BOLTZMANN_CONST_SI_UNITS / us->UnitMassKilogram / us->UnitLengthMetres
+                    / us->UnitLengthMetres * us->UnitTimeSeconds * us->UnitTimeSeconds
+                    * us->UnitTemperatureKelvin; //J/K = kg*m^2/s^2/K
+    us->ElectronVolt = ELECTRONVOLT_SI_UNITS / us->UnitMassKilogram / us->UnitLengthMetres
+                    / us->UnitLengthMetres * us->UnitTimeSeconds
+                    * us->UnitTimeSeconds; // J = kg*m^2/s^2
 
     return 0;
 }

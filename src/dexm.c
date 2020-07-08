@@ -151,6 +151,7 @@ int main(int argc, char *argv[]) {
     /* Retrieve background densities from the perturbations data file */
     printheader("Fetching Background Densities");
     retrieveDensities(&pars, &cosmo, &types, &ptdat);
+    retrieveMicroMasses(&pars, &cosmo, &types, &ptpars);
 
 
     /* For each particle type, fetch the user-defined density function title */
@@ -248,9 +249,58 @@ int main(int argc, char *argv[]) {
         const long long int id_first_particle = grand_counter;
         grand_counter += ptype->TotalNumber;
 
-        /* Create the particle group in the output file */
-        char *gname = ptype->ExportName;
-        hid_t h_grp = H5Gcreate(h_out_file, gname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        /* Random sampler used for thermal species */
+        struct sampler thermal_sampler;
+
+        /* Initialize a random sampler if this particle type is thermal */
+        if (strcmp(ptype->ThermalMotionType, "") != 0) {
+            /* Check if the type of thermal motion is supported */
+            pdf function;
+            /* Domain of the probability function */
+            double xl, xr;
+
+            if (strcmp(ptype->ThermalMotionType, FERMION_TYPE) == 0) {
+                function = fd_pdf;
+                xl = THERMAL_MIN_MOMENTUM; //units of kb*T
+                xr = THERMAL_MAX_MOMENTUM; //units of kb*T
+            } else if (strcmp(ptype->ThermalMotionType, BOSON_TYPE) == 0) {
+                function = be_pdf;
+                xl = THERMAL_MIN_MOMENTUM; //units of kb*T
+                xr = THERMAL_MAX_MOMENTUM; //units of kb*T
+            } else {
+                printf("ERROR: unsupported ThermalMotionType '%s'.\n", ptype->ThermalMotionType);
+                exit(1);
+            }
+
+            /* Microscopic mass in electronVolts */
+            double M_eV = ptype->MicroscopicMass_eV;
+            /* Convert the temperature to electronVolts */
+            double T_eV = ptype->MicroscopyTemperature * us.kBoltzmann / us.ElectronVolt;
+            /* Chemical potential */
+            double mu_eV = 0;
+
+            /* Rescale the domain */
+            xl *= T_eV;
+            xr *= T_eV;
+
+            /* Initialize the sampler */
+            double thermal_params[2] = {T_eV, mu_eV};
+
+            int err = initSampler(&thermal_sampler, function, xl, xr, thermal_params);
+            if (err > 0) {
+                printf("Error initializing the thermal motion sampler.\n");
+                exit(1);
+            }
+
+            printf("Thermal motion: %s with [M, T] = [%e eV, %e eV].\n",
+                    ptype->ThermalMotionType, M_eV, T_eV);
+        }
+
+        /* The particle group in the output file */
+        hid_t h_grp;
+
+        /* Datsets */
+        hid_t h_data;
 
         /* Vector dataspace (e.g. positions, velocities) */
         const hsize_t vrank = 2;
@@ -262,24 +312,40 @@ int main(int argc, char *argv[]) {
         const hsize_t sdims[1] = {ptype->TotalNumber};
         hid_t h_sspace = H5Screate_simple(srank, sdims, NULL);
 
-        /* Create various datasets (empty for now) */
-        hid_t h_data;
+        /* Check if the ExportName particle group already exists */
+        hid_t h_status = H5Eset_auto1(NULL, NULL);  //turn off error printing
+        char *gname = ptype->ExportName;
+        h_status = H5Gget_objinfo(h_out_file, gname, 0, NULL);
 
-        /* Coordinates (use vector space) */
-        h_data = H5Dcreate(h_grp, "Coordinates", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dclose(h_data);
+        /* If the group does not exis yes */
+        if (h_status != 0) {
 
-        /* Velocities (use vector space) */
-        h_data = H5Dcreate(h_grp, "Velocities", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dclose(h_data);
+            /* Create the particle group in the output file */
+            h_grp = H5Gcreate(h_out_file, gname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-        /* Masses (use scalar space) */
-        h_data = H5Dcreate(h_grp, "Masses", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dclose(h_data);
+            /* Coordinates (use vector space) */
+            h_data = H5Dcreate(h_grp, "Coordinates", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            H5Dclose(h_data);
 
-        /* Particle IDs (use scalar space) */
-        h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dclose(h_data);
+            /* Velocities (use vector space) */
+            h_data = H5Dcreate(h_grp, "Velocities", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            H5Dclose(h_data);
+
+            /* Masses (use scalar space) */
+            h_data = H5Dcreate(h_grp, "Masses", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            H5Dclose(h_data);
+
+            /* Particle IDs (use scalar space) */
+            h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            H5Dclose(h_data);
+
+        } else {
+            /* Otherwise, open the existing group */
+            // h_grp = H5Gopen(h_out_file, gname, H5P_DEFAULT);
+
+            printf("ERROR: particle group already exists. Adding to existing groups will be implemented later.\n");
+            exit(1);
+        }
 
         /* Allocate enough memory for one chunk of particles */
         struct particle *parts;
@@ -339,7 +405,7 @@ int main(int argc, char *argv[]) {
                 int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
-                /* Displace the particles in this chunk */
+                /* Assign velocities to the particles in this chunk */
                 #pragma omp parallel for
                 for (int i=0; i<chunk_size; i++) {
                     /* Find the displaceed particle location */
@@ -350,7 +416,7 @@ int main(int argc, char *argv[]) {
                     /* Find the velocity in the given direction */
                     double vel = gridTSC(grid, N, boxlen, x, y, z);
 
-                    /* Displace the particles */
+                    /* Add the velocity component */
                     if (dir == 0) {
                         parts[i].v_X = vel;
                     } else if (dir == 1) {
@@ -361,6 +427,44 @@ int main(int argc, char *argv[]) {
                 }
             }
 
+            /* Add thermal motion */
+            if (strcmp(ptype->ThermalMotionType, "") != 0) {
+                const double a_ini = 1.0 / (cosmo.z_ini + 1.0);
+
+                /* Add thermal velocities to the particles in this chunk */
+                for (int i=0; i<chunk_size; i++) {
+                    /* Draw a momentum in eV from the thermal distribution */
+                    double p0_eV = samplerCustom(&thermal_sampler); //present-day momentum
+                    double p_eV = p0_eV / a_ini; //redshifted momentum
+
+                    if (isnan(p_eV) || p_eV <= 0) {
+                        printf("ERROR: invalid thermal momentum drawn: %e.\n", p_eV);
+                        exit(1);
+                    }
+
+                    /* Convert to speed in internal units. Note that this is
+                     * the spatial part of the relativistic 4-velocity. */
+                    double V = p_eV / ptype->MicroscopicMass_eV * us.SpeedOfLight;
+
+                    /* Generate a random point on the sphere using Gaussians */
+                    double x = sampleNorm();
+                    double y = sampleNorm();
+                    double z = sampleNorm();
+
+                    /* And normalize */
+                    double length = hypot(x, hypot(y, z));
+                    if (length > 0) {
+                        x /= length;
+                        y /= length;
+                        z /= length;
+                    }
+
+                    /* Add the thermal velocities */
+                    parts[i].v_X += x * V;
+                    parts[i].v_Y += y * V;
+                    parts[i].v_Z += z * V;
+                }
+            }
 
             /* Unit conversions */
             /* (...) */
@@ -433,6 +537,11 @@ int main(int argc, char *argv[]) {
 
         /* Free memory of the displacement and velocity grids */
         free(grid);
+
+        /* Clean up the random sampler if this particle type is thermal */
+        if (strcmp(ptype->ThermalMotionType, "") != 0) {
+            cleanSampler(&thermal_sampler);
+        }
 
         /* Close the scalar and vector dataspaces */
         H5Sclose(h_vspace);
