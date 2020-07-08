@@ -28,4 +28,7 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
                           struct units *us, struct particle_type **types,
                           hid_t h_file);
 
+int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
+                            struct units *us, struct particle_type **types,
+                            struct perturb_params *ptpars, const char *fname);
 #endif

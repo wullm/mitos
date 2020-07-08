@@ -321,3 +321,154 @@ int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title
 
     return 0;
 }
+
+int readPerturbParams(struct params *pars, struct units *us,
+                      struct perturb_params *ptpars) {
+
+    printf("Reading cosmological parameters from '%s'.\n", pars->PerturbFile);
+
+    /* Open the hdf5 file (file exists error handled by HDF5) */
+    hid_t h_file = H5Fopen(pars->PerturbFile, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    /* Open the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
+
+    /* Read the size of the perturbation */
+    hid_t h_attr, h_err;
+
+    /* Read the units of the perturbation data file */
+    double UnitLengthCGS, UnitTimeCGS, UnitMassCGS;
+    double UnitLengthMetres, UnitTimeSeconds, UnitMassKilogram;
+    double UnitTemperatureKelvin;
+
+    /* CGS Length units */
+    h_attr = H5Aopen(h_grp, "Unit length in cgs (U_L)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &UnitLengthCGS);
+    H5Aclose(h_attr);
+
+    /* CGS Time units */
+    h_attr = H5Aopen(h_grp, "Unit time in cgs (U_t)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &UnitTimeCGS);
+    H5Aclose(h_attr);
+
+    /* CGS Mass units */
+    h_attr = H5Aopen(h_grp, "Unit mass in cgs (U_M)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &UnitMassCGS);
+    H5Aclose(h_attr);
+
+    /* CGS Temperature units (same as SI units) */
+    h_attr = H5Aopen(h_grp, "Unit temperature in cgs (U_T)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &UnitTemperatureKelvin);
+    H5Aclose(h_attr);
+
+    /* Convert to SI units */
+    UnitLengthMetres = UnitLengthCGS/100;
+    UnitTimeSeconds = UnitTimeCGS;
+    UnitMassKilogram = UnitMassCGS/1000;
+
+    /* Conversion factors to internal units */
+    double length_unit_factor = UnitLengthMetres / us->UnitLengthMetres;
+    double time_unit_factor = UnitTimeSeconds / us->UnitTimeSeconds;
+    double mass_unit_factor = UnitMassKilogram / us->UnitMassKilogram;
+    double temperature_unit_factor = UnitTemperatureKelvin / us->UnitTemperatureKelvin;
+
+    /* Unused variables */
+    (void) length_unit_factor;
+    (void) time_unit_factor;
+    (void) mass_unit_factor;
+
+    /* Check that it makes sense */
+    if (UnitLengthMetres <= 0 || UnitTimeSeconds <= 0 ||
+        UnitMassKilogram <= 0 || UnitTemperatureKelvin <= 0) {
+        printf("ERROR: unknown units of perturbation file.\n");
+        return 1;
+    }
+
+    /* Close the Header group */
+    H5Gclose(h_grp);
+
+    /* Open the Cosmology group */
+    h_grp = H5Gopen(h_file, "Cosmology", H5P_DEFAULT);
+
+    /* The number of ncdm species */
+    h_attr = H5Aopen(h_grp, "N_ncdm", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_INT, &ptpars->N_ncdm);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* Allocate memory for ncdm attributes */
+    ptpars->T_ncdm = malloc(ptpars->N_ncdm * sizeof(double));
+    ptpars->M_ncdm_eV = malloc(ptpars->N_ncdm * sizeof(double));
+
+    /* Hubble parameter in units of 100 km/s/Mpc */
+    h_attr = H5Aopen(h_grp, "h", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->h);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* CMB Temperature */
+    h_attr = H5Aopen(h_grp, "T_CMB (U_T)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->T_CMB);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* Conver the CMB temperature to internal units */
+    ptpars->T_CMB *= temperature_unit_factor;
+
+    /* Neutrino temperatures (as fraction of T_CMB) */
+    h_attr = H5Aopen(h_grp, "T_ncdm (T_CMB)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->T_ncdm);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* Neutrino masses in eV */
+    h_attr = H5Aopen(h_grp, "M_ncdm (eV)", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->M_ncdm_eV);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* The present energy density from matter (excluding ncdm) */
+    h_attr = H5Aopen(h_grp, "Omega_m", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_m);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* The present energy density from baryons */
+    h_attr = H5Aopen(h_grp, "Omega_b", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_b);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* The present energy density from ultra-relativistic species (excluding photons) */
+    h_attr = H5Aopen(h_grp, "Omega_ur", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_ur);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* The present curvature density parameter */
+    h_attr = H5Aopen(h_grp, "Omega_k", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_k);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* The present dark energy density parameter */
+    h_attr = H5Aopen(h_grp, "Omega_lambda", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_lambda);
+    H5Aclose(h_attr);
+    if (h_err < 0) return 1;
+
+    /* Close the Cosmology group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    return 0;
+}
+
+int cleanPerturbParams(struct perturb_params *ptpars) {
+    free(ptpars->M_ncdm_eV);
+    free(ptpars->T_ncdm);
+
+    return 0;
+}

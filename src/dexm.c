@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
     struct cosmology cosmo;
     struct perturb_data ptdat;
     struct perturb_spline spline;
+    struct perturb_params ptpars;
 
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
 
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat);
+    readPerturbParams(&pars, &us, &ptpars);
 
     /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
     if (pars.MergeDarkMatterBaryons) {
@@ -195,6 +197,13 @@ int main(int argc, char *argv[]) {
     printheader("Computing Energy Flux Derivatives (Velocities)");
     err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY);
     if (err > 0) exit(1);
+
+    /* Create the beginning of a SWIFT parameter file */
+    printheader("Creating SWIFT Parameter File");
+    char out_par_fname[DEFAULT_STRING_LENGTH];
+    sprintf(out_par_fname, "%s/%s", pars.OutputDirectory, "swift_parameters.yml");
+    printf("Creating output file '%s'.\n", out_par_fname);
+    writeSwiftParameterFile(&pars, &cosmo, &us, &types, &ptpars, out_par_fname);
 
     /* Name of the main output file containing the initial conditions */
     printheader("Initializing Output File");
@@ -434,6 +443,7 @@ int main(int argc, char *argv[]) {
     cleanTypes(&pars, &types);
     cleanParams(&pars);
     cleanPerturb(&ptdat);
+    cleanPerturbParams(&ptpars);
 
     /* Release the interpolation splines */
     cleanPerturbSpline(&spline);

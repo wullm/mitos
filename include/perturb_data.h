@@ -46,11 +46,34 @@ struct perturb_data {
     double *Omega;
 };
 
+/* Extra cosmological parameters that can be extracted from perturb files */
+struct perturb_params {
+    int N_ncdm; //number of non-cold dark matter species (neutrinos)
+    double *M_ncdm_eV; //masses of the ncdm particles in eV
+    double *T_ncdm; //temperatures as fraction of T_CMB
+    double T_CMB; //temperature in U_T
+    double h; //Hubble parameter
+
+    /* NB: Individual Omegas of fluid components are stored in ptdat */
+    double Omega_lambda;
+    double Omega_k;
+    double Omega_m;
+    double Omega_b;
+    double Omega_ur;
+};
+
 /* Read the perturbation data from file */
 int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt);
 
 /* Clean up the memory */
 int cleanPerturb(struct perturb_data *pt);
+
+/* Read extra cosmological parameters from file */
+int readPerturbParams(struct params *pars, struct units *us,
+                      struct perturb_params *ptpars);
+
+/* Clean up the memory */
+int cleanPerturbParams(struct perturb_params *ptpars);
 
 /* Unit conversion factor for transfer functions, depending on the title. */
 double unitConversionFactor(const char *title, double unit_length_factor,

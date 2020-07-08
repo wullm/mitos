@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "../include/header.h"
 
 int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
@@ -73,8 +74,8 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
 
     /* Collect particle type attributes using the ExportNames */
     long long int numparts[7] = {0, 0, 0, 0, 0, 0, 0};
-    long long int numparts_high_word[7] = {0, 0, 0, 0, 0, 0, 0};
-    double mass_table[7] = {0., 0., 0., 0., 0., 0., 0.};
+    long long int numparts_high_word[7] = {0, 0, 0, 0, 0, 0, 0}; //not used, so use zeros
+    double mass_table[7] = {0., 0., 0., 0., 0., 0., 0.}; //not used, so use zeros
     for (int i=0; i<7; i++) {
         char ptype_name[40];
         sprintf(ptype_name, "PartType%d", i);
@@ -83,8 +84,7 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
         for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
             struct particle_type *ptype = *types + pti;
             if (strcmp(ptype->ExportName, ptype_name) == 0) {
-                numparts[i] = ptype->TotalNumber;
-                mass_table[i] = ptype->Mass;
+                numparts[i] += ptype->TotalNumber;
             }
         }
     }
@@ -167,6 +167,163 @@ int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
     /* Close the Cosmology group */
     H5Gclose(h_grp);
 
+
+    return 0;
+}
+
+
+int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
+                            struct units *us, struct particle_type **types,
+                            struct perturb_params *ptpars, const char *fname) {
+    /* Open a text file */
+    FILE *f = fopen(fname, "w+");
+
+    /* Determine the units used */
+    double unit_mass_cgs = us->UnitMassKilogram * 1000;
+    double unit_length_cgs = us->UnitLengthMetres * 100;
+    double unit_time_cgs = us->UnitTimeSeconds;
+    double unit_velocity_cgs = unit_length_cgs/unit_time_cgs;
+    double unit_temperature_cgs = us->UnitTemperatureKelvin;
+    double unit_current_cgs = us->UnitCurrentAmpere;
+
+    fprintf(f, "InternalUnitSystem:\n");
+    fprintf(f, "  UnitMass_in_cgs:\t%.10e\n", unit_mass_cgs);
+    fprintf(f, "  UnitLength_in_cgs:\t%.10e\n", unit_length_cgs);
+    fprintf(f, "  UnitVelocity_in_cgs:\t%.10e\n", unit_velocity_cgs);
+    fprintf(f, "  UnitCurrent_in_cgs:\t%.10e\n", unit_current_cgs);
+    fprintf(f, "  UnitTemp_in_cgs:\t%.10e\n", unit_temperature_cgs);
+    fprintf(f, "\n");
+
+    /* Determine cosmological parameters */
+    double a_first = 1.0 / (cosmo->z_ini + 1.0);
+    double T_CMB = ptpars->T_CMB;
+    /* SWIFT only supports one neutrino temperature, so use the first one */
+    double T_nu = ptpars->T_ncdm[0] * T_CMB;
+
+    fprintf(f, "Cosmology:\n");
+    fprintf(f, "  Omega_m:\t%.10f\n", ptpars->Omega_m);
+    fprintf(f, "  Omega_b:\t%.10f\n", ptpars->Omega_b);
+    fprintf(f, "  Omega_lambda:\t%.10f\n", ptpars->Omega_lambda);
+    fprintf(f, "  Omega_k:\t%.10f\n", ptpars->Omega_k);
+    fprintf(f, "  Omega_ur:\t%.10f\n", ptpars->Omega_ur);
+    fprintf(f, "  h:\t\t%.10f\n", ptpars->h);
+    fprintf(f, "  a_begin:\t%.10f # z = %f\n", a_first, cosmo->z_ini);
+    fprintf(f, "  a_end:\t%.10f\n", 1.0);
+    fprintf(f, "  T_CMB:\t%.10f\n", T_CMB);
+    fprintf(f, "  T_nu:\t\t%.10f\n", T_nu);
+
+    /* Print the number of neutrino species and their masses */
+    fprintf(f, "  N_nu:\t\t%d\n", ptpars->N_ncdm);
+    fprintf(f, "  M_nu:\t\t");
+    for (int i=0; i<ptpars->N_ncdm; i++) {
+        fprintf(f, "%.10f", ptpars->M_ncdm_eV[i]);
+        if (i < ptpars->N_ncdm - 1) {
+            fprintf(f, ", ");
+        } else {
+            fprintf(f, "\n");
+        }
+    }
+    fprintf(f, "\n");
+
+    /* Some reasonable SWIFT parameters that can be easily changed */
+    double dt_min = 1e-10;
+    double dt_max = 1e-2;
+
+    fprintf(f, "TimeIntegration:\n");
+    fprintf(f, "  dt_min:\t%.4e\n", dt_min);
+    fprintf(f, "  dt_max:\t%.4e\n", dt_max);
+    fprintf(f, "\n");
+
+    /* Some reasonable SWIFT parameters that can be easily changed */
+    int max_top_level_cells = 16;
+    int cell_split_size = 100;
+
+    fprintf(f, "Scheduler:\n");
+    fprintf(f, "  max_top_level_cells:\t%d\n", max_top_level_cells);
+    fprintf(f, "  cell_split_size:\t%d\n", cell_split_size);
+    fprintf(f, "\n");
+
+    /* Some reasonable SWIFT parameters that can be easily changed */
+    double delta_time = 1.25;
+    int compression = 4;
+    char snapshot_basename[10] = "box";
+
+    fprintf(f, "Snapshots:\n");
+    fprintf(f, "  scale_factor_first:\t%.10f # z = %f\n", a_first, cosmo->z_ini);
+    fprintf(f, "  delta_time:\t\t%.4f\n", delta_time);
+    fprintf(f, "  basename:\t\t%s\n", snapshot_basename);
+    fprintf(f, "  compression:\t\t%d\n", compression);
+    fprintf(f, "\n");
+    fprintf(f, "Statistics:\n");
+    fprintf(f, "  scale_factor_first:\t%.10f # z = %f\n", a_first, cosmo->z_ini);
+    fprintf(f, "  delta_time:\t\t%.4f\n", delta_time);
+    fprintf(f, "\n");
+
+    /* Some reasonable SWIFT parameters that can be easily changed */
+    int periodic = 1;
+    int dithering = 0;
+    double eta = 0.025;
+    double theta = 0.5;
+    char MAC[10] = "geometric";
+
+    fprintf(f, "InitialConditions:\n");
+    fprintf(f, "  file_name:\t%s\n", pars->OutputFilename);
+    fprintf(f, "  periodic:\t%d\n", periodic);
+    fprintf(f, "\n");
+    fprintf(f, "Gravity:\n");
+    fprintf(f, "  mesh_side_length:\t%d\n", pars->GridSize);
+    fprintf(f, "  dithering:\t\t%d\n", dithering);
+    fprintf(f, "  MAC:\t\t\t%s\n", MAC);
+    fprintf(f, "  eta:\t\t\t%.5f\n", eta);
+    fprintf(f, "  theta_cr:\t\t%.5f\n", theta);
+
+    /* Collect the number of particles per ExportNames */
+    long long int numparts[7] = {0, 0, 0, 0, 0, 0, 0};
+    for (int i=0; i<7; i++) {
+        char ptype_name[40];
+        sprintf(ptype_name, "PartType%d", i);
+
+        /* Find a particle type with this export name */
+        for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+            struct particle_type *ptype = *types + pti;
+            if (strcmp(ptype->ExportName, ptype_name) == 0) {
+                numparts[i] += ptype->TotalNumber;
+            }
+        }
+    }
+
+    /* Compute the mean particle separation for each type */
+    double particle_dist[7] = {0, 0, 0, 0, 0, 0, 0};
+    for (int i=0; i<7; i++) {
+        if (numparts[i] > 0) {
+            particle_dist[i] = pars->BoxLen / cbrt(numparts[i]);
+        }
+    }
+
+    double softening_factor = 1.0 / 25.0;
+    char ofstring[50] = "of the mean inter-particle separation";
+
+    /* Find the mean particle sepatarion of PartType1 */
+    double softening_DM = particle_dist[1] * softening_factor;
+    double softening_nu = particle_dist[6] * softening_factor;
+    double softening_b = particle_dist[0] * softening_factor;
+
+    if (softening_DM > 0) {
+        fprintf(f, "  comoving_DM_softening:\t\t%.10f \t# %.4f %s\n", softening_DM, softening_factor, ofstring);
+        fprintf(f, "  max_physical_DM_softening:\t\t%.10f \t# %.4f %s\n", softening_DM, softening_factor, ofstring);
+    }
+    if (softening_nu > 0) {
+        fprintf(f, "  comoving_nu_softening:\t\t%.10f \t# %.4f %s\n", softening_nu, softening_factor, ofstring);
+        fprintf(f, "  max_physical_nu_softening:\t\t%.10f \t# %.4f %s\n", softening_nu, softening_factor, ofstring);
+    }
+    if (softening_b > 0) {
+        fprintf(f, "  comoving_baryon_softening:\t\t%.10f \t# %.4f %s\n", softening_b, softening_factor, ofstring);
+        fprintf(f, "  max_physical_baryon_softening:\t%.10f \t# %.4f %s\n", softening_b, softening_factor, ofstring);
+    }
+
+
+    /* Close the file */
+    fclose(f);
 
     return 0;
 }
