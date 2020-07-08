@@ -140,12 +140,17 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->Omega);
     H5Dclose(h_data);
 
+    if (h_err < 0) {
+        printf("ERROR: problem with reading background densities.\n");
+        return 1;
+    }
+
     /* Read the transfer functions */
     h_data = H5Dopen2(h_grp, "Transfer functions", H5P_DEFAULT);
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->delta);
     H5Dclose(h_data);
 
-    if (h_err < 0 || pt->k[0] == 0 || pt->log_tau[0] == 0 || pt->Omega[0] == 0) {
+    if (h_err < 0 || pt->k[0] == 0 || pt->log_tau[0] == 0) {
         printf("ERROR: problem with reading the perturbation data.\n");
         return 1;
     }
