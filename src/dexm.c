@@ -210,29 +210,94 @@ int main(int argc, char *argv[]) {
 
     /* Create dataspace for BoxSize attribute */
     const hsize_t arank = 1;
-    const hsize_t adims[1] = {3}; //3D space
-    hid_t h_aspace = H5Screate_simple(arank, adims, NULL);
+    const hsize_t adims_three[1] = {3}; //3D space
+    hid_t h_aspace = H5Screate_simple(arank, adims_three, NULL);
 
     /* Create the BoxSize attribute and write the data */
     hid_t h_attr = H5Acreate1(h_grp, "BoxSize", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
     double boxsize[3] = {boxlen, boxlen, boxlen};
     H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
     H5Aclose(h_attr);
-    H5Sclose(h_aspace);
 
+    /* Change dataspace dimensions to scalar value attributes */
+    const hsize_t adims_single[1] = {1};
+    H5Sset_extent_simple(h_aspace, arank, adims_single, NULL);
 
-    /* Create dataspace for BoxSize attribute */
-    const hsize_t adims2[1] = {6}; //6 particle types
-    h_aspace = H5Screate_simple(arank, adims2, NULL);
+    /* Create the Dimension attribute and write the data */
+    int dimension = 3;
+    h_attr = H5Acreate1(h_grp, "Dimension", H5T_NATIVE_INT, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_INT, &dimension);
+    H5Aclose(h_attr);
 
-    /* Create the BoxSize attribute and write the data */
+    /* Create the Flag_Entropy_ICs attribute and write the data */
+    int flag_entropy = 0;
+    h_attr = H5Acreate1(h_grp, "Flag_Entropy_ICs", H5T_NATIVE_INT, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_INT, &flag_entropy);
+    H5Aclose(h_attr);
+
+    /* Create the NumFilesPerSnapshot attribute and write the data */
+    int num_files_per_snapshot = 1;
+    h_attr = H5Acreate1(h_grp, "NumFilesPerSnapshot", H5T_NATIVE_INT, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_INT, &num_files_per_snapshot);
+    H5Aclose(h_attr);
+
+    /* Change dataspace dimensions to particle type attributes */
+    const hsize_t adims_pt[1] = {7}; //particle type 0-6
+    H5Sset_extent_simple(h_aspace, arank, adims_pt, NULL);
+
+    /* Collect particle type attributes using the ExportNames */
+    long long int numparts[7] = {0, 0, 0, 0, 0, 0, 0};
+    double mass_table[7] = {0., 0., 0., 0., 0., 0., 0.};
+    for (int i=0; i<7; i++) {
+        char ptype_name[40];
+        sprintf(ptype_name, "PartType%d", i);
+
+        /* Find a particle type with this export name */
+        for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+            struct particle_type *ptype = types + pti;
+            if (strcmp(ptype->ExportName, ptype_name) == 0) {
+                numparts[i] = ptype->TotalNumber;
+                mass_table[i] = ptype->Mass;
+            }
+        }
+    }
+
+    /* Create the NumPart_Total attribute and write the data */
     h_attr = H5Acreate1(h_grp, "NumPart_Total", H5T_NATIVE_LONG, h_aspace, H5P_DEFAULT);
-    long long int numparts[6] = {0, 0, 0, 0, 0, 0};
     H5Awrite(h_attr, H5T_NATIVE_LONG, numparts);
     H5Aclose(h_attr);
+
+    /* Create the NumPart_Total_HighWord attribute and write the data */
+    h_attr = H5Acreate1(h_grp, "NumPart_Total_HighWord", H5T_NATIVE_LONG, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_LONG, numparts);
+    H5Aclose(h_attr);
+
+    /* Create the MassTable attribute and write the data */
+    h_attr = H5Acreate1(h_grp, "MassTable", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, mass_table);
+    H5Aclose(h_attr);
+
+    /* Close the attribute dataspace */
     H5Sclose(h_aspace);
 
     /* Close the Header group */
+    H5Gclose(h_grp);
+
+    /* Create the Cosmology group */
+    h_grp = H5Gcreate(h_out_file, "/Cosmology", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create dataspace for scalar value attributes */
+    h_aspace = H5Screate_simple(arank, adims_single, NULL);
+
+    /* Create the Redshift attribute and write the data */
+    h_attr = H5Acreate1(h_grp, "Redshift", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, &cosmo.z_ini);
+    H5Aclose(h_attr);
+
+    /* Close the attribute dataspace */
+    H5Sclose(h_aspace);
+
+    /* Close the Cosmology group */
     H5Gclose(h_grp);
 
     /* Counter of total number of particle stored */
@@ -370,8 +435,6 @@ int main(int argc, char *argv[]) {
 
 
             /* Unit conversions */
-
-
             /* (...) */
 
             /* Before writing particle data to disk, we need to choose the
