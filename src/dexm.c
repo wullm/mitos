@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
         char *gname = ptype->ExportName;
         h_status = H5Gget_objinfo(h_out_file, gname, 0, NULL);
 
-        /* If the group does not exis yes */
+        /* If the group does not yet exist */
         if (h_status != 0) {
 
             /* Create the particle group in the output file */
