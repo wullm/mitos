@@ -247,6 +247,7 @@ int main(int argc, char *argv[]) {
 
     /* Collect particle type attributes using the ExportNames */
     long long int numparts[7] = {0, 0, 0, 0, 0, 0, 0};
+    long long int numparts_high_word[7] = {0, 0, 0, 0, 0, 0, 0};
     double mass_table[7] = {0., 0., 0., 0., 0., 0., 0.};
     for (int i=0; i<7; i++) {
         char ptype_name[40];
@@ -269,7 +270,7 @@ int main(int argc, char *argv[]) {
 
     /* Create the NumPart_Total_HighWord attribute and write the data */
     h_attr = H5Acreate1(h_grp, "NumPart_Total_HighWord", H5T_NATIVE_LONG, h_aspace, H5P_DEFAULT);
-    H5Awrite(h_attr, H5T_NATIVE_LONG, numparts);
+    H5Awrite(h_attr, H5T_NATIVE_LONG, numparts_high_word);
     H5Aclose(h_attr);
 
     /* Create the MassTable attribute and write the data */
