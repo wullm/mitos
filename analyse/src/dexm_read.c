@@ -271,6 +271,11 @@ int main(int argc, char *argv[]) {
                 double V_Y = velocities_data[l][1];
                 double V_Z = velocities_data[l][2];
 
+                /* Unused variables */
+                (void) V_X;
+                (void) V_Y;
+                (void) V_Z;
+
                 double M = mass_data[l];
                 total_mass += M;
 
