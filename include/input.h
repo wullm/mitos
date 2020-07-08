@@ -45,6 +45,7 @@ struct params {
     int MaxParticleTypes;
     int NumParticleTypes;
     char *PerturbFile;
+    char MergeDarkMatterBaryons;
     char Homogeneous;
 
     /* Output parameters */

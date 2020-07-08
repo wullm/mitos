@@ -22,6 +22,7 @@
 #include <hdf5.h>
 #include <math.h>
 #include "../include/perturb_data.h"
+#include "../include/titles.h"
 
 /* Read the perturbation data from file */
 int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) {
@@ -242,6 +243,76 @@ int cleanPerturb(struct perturb_data *pt) {
         free(pt->titles[i]);
     }
     free(pt->titles);
+
+    return 0;
+}
+
+/* Merge two transfer functions (e.g. cdm & barons) into one fluid */
+int mergeTransferFunctions(struct perturb_data *pt, char *title_a, char *title_b,
+                           double weight_a, double weight_b) {
+    /* Find the indices of the two functions */
+    int index_a = findTitle(pt->titles, title_a, pt->n_functions);
+    int index_b = findTitle(pt->titles, title_b, pt->n_functions);
+
+    if (index_a < 0 || index_b < 0) {
+        printf("Error: one of the indices not found.\n");
+        return 1;
+    }
+
+    /* Size of the perturbation */
+    int tau_size = pt->tau_size;
+    int k_size = pt->k_size;
+
+    /* The two transfer functions in question */
+    double *vector_a = pt->delta + index_a * k_size * tau_size;
+    double *vector_b = pt->delta + index_b * k_size * tau_size;
+
+    for (int tau_index = 0; tau_index < tau_size; tau_index++) {
+        for (int k_index = 0; k_index < k_size; k_index++) {
+            double A = vector_a[k_size * tau_index + k_index];
+            double B = vector_b[k_size * tau_index + k_index];
+
+            double sum = weight_a * A + weight_b * B;
+
+            /* Replace vector a with the merged function */
+            vector_a[k_size * tau_index + k_index] = sum;
+        }
+    }
+
+    return 0;
+}
+
+
+/* Merge the background densities (Omegas) of two transfer functions
+ * (e.g. cdm & barons) into one fluid */
+int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title_b,
+                             double weight_a, double weight_b) {
+    /* Find the indices of the two functions */
+    int index_a = findTitle(pt->titles, title_a, pt->n_functions);
+    int index_b = findTitle(pt->titles, title_b, pt->n_functions);
+
+    if (index_a < 0 || index_b < 0) {
+        printf("Error: one of the indices not found.\n");
+        return 1;
+    }
+
+
+    /* Size of the perturbation */
+    int tau_size = pt->tau_size;
+
+    /* The two vectors in question */
+    double *vector_a = pt->Omega + index_a * tau_size;
+    double *vector_b = pt->Omega + index_b * tau_size;
+
+    for (int tau_index = 0; tau_index < tau_size; tau_index++) {
+        double A = vector_a[tau_index];
+        double B = vector_b[tau_index];
+
+        double sum = weight_a * A + weight_b * B;
+
+        /* Replace vector a with the merged function */
+        vector_a[tau_index] = sum;
+    }
 
     return 0;
 }

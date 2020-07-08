@@ -35,6 +35,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
      pars->NumParticleTypes = 0; //should not be read, but inferred
      pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
+     pars->MergeDarkMatterBaryons = ini_getbool("PerturbData", "MergeDarkMatterBaryons", 0, fname);
      pars->SlabSize = ini_getl("Read", "SlabSize", 8000000, fname);
 
      /* Read strings */

@@ -56,4 +56,10 @@ int cleanPerturb(struct perturb_data *pt);
 double unitConversionFactor(const char *title, double unit_length_factor,
                             double unit_time_factor);
 
+/* Merge two transfer functions (e.g. cdm & barons) into one fluid */
+int mergeTransferFunctions(struct perturb_data *pt, char *title_a, char *title_b,
+                           double weight_a, double weight_b);
+int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title_b,
+                             double weight_a, double weight_b);
+
 #endif

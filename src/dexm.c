@@ -68,6 +68,30 @@ int main(int argc, char *argv[]) {
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat);
 
+    /* Merge cdm & baryons into one function if desired (replacing cdm) */
+    if (pars.MergeDarkMatterBaryons) {
+        printheader("Merging cdm & baryon transfer functions, replacing cdm.");
+
+        /* The indices of the density transfer functions */
+        int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
+        int index_b = findTitle(ptdat.titles, "d_b", ptdat.n_functions);
+
+        /* Find the present-day background densities */
+        int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+        double Omega_cdm = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
+        double Omega_b = ptdat.Omega[ptdat.tau_size * index_b + today_index];
+
+        /* Use the present-day densities as weights */
+        double weight_cdm = Omega_cdm / (Omega_cdm + Omega_b);
+        double weight_b = Omega_b / (Omega_cdm + Omega_b);
+
+        printf("Using weights [w_cdm, w_b] = [%f, %f]\n", weight_cdm, weight_b);
+
+        mergeTransferFunctions(&ptdat, "d_cdm", "d_b", weight_cdm, weight_b);
+        mergeTransferFunctions(&ptdat, "t_cdm", "t_b", weight_cdm, weight_b);
+        mergeBackgroundDensities(&ptdat, "d_cdm", "d_b", 1.0, 1.0); //replace with sum
+    }
+
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
