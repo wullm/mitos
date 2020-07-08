@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
     readUnits(&us, fname);
-    readCosmology(&cosmo, fname);
+    readCosmology(&cosmo, &us, fname);
 
     printf("The output directory is '%s'.\n", pars.OutputDirectory);
     printf("Creating initial conditions for '%s'.\n", pars.Name);
@@ -110,6 +110,11 @@ int main(int argc, char *argv[]) {
     sprintf(box_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
     fft_c2r_export(grf, N, boxlen, box_fname);
     printf("Pure Gaussian Random Field exported to '%s'.\n", box_fname);
+
+
+    /* Retrieve background densities from the perturbations data file */
+    printheader("Fetching Background Densities");
+    retrieveDensities(&pars, &cosmo, &types, &ptdat);
 
 
     /* For each particle type, fetch the user-defined density function title */

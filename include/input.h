@@ -22,7 +22,11 @@
 
 #define DEFAULT_STRING_LENGTH 50
 
+#define KM_METRES 1000
 #define MPC_METRES 3.085677581282e22
+
+#define SPEED_OF_LIGHT_METRES_SECONDS 2.99792e8
+#define GRAVITY_G_SI_UNITS 6.67428e-11 // m^3 / kg / s^2
 
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"
@@ -62,6 +66,10 @@ struct units {
     int Transfer_hExponent; //1 for h/Mpc; 0 for 1/Mpc
     int Transfer_kExponent; //0 for CLASS; -2 for CAMB/CMBFAST/Eisenstein-Hu
     int Transfer_Sign; //-1 for CLASS; +1 for CAMB/CMBFAST/Eisenstein-Hu
+
+    /* Physical constants in internal units */
+    double SpeedOfLight;
+    double GravityG;
 };
 
 struct cosmology {
@@ -71,11 +79,12 @@ struct cosmology {
     double k_pivot;
     double z_ini;
     double log_tau_ini; //conformal time
+    double rho_crit; //not user-specified, but inferred from h
 };
 
 int readParams(struct params *parser, const char *fname);
 int readUnits(struct units *us, const char *fname);
-int readCosmology(struct cosmology *cosmo, const char *fname);
+int readCosmology(struct cosmology *cosmo, struct units *us, const char *fname);
 
 int cleanParams(struct params *parser);
 

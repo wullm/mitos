@@ -81,15 +81,25 @@ int readUnits(struct units *us, const char *fname) {
     us->Transfer_kExponent = ini_getl("TransferFunctions", "kExponent", default_k_exponent, fname);
     us->Transfer_Sign = ini_getl("TransferFunctions", "Sign", default_sign, fname);
 
+    /* Some physical constants */
+    us->SpeedOfLight = SPEED_OF_LIGHT_METRES_SECONDS * us->UnitTimeSeconds
+                        / us->UnitLengthMetres;
+    us->GravityG = GRAVITY_G_SI_UNITS * us->UnitTimeSeconds * us->UnitTimeSeconds
+                 / us->UnitLengthMetres / us->UnitLengthMetres / us->UnitLengthMetres
+                 * us->UnitMassKilogram; // m^3 / kg / s^2 to internal
+
     return 0;
 }
 
-int readCosmology(struct cosmology *cosmo, const char *fname) {
+int readCosmology(struct cosmology *cosmo, struct units *us, const char *fname) {
      cosmo->h = ini_getd("Cosmology", "h", 0.70, fname);
      cosmo->n_s = ini_getd("Cosmology", "n_s", 0.97, fname);
      cosmo->A_s = ini_getd("Cosmology", "A_s", 2.215e-9, fname);
      cosmo->k_pivot = ini_getd("Cosmology", "k_pivot", 0.05, fname);
      cosmo->z_ini = ini_getd("Cosmology", "z_ini", 40.0, fname);
+
+     double H0 = 100 * cosmo->h * KM_METRES / MPC_METRES * us->UnitTimeSeconds;
+     cosmo->rho_crit = 3 * H0 * H0 / (8 * M_PI * us->GravityG);
 
      return 0;
 }

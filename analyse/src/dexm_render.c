@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
     readUnits(&us, fname);
-    readCosmology(&cosmo, fname);
+    readCosmology(&cosmo, &us, fname);
 
     printf("The output directory is '%s'.\n", pars.OutputDirectory);
     printf("Creating initial conditions for '%s'.\n", pars.Name);

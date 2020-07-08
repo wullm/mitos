@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     readParams(&pars, fname);
     readUnits(&us, fname);
-    readCosmology(&cosmo, fname);
+    readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
     printf("Creating initial conditions for: \"%s\".\n", pars.Name);

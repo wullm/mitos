@@ -21,6 +21,7 @@
 #define PARTICLE_TYPES_H
 
 #include "input.h"
+#include "perturb_data.h"
 
 struct particle_type {
     char *Identifier;
@@ -37,5 +38,7 @@ struct particle_type {
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);
 int cleanTypes(struct params *pars, struct particle_type **tps);
+int retrieveDensities(struct params *pars, struct cosmology *cosmo,
+                      struct particle_type **tps, struct perturb_data *ptdat);
 
 #endif
