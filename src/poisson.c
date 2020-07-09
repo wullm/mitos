@@ -96,18 +96,18 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
         if (withELPT && ptype->CyclesOfELPT > 0) {
             /* Base filename for the intermediate step eLPT grids */
             char elptbox_fname[DEFAULT_STRING_LENGTH];
-            sprintf(elptbox_fname, "%s/%s_%s", pars->OutputDirectory, "elpt_", Identifier);
+            sprintf(elptbox_fname, "%s/%s_%s", pars->OutputDirectory, "elpt", Identifier);
 
             /* Solve the Monge-Ampere equation */
             elptChunked(rho, N, boxlen, ptype->CyclesOfELPT, elptbox_fname, pbox_fname);
         } else {
             /* Solve Poisson's equation and store the result back in rho */
             solvePoisson(rho, rho, N, boxlen);
-        }
 
-        /* Export the potential */
-        printf("Potential field written to '%s'.\n", pbox_fname);
-        writeGRF_H5(rho, N, boxlen, pbox_fname);
+            /* Export the potential */
+            printf("Potential field written to '%s'.\n", pbox_fname);
+            writeGRF_H5(rho, N, boxlen, pbox_fname);
+        }
 
         /* Free up memory */
         free(rho);
