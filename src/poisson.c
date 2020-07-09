@@ -162,7 +162,7 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
             /* Compute the derivative */
             fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i], NULL);
 
-            /* Undo the TSC window function */
+            /* Undo the TSC window function for later */
             undoTSCWindow(fbox, N, boxlen);
 
             /* Fourier transform back */
