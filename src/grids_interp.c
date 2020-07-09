@@ -22,6 +22,38 @@
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 
+void gridRemainders(int N, double boxlen, double x, double y, double z,
+                    double *uX, double *uY, double *uZ) {
+
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) round(X);
+    int iY = (int) round(Y);
+    int iZ = (int) round(Z);
+
+    /* Remainders */
+    *uX = (X - iX) * boxlen / N;
+    *uY = (Y - iY) * boxlen / N;
+    *uZ = (Z - iZ) * boxlen / N;
+}
+
+double gridNGP(const double *box, int N, double boxlen, double x, double y, double z) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) round(X);
+    int iY = (int) round(Y);
+    int iZ = (int) round(Z);
+
+    return box[row_major(iX, iY, iZ, N)];
+}
 
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
@@ -108,6 +140,18 @@ double gridTSC(const double *box, int N, double boxlen, double x, double y, doub
     return sum;
 }
 
+int undoNGPWindow(fftw_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 1; //NGP
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
 
 int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */

@@ -38,4 +38,13 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
                            struct particle_type *types, const char *grid_name,
                            const char *out_grid_name);
 
+int computeSecondGridDerivatives(const struct params *pars, const struct units *us,
+                                 const struct cosmology *cosmo,
+                                 struct particle_type *types, const char *grid_name,
+                                 const char *out_grid_name);
+
+int computeThirdGridDerivatives(const struct params *pars, const struct units *us,
+                                const struct cosmology *cosmo,
+                                struct particle_type *types, const char *grid_name,
+                                const char *out_grid_name);
 #endif

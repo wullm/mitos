@@ -198,6 +198,10 @@ int main(int argc, char *argv[]) {
     printheader("Computing Potential Derivatives (Displacements)");
     err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT);
     if (err > 0) exit(1);
+    err = computeSecondGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT);
+    if (err > 0) exit(1);
+    err = computeThirdGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT);
+    if (err > 0) exit(1);
 
     /* Compute the energy flux potential grids */
     printheader("Computing Energy Flux Potentials");
@@ -207,6 +211,8 @@ int main(int argc, char *argv[]) {
     /* Compute derivatives of the energy flux grids */
     printheader("Computing Energy Flux Derivatives (Velocities)");
     err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY);
+    if (err > 0) exit(1);
+    err = computeSecondGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY);
     if (err > 0) exit(1);
 
     /* Create the beginning of a SWIFT parameter file */
@@ -365,16 +371,22 @@ int main(int argc, char *argv[]) {
             genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk, id_first_particle);
 
             /* Interpolating displacements at the pre-initial particle locations */
+
+            /* Collect displacements */
+            double *psi_x = calloc(chunk_size, sizeof(double));
+            double *psi_y = calloc(chunk_size, sizeof(double));
+            double *psi_z = calloc(chunk_size, sizeof(double));
+
             /* For x, y, and z */
             const char letters[] = {'x', 'y', 'z'};
             for (int dir=0; dir<3; dir++) {
+                /* Load the 0th order displacement grid in this direction */
                 char dbox_fname[DEFAULT_STRING_LENGTH];
                 sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
-                // printf("Displacement field read from '%s'.\n", dbox_fname);
                 int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
-                /* Displace the particles in this chunk */
+                /* Collect displacements for the particles in this chunk */
                 #pragma omp parallel for
                 for (int i=0; i<chunk_size; i++) {
                     /* Find the pre-initial (e.g. grid) locations */
@@ -382,30 +394,148 @@ int main(int argc, char *argv[]) {
                     double y = parts[i].Y;
                     double z = parts[i].Z;
 
-                    /* Find the displacement */
-                    double disp = gridTSC(grid, N, boxlen, x, y, z);
+                    /* Find the zeroth order displacement */
+                    double disp = gridNGP(grid, N, boxlen, x, y, z);
 
-                    /* Displace the particles */
                     if (dir == 0) {
-                        parts[i].X -= disp;
+                        psi_x[i] -= disp;
                     } else if (dir == 1) {
-                        parts[i].Y -= disp;
+                        psi_y[i] -= disp;
                     } else {
-                        parts[i].Z -= disp;
+                        psi_z[i] -= disp;
                     }
                 }
             }
 
-            /* Interpolating velocities at the displaced particle locations */
-            /* For x, y, and z */
-            for (int dir=0; dir<3; dir++) {
+            /* Next, collect second order derivatives of the potential */
+            /* We need xx, xy, xz, yy, yz, zz */
+            const int index_a[] = {0, 0, 0, 1, 1, 2};
+            const int index_b[] = {0, 1, 2, 1, 2, 2};
+            for (int dir=0; dir<6; dir++) {
+                /* Load the 1st order displacement grid in this direction */
                 char dbox_fname[DEFAULT_STRING_LENGTH];
-                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_VELOCITY, letters[dir], ptype->Identifier, ".hdf5");
-                // printf("Velocity field read from '%s'.\n", dbox_fname);
+                sprintf(dbox_fname, "%s/%s_%c%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[index_a[dir]], letters[index_b[dir]], ptype->Identifier, ".hdf5");
                 int err = readGRF_inPlace_H5(grid, dbox_fname);
                 if (err > 0) exit(1);
 
-                /* Assign velocities to the particles in this chunk */
+                /* Collect first-order displacements for the particles in this chunk */
+                #pragma omp parallel for
+                for (int i=0; i<chunk_size; i++) {
+                    /* Find the pre-initial (e.g. grid) locations */
+                    double x = parts[i].X;
+                    double y = parts[i].Y;
+                    double z = parts[i].Z;
+
+                    /* Grid remainders (distance to top-left corner) */
+                    double uX, uY, uZ;
+                    gridRemainders(N, boxlen, x, y, z, &uX, &uY, &uZ);
+
+                    /* Find the first-order displacement */
+                    double disp = gridNGP(grid, N, boxlen, x, y, z);
+
+                    /* Collect first order displacements */
+                    if (dir == 0) { //xx
+                        psi_x[i] -= disp * uX;
+                    } else if (dir == 1) { //xy
+                        psi_x[i] -= disp * uY;
+                        psi_y[i] -= disp * uX;
+                    } else if (dir == 2) { //xz
+                        psi_x[i] -= disp * uZ;
+                        psi_z[i] -= disp * uX;
+                    } else if (dir == 3) { //yy
+                        psi_y[i] -= disp * uY;
+                    } else if (dir == 4) { //yz
+                        psi_y[i] -= disp * uZ;
+                        psi_z[i] -= disp * uY;
+                    } else { //zz
+                        psi_z[i] -= disp * uZ;
+                    }
+                }
+            }
+
+            /* Next, collect third order derivatives of the potential */
+            /* We need xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz */
+            const int index3_a[] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2};
+            const int index3_b[] = {0, 0, 0, 1, 1, 2, 1, 1, 2, 2};
+            const int index3_c[] = {0, 1, 2, 1, 2, 2, 1, 2, 2, 2};
+            for (int dir=0; dir<10; dir++) {
+                /* Load the 2nd order displacement grid in this direction */
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "%s/%s_%c%c%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[index3_a[dir]], letters[index3_b[dir]], letters[index3_c[dir]], ptype->Identifier, ".hdf5");
+                int err = readGRF_inPlace_H5(grid, dbox_fname);
+                if (err > 0) exit(1);
+
+                /* Collect first-order displacements for the particles in this chunk */
+                #pragma omp parallel for
+                for (int i=0; i<chunk_size; i++) {
+                    /* Find the pre-initial (e.g. grid) locations */
+                    double x = parts[i].X;
+                    double y = parts[i].Y;
+                    double z = parts[i].Z;
+
+                    /* Grid remainders (distance to top-left corner) */
+                    double uX, uY, uZ;
+                    gridRemainders(N, boxlen, x, y, z, &uX, &uY, &uZ);
+
+                    /* Find the first-order displacement */
+                    double disp = gridNGP(grid, N, boxlen, x, y, z);
+
+                    /* Collect first order displacements */
+                    if (dir == 0) { //xxx
+                        psi_x[i] -= disp * uX * uX;
+                    } else if (dir == 1) { //xxy
+                        psi_x[i] -= disp * uX * uY * 2;
+                        psi_y[i] -= disp * uX * uX;
+                    } else if (dir == 2) { //xxz
+                        psi_x[i] -= disp * uX * uZ * 2;
+                        psi_z[i] -= disp * uX * uX;
+                    } else if (dir == 3) { //xyy
+                        psi_y[i] -= disp * uX * uY * 2;
+                        psi_x[i] -= disp * uY * uY;
+                    } else if (dir == 4) { //xyz
+                        psi_x[i] -= disp * uY * uZ * 2;
+                        psi_z[i] -= disp * uX * uY * 2;
+                        psi_y[i] -= disp * uZ * uX * 2;
+                    } else if (dir == 5) { //xzz
+                        psi_x[i] -= disp * uZ * uZ;
+                        psi_z[i] -= disp * uX * uZ * 2;
+                    } else if (dir == 6) { //yyy
+                        psi_y[i] -= disp * uY * uY;
+                    } else if (dir == 7) { //yyz
+                        psi_y[i] -= disp * uY * uZ * 2;
+                        psi_z[i] -= disp * uY * uY;
+                    } else if (dir == 8) { //yzz
+                        psi_y[i] -= disp * uZ * uZ;
+                        psi_z[i] -= disp * uZ * uY * 2;
+                    } else { //zzz
+                        psi_z[i] -= disp * uZ * uZ;
+                    }
+                }
+            }
+
+            /* Displace the particles in this chunk */
+            #pragma omp parallel for
+            for (int i=0; i<chunk_size; i++) {
+                parts[i].X += psi_x[i];
+                parts[i].Y += psi_y[i];
+                parts[i].Z += psi_z[i];
+            }
+
+            /* Reset the displacement collectors, so we can use them for velocities */
+            memset(psi_x, 0, chunk_size * sizeof(double));
+            memset(psi_y, 0, chunk_size * sizeof(double));
+            memset(psi_z, 0, chunk_size * sizeof(double));
+
+            /* Interpolating velocities at the displaced particle locations */
+            /* For x, y, and z */
+            for (int dir=0; dir<3; dir++) {
+                /* Load the 0th order velocity grid in this direction */
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_VELOCITY, letters[dir], ptype->Identifier, ".hdf5");
+                int err = readGRF_inPlace_H5(grid, dbox_fname);
+                if (err > 0) exit(1);
+
+                /* Collect velocities for the particles in this chunk */
                 #pragma omp parallel for
                 for (int i=0; i<chunk_size; i++) {
                     /* Find the displaceed particle location */
@@ -416,16 +546,73 @@ int main(int argc, char *argv[]) {
                     /* Find the velocity in the given direction */
                     double vel = gridTSC(grid, N, boxlen, x, y, z);
 
-                    /* Add the velocity component */
+                    /* Collect the velocity component */
                     if (dir == 0) {
-                        parts[i].v_X = vel;
+                        psi_x[i] += vel;
                     } else if (dir == 1) {
-                        parts[i].v_Y = vel;
+                        psi_y[i] += vel;
                     } else {
-                        parts[i].v_Z = vel;
+                        psi_z[i] += vel;
                     }
                 }
             }
+
+            /* Next, collect second order derivatives of the velocity potential */
+            /* We need xx, xy, xz, yy, yz, zz  */
+            for (int dir=0; dir<6; dir++) {
+                /* Load the 1st order velocity grid in this direction */
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "%s/%s_%c%c_%s%s", pars.OutputDirectory, GRID_NAME_VELOCITY, letters[index_a[dir]], letters[index_b[dir]], ptype->Identifier, ".hdf5");
+                int err = readGRF_inPlace_H5(grid, dbox_fname);
+                if (err > 0) exit(1);
+
+                /* Collect first-order velocity corrections for the particles in this chunk */
+                #pragma omp parallel for
+                for (int i=0; i<chunk_size; i++) {
+                    /* Find the displaceed particle location */
+                    double x = parts[i].X;
+                    double y = parts[i].Y;
+                    double z = parts[i].Z;
+
+                    /* Grid remainders (distance to top-left corner) */
+                    double uX, uY, uZ;
+                    gridRemainders(N, boxlen, x, y, z, &uX, &uY, &uZ);
+
+                    /* Find the first-order velocity correction */
+                    double vel = gridNGP(grid, N, boxlen, x, y, z);
+
+                    /* Collect first order displacements */
+                    if (dir == 0) { //xx
+                        psi_x[i] += vel * uX;
+                    } else if (dir == 1) { //xy
+                        psi_x[i] += vel * uY;
+                        psi_y[i] += vel * uX;
+                    } else if (dir == 2) { //xz
+                        psi_x[i] += vel * uZ;
+                        psi_z[i] += vel * uX;
+                    } else if (dir == 3) { //yy
+                        psi_y[i] += vel * uY;
+                    } else if (dir == 4) { //yz
+                        psi_y[i] += vel * uZ;
+                        psi_z[i] += vel * uY;
+                    } else { //zz
+                        psi_z[i] += vel * uZ;
+                    }
+                }
+            }
+
+            /* Assign the velocities to the particles in this chunk */
+            #pragma omp parallel for
+            for (int i=0; i<chunk_size; i++) {
+                parts[i].v_X = psi_x[i];
+                parts[i].v_Y = psi_y[i];
+                parts[i].v_Z = psi_z[i];
+            }
+
+            /* Free the memory used for the displacements and velocities */
+            free(psi_x);
+            free(psi_y);
+            free(psi_z);
 
             /* Add thermal motion */
             if (strcmp(ptype->ThermalMotionType, "") != 0) {

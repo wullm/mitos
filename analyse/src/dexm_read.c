@@ -347,23 +347,22 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        /* Export the density box for testing purposes */
-        char box_fname[40];
-        sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
-        // write_doubles_as_floats(box_fname, rho_box, N*N*N);
-        writeGRF_H5(rho_box, N, boxlen[0], box_fname);
-        printf("Density grid exported to %s.\n", box_fname);
+        // readGRF_inPlace_H5(rho_box, "output/density_cdm.hdf5");
 
         int bins = 50;
         double *k_in_bins = malloc(bins * sizeof(double));
         double *power_in_bins = malloc(bins * sizeof(double));
         int *obs_in_bins = calloc(bins, sizeof(int));
 
-        /* Transform back to momentum space */
+        /* Transform to momentum space */
         fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
         fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, rho_box, fbox, FFTW_ESTIMATE);
+        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, rho_box, FFTW_ESTIMATE);
         fft_execute(r2c);
     	fft_normalize_r2c(fbox,N,boxlen[0]);
+
+        /* Undo the TSC window function */
+        undoTSCWindow(fbox, N, boxlen[0]);
 
         if (strcmp(tp.Identifier, "cdm") == 0) {
             fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
@@ -387,8 +386,8 @@ int main(int argc, char *argv[]) {
             printf("%f %e %d\n", k, Pk, obs);
         }
 
-        printf("\n");
 
+        printf("\n");
 
 
         if (strcmp(tp.Identifier, "ncdm") == 0) {
@@ -426,9 +425,15 @@ int main(int argc, char *argv[]) {
         }
 
 
+        /* Transform back */
+        fft_execute(c2r);
+    	fft_normalize_c2r(rho_box,N,boxlen[0]);
 
-
-
+        /* Export the density box for testing purposes */
+        char box_fname[40];
+        sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
+        writeGRF_H5(rho_box, N, boxlen[0], box_fname);
+        printf("Density grid exported to %s.\n", box_fname);
 
         free(rho_box);
         fftw_free(fbox);

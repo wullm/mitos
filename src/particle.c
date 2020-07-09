@@ -71,9 +71,9 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
         inverse_row_major(id, &x, &y, &z, M);
 
         struct particle *part = &(*particles)[id - start];
-        part->X = x * spacing;
-        part->Y = y * spacing;
-        part->Z = z * spacing;
+        part->X = (x + 0.25) * spacing;
+        part->Y = (y + 0.25) * spacing;
+        part->Z = (z + 0.25) * spacing;
         part->v_X = 0.f;
         part->v_Y = 0.f;
         part->v_Z = 0.f;

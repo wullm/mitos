@@ -22,9 +22,14 @@
 
 #include "fft.h"
 
+void gridRemainders(int N, double boxlen, double x, double y, double z,
+                    double *uX, double *uY, double *uZ); 
+
+double gridNGP(const double *box, int N, double boxlen, double x, double y, double z);
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z);
 double gridTSC(const double *box, int N, double boxlen, double x, double y, double z);
 
+int undoNGPWindow(fftw_complex *farr, int N, double boxlen);
 int undoCICWindow(fftw_complex *farr, int N, double boxlen);
 int undoTSCWindow(fftw_complex *farr, int N, double boxlen);
 
