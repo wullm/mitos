@@ -146,7 +146,7 @@ static inline void kernel_undo_Hermite_window(struct kernel *the_kernel) {
         double W_z = sinc(0.5 * kz * p->boxlen / p->N);
         double W = pow(W_x * W_y * W_z, order);
 
-        the_kernel->kern = W;
+        the_kernel->kern = 1.0 / W;
     }
 }
 
