@@ -22,6 +22,19 @@
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 
+double gridNGP(const double *box, int N, double boxlen, double x, double y, double z) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    return box[row_major(iX, iY, iZ, N)];
+}
 
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
@@ -108,6 +121,66 @@ double gridTSC(const double *box, int N, double boxlen, double x, double y, doub
     return sum;
 }
 
+double gridPCS(const double *box, int N, double boxlen, double x, double y, double z) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    /* Intepolate the necessary fields with QIP */
+    double lookLength = 2;
+    int lookLftX = (int) floor((X-iX) - lookLength);
+    int lookRgtX = (int) floor((X-iX) + lookLength);
+    int lookLftY = (int) floor((Y-iY) - lookLength);
+    int lookRgtY = (int) floor((Y-iY) + lookLength);
+    int lookLftZ = (int) floor((Z-iZ) - lookLength);
+    int lookRgtZ = (int) floor((Z-iZ) + lookLength);
+
+    /* Accumulate */
+    double sum = 0;
+    for (int i=lookLftX; i<=lookRgtX; i++) {
+        for (int j=lookLftY; j<=lookRgtY; j++) {
+            for (int k=lookLftZ; k<=lookRgtZ; k++) {
+                double xx = fabs(X - (iX+i));
+                double yy = fabs(Y - (iY+j));
+                double zz = fabs(Z - (iZ+k));
+
+                double part_x = xx < 1.0 ? (4. - 6.*xx*xx + 3.*xx*xx*xx)
+                                        : (xx < 2.0 ? (2.-xx)*(2.-xx)*(2.-xx) : 0);
+				double part_y = yy < 1.0 ? (4. - 6.*yy*yy + 3.*yy*yy*yy)
+                                        : (yy < 2.0 ? (2.-yy)*(2.-yy)*(2.-yy) : 0);
+				double part_z = zz < 1.0 ? (4. - 6.*zz*zz + 3.*zz*zz*zz)
+                                        : (zz < 2.0 ? (2.-zz)*(2.-zz)*(2.-zz) : 0);
+
+                sum += box[row_major(iX+i, iY+j, iZ+k, N)] * (part_x*part_y*part_z);
+            }
+        }
+    }
+
+    /* Finally, apply the 1/6^3 factor of the Piecewise Cubic Spline */
+    sum /= 6 * 6 * 6;
+
+    return sum;
+}
+
+int undoNGPWindow(fftw_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 1; //NGP
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
 
 int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
@@ -126,6 +199,19 @@ int undoTSCWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
     struct Hermite_kern_params Hkp;
     Hkp.order = 3; //TSC
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
+int undoPCSWindow(fftw_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 4; //PCS
     Hkp.N = N;
     Hkp.boxlen = boxlen;
 
