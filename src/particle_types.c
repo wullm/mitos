@@ -54,6 +54,8 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->Chunks = ini_getl(seek_str, "Chunks", 0, fname);
             tp->ChunkSize = ini_getl(seek_str, "ChunkSize", 0, fname);
 
+            tp->CyclesOfELPT = ini_getl(seek_str, "CyclesOfELPT", 0, fname);
+
             /* Further strings */
             tp->TransferFunctionDensity = malloc(20);
             tp->TransferFunctionVelocity = malloc(20);
@@ -100,6 +102,7 @@ int cleanTypes(struct params *pars, struct particle_type **tps) {
         free(tp->ExportName);
         free(tp->TransferFunctionDensity);
         free(tp->TransferFunctionVelocity);
+        free(tp->ThermalMotionType);
     }
     free(*tps);
     return 0;

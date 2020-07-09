@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 
     /* Compute the potential grids */
     printheader("Computing Gravitational Potentials");
-    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL);
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL, /* withELPT = */ 1);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the potential grids */
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
 
     /* Compute the energy flux potential grids */
     printheader("Computing Energy Flux Potentials");
-    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_THETA_POTENTIAL);
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_THETA_POTENTIAL, /* withELPT = */ 0);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the energy flux grids */

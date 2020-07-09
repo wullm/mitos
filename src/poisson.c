@@ -54,11 +54,11 @@ int solvePoisson(double *phi, double *f, int N, double boxlen) {
     return 0;
 }
 
-/* Solve the Poisson equation for each density grid */
+/* Solve the Poisson equation for each source grid */
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
                           struct particle_type *types, const char *grid_name,
-                          const char *out_grid_name) {
+                          const char *out_grid_name, char withELPT) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
@@ -88,12 +88,24 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
             return 1;
         }
 
-        /* Solve Poisson's equation and store the result back in rho */
-        solvePoisson(rho, rho, N, boxlen);
-
-        /* Filename of the potential grid */
+        /* Filename of the potential grid that is to be computed */
         char pbox_fname[DEFAULT_STRING_LENGTH];
         sprintf(pbox_fname, "%s/%s_%s%s", pars->OutputDirectory, out_grid_name, Identifier, ".hdf5");
+
+        /* Check if we need to use eLPT or if we can directly solve Poisson's eq */
+        if (withELPT && ptype->CyclesOfELPT > 0) {
+            /* Base filename for the intermediate step eLPT grids */
+            char elptbox_fname[DEFAULT_STRING_LENGTH];
+            sprintf(elptbox_fname, "%s/%s_%s", pars->OutputDirectory, "elpt_", Identifier);
+
+            /* Solve the Monge-Ampere equation */
+            elptChunked(rho, N, boxlen, ptype->CyclesOfELPT, elptbox_fname, pbox_fname);
+        } else {
+            /* Solve Poisson's equation and store the result back in rho */
+            solvePoisson(rho, rho, N, boxlen);
+        }
+
+        /* Export the potential */
         printf("Potential field written to '%s'.\n", pbox_fname);
         writeGRF_H5(rho, N, boxlen, pbox_fname);
 

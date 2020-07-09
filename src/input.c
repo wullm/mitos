@@ -124,6 +124,7 @@ int cleanParams(struct params *pars) {
     free(pars->InputFilename);
     free(pars->OutputFilename);
     free(pars->PerturbFile);
+    free(pars->SwiftParamFilename);
 
     return 0;
 }
@@ -274,8 +275,8 @@ int readFieldChunk_H5(double *chunk_data, int N, int num_chunks, int chunk_id,
     /* Offset of the chunk inside the grid */
     const hsize_t chunk_offset[3] = {chunk_x * M, chunk_y * M, chunk_z * M};
 
-    printf("%lld %lld %lld\n", chunk_offset[0], chunk_offset[1], chunk_offset[2]);
-    printf("%lld %lld %lld\n", chunk_offset[0]+chunk_dims[0], chunk_offset[1]+chunk_dims[1], chunk_offset[2]+chunk_dims[2]);
+    // printf("%lld %lld %lld\n", chunk_offset[0], chunk_offset[1], chunk_offset[2]);
+    // printf("%lld %lld %lld\n", chunk_offset[0]+chunk_dims[0], chunk_offset[1]+chunk_dims[1], chunk_offset[2]+chunk_dims[2]);
 
     /* Create memory space for the chunk */
     hid_t h_memspace = H5Screate_simple(chunk_rank, chunk_dims, NULL);

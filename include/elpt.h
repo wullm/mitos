@@ -23,6 +23,12 @@
 #include <fftw3.h>
 #include "input.h"
 
-int elpt(double *phi, double *f, int N, double boxlen);
+#define ELPT_BASENAME "elpt"
+#define ELPT_RHO "rho"
+#define ELPT_RESID "resid"
+#define ELPT_DPHI "dphi"
+#define ELPT_PHI_RESID "phi_resid"
+
+int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, char *fname);
 
 #endif
