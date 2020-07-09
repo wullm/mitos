@@ -112,14 +112,7 @@ int main(int argc, char *argv[]) {
 
         /* We will store the density grid in here */
         double *rho_box = calloc(N*N*N, sizeof(double));
-
-        for (int x=0; x<N; x++) {
-            for (int y=0; y<N; y++) {
-                for (int z=0; z<N; z++) {
-                    rho_box[row_major(x,y,z,N)] = 0.0;
-                }
-            }
-        }
+        double *rho_interlaced_box = calloc(N*N*N, sizeof(double));
 
         /* Open the corresponding group */
         hid_t h_grp = H5Gopen(h_file, tp.ExportName, H5P_DEFAULT);
@@ -436,6 +429,7 @@ int main(int argc, char *argv[]) {
         printf("Density grid exported to %s.\n", box_fname);
 
         free(rho_box);
+        free(rho_interlaced_box);
         fftw_free(fbox);
     }
 

@@ -73,15 +73,6 @@ void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
                 /* All except the z=0 and the z=N/2 planes count double */
                 int multiplicity = (z==0 || z==N/2) ? 1 : 2;
 
-                // /* Perform CIC correction */
-                // double Wx = (kx == 0) ? 1 : sinc(0.5*kx*boxlen/N);
-				// double Wy = (ky == 0) ? 1 : sinc(0.5*ky*boxlen/N);
-				// double Wz = (kz == 0) ? 1 : sinc(0.5*kz*boxlen/N);
-				// double W = Wx*Wy*Wz;
-				// double WW = W*W;
-                //
-				// Power /= WW * WW;
-
                 /* Add to the tables */
                 k_in_bins[bin] += multiplicity * k;
 				power_in_bins[bin] += multiplicity * Power;
