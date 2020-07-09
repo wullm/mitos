@@ -20,7 +20,12 @@
 #ifndef GRIDS_INTERP_H
 #define GRIDS_INTERP_H
 
+#include "fft.h"
+
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z);
 double gridTSC(const double *box, int N, double boxlen, double x, double y, double z);
+
+int undoCICWindow(fftw_complex *farr, int N, double boxlen);
+int undoTSCWindow(fftw_complex *farr, int N, double boxlen);
 
 #endif

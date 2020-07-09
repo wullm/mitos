@@ -155,10 +155,17 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
             int err = readGRF_inPlace_H5(box, box_fname);
             if (err > 0) return err;
 
-            /* Compute the derivative */
+            /* Compute the Fourier transform */
             fft_execute(r2c);
             fft_normalize_r2c(fbox, N, boxlen);
+
+            /* Compute the derivative */
             fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i], NULL);
+
+            /* Undo the TSC window function */
+            undoTSCWindow(fbox, N, boxlen);
+
+            /* Fourier transform back */
             fft_execute(c2r);
             fft_normalize_c2r(box, N, boxlen);
 

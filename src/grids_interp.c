@@ -20,6 +20,7 @@
 #include <math.h>
 #include "../include/grids_interp.h"
 #include "../include/fft.h"
+#include "../include/fft_kernels.h"
 
 
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z) {
@@ -105,4 +106,31 @@ double gridTSC(const double *box, int N, double boxlen, double x, double y, doub
     }
 
     return sum;
+}
+
+
+int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 2; //CIC
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
+int undoTSCWindow(fftw_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 3; //TSC
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
 }

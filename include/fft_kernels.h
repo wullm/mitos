@@ -114,4 +114,40 @@ static inline void kernel_inv_transfer_function(struct kernel *the_kernel) {
 }
 
 
+
+/* Sinc function */
+inline double sinc(double x) { return x == 0 ? 1. : sin(x) / x; }
+
+struct Hermite_kern_params {
+    int order;
+    int N;
+    double boxlen;
+};
+
+
+/* Support for undoing the CIC (order = 2), TSC (order = 3), and higher Hermite
+ * polynonial window functions. The order is passed as paramater to the kernel. */
+static inline void kernel_undo_Hermite_window(struct kernel *the_kernel) {
+
+    if (the_kernel->k == 0) {
+        the_kernel->kern = 1.0;
+    } else {
+        /* Unpack the parameters */
+        struct Hermite_kern_params *p = (struct Hermite_kern_params *) the_kernel->params;
+        int order = p->order;
+
+        double kx = the_kernel->kx;
+        double ky = the_kernel->ky;
+        double kz = the_kernel->kz;
+
+        /* The Hermite Window function in Fourier space */
+        double W_x = sinc(0.5 * kx * p->boxlen / p->N);
+        double W_y = sinc(0.5 * ky * p->boxlen / p->N);
+        double W_z = sinc(0.5 * kz * p->boxlen / p->N);
+        double W = pow(W_x * W_y * W_z, order);
+
+        the_kernel->kern = W;
+    }
+}
+
 #endif
