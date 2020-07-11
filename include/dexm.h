@@ -33,6 +33,7 @@
 #include "calc_powerspec.h"
 #include "primordial.h"
 #include "generate_grids.h"
+#include "shrink_grids.h"
 #include "poisson.h"
 #include "elpt.h"
 #include "grids_interp.h"
@@ -45,6 +46,7 @@
 #define TXT_RESET "\033[0m"
 
 #define GRID_NAME_GAUSSIAN "gaussian_pure"      // the Gaussian random field
+#define GRID_NAME_GAUSSIAN_SMALL "gaussian_small" // a smaller copy of the GRF 
 #define GRID_NAME_DENSITY "density"             // energy density
 #define GRID_NAME_THETA "theta"                 // energy flux theta
 #define GRID_NAME_POTENTIAL "potential"         // Newtonian potential

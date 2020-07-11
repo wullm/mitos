@@ -147,6 +147,15 @@ int main(int argc, char *argv[]) {
     fft_c2r_export(grf, N, boxlen, box_fname);
     printf("Pure Gaussian Random Field exported to '%s'.\n", box_fname);
 
+    /* Create a smaller (zoomed out) copy of the Gaussian random field */
+    if (pars.SmallGridSize > 0) {
+        char small_fname[DEFAULT_STRING_LENGTH];
+        sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, "output/density_cdm.hdf5");
+        if (errs > 0) exit(1);
+        printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+    }
+
 
     /* Retrieve background densities from the perturbations data file */
     printheader("Fetching Background Densities");

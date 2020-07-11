@@ -40,6 +40,7 @@ struct params {
 
     /* Box parameters */
     int GridSize;
+    int SmallGridSize;
     double BoxLen;
     int Splits; //for folding & position dependent power spectra
 

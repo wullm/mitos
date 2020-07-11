@@ -29,6 +29,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->Seed = ini_getl("Random", "Seed", 1, fname);
 
      pars->GridSize = ini_getl("Box", "GridSize", 64, fname);
+     pars->SmallGridSize = ini_getl("Box", "SmallGridSize", 0, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
      pars->Splits = ini_getl("Box", "Splits", 1, fname);
 
