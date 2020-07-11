@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
     printf("\n");
 
-    printf("%s%s%s\n", TXT_BLUE, "Requested Particle Types", TXT_RESET);
+    printheader("Requested Particle Types");
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
         /* The current particle type */
         struct particle_type *ptype = types + pti;
@@ -237,7 +237,9 @@ int main(int argc, char *argv[]) {
         /* The current particle type */
         struct particle_type *ptype = types + pti;
 
-        printf("\n%s%s%s%s%s\n", TXT_BLUE, "Generating Particle Type '", ptype->Identifier, "'.", TXT_RESET);
+        char header[50];
+        sprintf(header, "Generating Particle Type '%s'.", ptype->Identifier);
+        printheader(header);
 
         /* Skip empty particle types */
         if (ptype->TotalNumber <= 0) {
