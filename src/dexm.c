@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     if (pars.SmallGridSize > 0) {
         char small_fname[DEFAULT_STRING_LENGTH];
         sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
-        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, "output/density_cdm.hdf5");
+        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, box_fname);
         if (errs > 0) exit(1);
         printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
     }
