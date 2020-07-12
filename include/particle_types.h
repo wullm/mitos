@@ -32,7 +32,6 @@ struct particle_type {
     int CubeRootNumber;
     int Chunks;
     int ChunkSize; //except possibly the last chunk
-
     int CyclesOfELPT;
 
     char *TransferFunctionDensity;
@@ -41,6 +40,16 @@ struct particle_type {
     double MicroscopicMass_eV;
     double MicroscopyTemperature;
     char *ThermalMotionType;
+
+    /* Position in the output file and group, assigned automatically */
+    long long int FirstID;
+    long long int PositionInExportGroup;
+};
+
+/* Multiple particle_types can map into the same export_group */
+struct export_group {
+    char *ExportName;
+    long long int TotalNumber;
 };
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname);
@@ -49,4 +58,8 @@ int retrieveDensities(struct params *pars, struct cosmology *cosmo,
                       struct particle_type **tps, struct perturb_data *ptdat);
 int retrieveMicroMasses(struct params *pars, struct cosmology *cosmo,
                         struct particle_type **tps, struct perturb_params *ptpars);
+
+int fillExportGroups(struct params *pars, struct particle_type **tps, struct export_group **grps);
+int cleanExportGroups(struct params *pars, struct export_group **grps);
+
 #endif

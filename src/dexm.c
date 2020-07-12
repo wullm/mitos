@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     struct params pars;
     struct units us;
     struct particle_type *types = NULL;
+    struct export_group *export_groups = NULL;
     struct cosmology cosmo;
     struct perturb_data ptdat;
     struct perturb_spline spline;
@@ -66,6 +67,9 @@ int main(int argc, char *argv[]) {
 
     /* Read out particle types from the parameter file */
     readTypes(&pars, &types, fname);
+
+    /* Match particle types with export groups */
+    fillExportGroups(&pars, &types, &export_groups);
 
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat);
@@ -238,8 +242,57 @@ int main(int argc, char *argv[]) {
     err = writeHeaderAttributes(&pars, &cosmo, &us, &types, h_out_file);
     if (err > 0) exit(1);
 
-    /* Counter of total number of particle stored */
-    long long int grand_counter = 0;
+    /* Create an HDF5 Group for each ExportName */
+    for (int i = 0; i < pars.NumExportGroups; i++) {
+        /* The current export group */
+        struct export_group *grp = export_groups + i;
+
+        /* The total number of particles that are mapped to this ExportName */
+        long long int partnum = grp->TotalNumber;
+
+        /* The ExportName */
+        const char *ExportName = grp->ExportName;
+
+        /* The particle group in the output file */
+        hid_t h_grp;
+
+        /* Datsets */
+        hid_t h_data;
+
+        /* Vector dataspace (e.g. positions, velocities) */
+        const hsize_t vrank = 2;
+        const hsize_t vdims[2] = {partnum, 3};
+        hid_t h_vspace = H5Screate_simple(vrank, vdims, NULL);
+
+        /* Scalar dataspace (e.g. masses, particle ids) */
+        const hsize_t srank = 1;
+        const hsize_t sdims[1] = {partnum};
+        hid_t h_sspace = H5Screate_simple(srank, sdims, NULL);
+
+        /* Create the particle group in the output file */
+        printf("Creating Group '%s' with %lld particles.\n", ExportName, partnum);
+        h_grp = H5Gcreate(h_out_file, ExportName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+        /* Coordinates (use vector space) */
+        h_data = H5Dcreate(h_grp, "Coordinates", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dclose(h_data);
+
+        /* Velocities (use vector space) */
+        h_data = H5Dcreate(h_grp, "Velocities", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dclose(h_data);
+
+        /* Masses (use scalar space) */
+        h_data = H5Dcreate(h_grp, "Masses", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dclose(h_data);
+
+        /* Particle IDs (use scalar space) */
+        h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dclose(h_data);
+
+        /* Close the group */
+        H5Gclose(h_grp);
+    }
+
 
     /* For each user-defined particle type */
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
@@ -257,8 +310,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* ID of the first particle of this type */
-        const long long int id_first_particle = grand_counter;
-        grand_counter += ptype->TotalNumber;
+        const long long int id_first_particle = ptype->FirstID;
 
         /* Random sampler used for thermal species */
         struct sampler thermal_sampler;
@@ -308,55 +360,22 @@ int main(int argc, char *argv[]) {
         }
 
         /* The particle group in the output file */
-        hid_t h_grp;
+        hid_t h_grp = H5Gopen(h_out_file, ptype->ExportName, H5P_DEFAULT);
 
         /* Datsets */
         hid_t h_data;
 
         /* Vector dataspace (e.g. positions, velocities) */
         const hsize_t vrank = 2;
-        const hsize_t vdims[2] = {ptype->TotalNumber, 3};
-        hid_t h_vspace = H5Screate_simple(vrank, vdims, NULL);
+        h_data = H5Dopen2(h_grp, "Velocities", H5P_DEFAULT);
+        hid_t h_vspace = H5Dget_space(h_data);
+        H5Dclose(h_data);
 
         /* Scalar dataspace (e.g. masses, particle ids) */
         const hsize_t srank = 1;
-        const hsize_t sdims[1] = {ptype->TotalNumber};
-        hid_t h_sspace = H5Screate_simple(srank, sdims, NULL);
-
-        /* Check if the ExportName particle group already exists */
-        hid_t h_status = H5Eset_auto1(NULL, NULL);  //turn off error printing
-        char *gname = ptype->ExportName;
-        h_status = H5Gget_objinfo(h_out_file, gname, 0, NULL);
-
-        /* If the group does not yet exist */
-        if (h_status != 0) {
-
-            /* Create the particle group in the output file */
-            h_grp = H5Gcreate(h_out_file, gname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
-            /* Coordinates (use vector space) */
-            h_data = H5Dcreate(h_grp, "Coordinates", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            H5Dclose(h_data);
-
-            /* Velocities (use vector space) */
-            h_data = H5Dcreate(h_grp, "Velocities", H5T_NATIVE_DOUBLE, h_vspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            H5Dclose(h_data);
-
-            /* Masses (use scalar space) */
-            h_data = H5Dcreate(h_grp, "Masses", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            H5Dclose(h_data);
-
-            /* Particle IDs (use scalar space) */
-            h_data = H5Dcreate(h_grp, "ParticleIDs", H5T_NATIVE_LLONG, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            H5Dclose(h_data);
-
-        } else {
-            /* Otherwise, open the existing group */
-            // h_grp = H5Gopen(h_out_file, gname, H5P_DEFAULT);
-
-            printf("ERROR: particle group already exists. Adding to existing groups will be implemented later.\n");
-            exit(1);
-        }
+        h_data = H5Dopen2(h_grp, "ParticleIDs", H5P_DEFAULT);
+        hid_t h_sspace = H5Dget_space(h_data);
+        H5Dclose(h_data);
 
         /* Allocate enough memory for one chunk of particles */
         struct particle *parts;
@@ -493,8 +512,9 @@ int main(int argc, char *argv[]) {
             hid_t h_ch_sspace = H5Screate_simple(srank, ch_sdims, NULL);
 
             /* The start of this chunk, in the overall vector & scalar spaces */
-            const hsize_t vstart[2] = {start, 0}; //always with the "x" coordinate
-            const hsize_t sstart[1] = {start};
+            const hsize_t start_in_group = ptype->PositionInExportGroup + start;
+            const hsize_t vstart[2] = {start_in_group, 0}; //always with the "x" coordinate
+            const hsize_t sstart[1] = {start_in_group};
 
             /* Choose the corresponding hyperslabs inside the overall spaces */
             H5Sselect_hyperslab(h_vspace, H5S_SELECT_SET, vstart, NULL, ch_vdims, NULL);
@@ -570,6 +590,7 @@ int main(int argc, char *argv[]) {
 
 
     /* Clean up */
+    cleanExportGroups(&pars, &export_groups);
     cleanTypes(&pars, &types);
     cleanParams(&pars);
     cleanPerturb(&ptdat);

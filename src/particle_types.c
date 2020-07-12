@@ -30,6 +30,9 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
     /* Allocate memory for the particle types */
     *tps = malloc(max_num * sizeof(struct particle_type));
 
+    /* Grand counter of all particles */
+    long long int grand_counter = 0;
+
     /* Read out the particle types */
     int num = 0;
     for (int i=0; i<max_num; i++) {
@@ -83,8 +86,9 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
                 tp->ChunkSize = tp->TotalNumber;
             }
 
-            /* Infer Omega from Mass or vice versa */
-            //To be implemented
+            /* Use the grand particle counter to assign the particle ids */
+            tp->FirstID = grand_counter;
+            grand_counter += tp->TotalNumber;
 
             num++;
         }
@@ -196,6 +200,66 @@ int retrieveMicroMasses(struct params *pars, struct cosmology *cosmo,
         printf("Particle type '%s' has microscopic [M, T] = [%f eV, %f U_T].\n",
                 Identifier, ptype->MicroscopicMass_eV, ptype->MicroscopyTemperature);
     }
+
+    return 0;
+}
+
+/* Multiple particle_types can map into the same export_group. Here we count
+ * the number of particles that go into each export group. */
+int fillExportGroups(struct params *pars, struct particle_type **tps, struct export_group **grps) {
+    /* We need look for no more than this many export groups */
+    const int max_num = pars->NumParticleTypes;
+
+    /* We start with no export groups */
+    pars->NumExportGroups = 0;
+
+    /* Allocate memory for the export groups */
+    *grps = malloc(max_num * sizeof(struct export_group));
+
+    /* For each user-defined particle type */
+    for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+        /* The current particle type */
+        struct particle_type *ptype = *tps + pti;
+
+        /* Its ExportName */
+        const char *ExportName = ptype->ExportName;
+
+        /* Check if there is a group by that name */
+        char found = 0;
+        for (int i = 0; i < pars->NumExportGroups; i++) {
+            struct export_group *grp = *grps + i;
+
+            /* We have a match */
+            if (strcmp(ExportName, grp->ExportName) == 0) {
+                ptype->PositionInExportGroup = grp->TotalNumber;
+                grp->TotalNumber += ptype->TotalNumber;
+                found = 1;
+            }
+        }
+
+        if (!found) {
+            /* Create a new export_group */
+            struct export_group *grp = *grps + pars->NumExportGroups;
+
+            grp->TotalNumber = ptype->TotalNumber;
+            grp->ExportName = malloc(strlen(ptype->ExportName)+1);
+            strcpy(grp->ExportName, ptype->ExportName);
+
+            pars->NumExportGroups++;
+
+            /* First Particle Type in this Export Group */
+            ptype->PositionInExportGroup = 0;
+        }
+    }
+
+    return 0;
+}
+
+int cleanExportGroups(struct params *pars, struct export_group **grps) {
+    for (int i = 0; i < pars->NumExportGroups; i++) {
+        free((*grps + i)->ExportName);
+    }
+    free(*grps);
 
     return 0;
 }
