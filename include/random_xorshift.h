@@ -48,12 +48,12 @@ static inline uint64_t splitmix64(struct splitmix64_state *state) {
 
 static inline struct xoshiro256ss_state xoshiro256ss_init(uint64_t seed) {
     struct splitmix64_state smstate = {seed};
-	struct xoshiro256ss_state result = {0};
+    struct xoshiro256ss_state result = {0};
 
-	result.s[0] = splitmix64(&smstate);
-	result.s[1] = splitmix64(&smstate);
-	result.s[2] = splitmix64(&smstate);
-	result.s[3] = splitmix64(&smstate);
+    result.s[0] = splitmix64(&smstate);
+    result.s[1] = splitmix64(&smstate);
+    result.s[2] = splitmix64(&smstate);
+    result.s[3] = splitmix64(&smstate);
 
-	return result;
+    return result;
 };
