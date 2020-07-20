@@ -30,11 +30,7 @@ int main() {
     // srand(pars.Seed);
 
     /* Seed the xorshift random number generator */
-    struct xoshiro256ss_state seed;
-    seed.s[0] = pars.Seed;
-    seed.s[1] = pars.Seed + 3;
-    seed.s[2] = pars.Seed + 1;
-    seed.s[3] = pars.Seed + 7;
+    struct xoshiro256ss_state seed = xoshiro256ss_init(pars.Seed);
 
     /* Test Gaussian random number generator */
     const int N = 1000000;

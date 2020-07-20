@@ -27,3 +27,33 @@ static inline uint64_t xoshiro256ss(struct xoshiro256ss_state *state) {
 
 	return result;
 }
+
+
+/* A second random number generator, used to seed the first */
+
+struct splitmix64_state {
+    uint64_t s;
+};
+
+static inline uint64_t splitmix64(struct splitmix64_state *state) {
+    uint64_t result = state->s;
+
+    state->s = result + 0x9E3779B97f4A7C15;
+    result = (result ^ (result >> 30)) * 0xBF58476D1CE4E5B9;
+    result = (result ^ (result >> 27)) * 0x94D049BB133111EB;
+    return result ^ (result >> 31);
+}
+
+/* Finally, an initialization method for the xoshiro rng using splitmix64 rng */
+
+static inline struct xoshiro256ss_state xoshiro256ss_init(uint64_t seed) {
+    struct splitmix64_state smstate = {seed};
+	struct xoshiro256ss_state result = {0};
+
+	result.s[0] = splitmix64(&smstate);
+	result.s[1] = splitmix64(&smstate);
+	result.s[2] = splitmix64(&smstate);
+	result.s[3] = splitmix64(&smstate);
+
+	return result;
+};
