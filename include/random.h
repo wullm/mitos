@@ -28,6 +28,10 @@ static inline uint64_t rand_uint64(rng_state *state) {
     return xoshiro256ss(state);
 }
 
+static inline rng_state rand_uint64_init(uint64_t seed) {
+    return xoshiro256ss_init(seed);
+}
+
 #define SEARCH_TABLE_LENGTH 1000
 #define NUMERICAL_CDF_SAMPLES 1000
 

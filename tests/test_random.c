@@ -29,8 +29,8 @@ int main() {
     // /* Seed the random number generator */
     // srand(pars.Seed);
 
-    /* Seed the xorshift random number generator */
-    rng_state seed = xoshiro256ss_init(pars.Seed);
+    /* Seed the random number generator */
+    rng_state seed = rand_uint64_init(pars.Seed);
 
     /* Test Gaussian random number generator */
     const int N = 1000000;

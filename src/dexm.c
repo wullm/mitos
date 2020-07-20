@@ -111,8 +111,8 @@ int main(int argc, char *argv[]) {
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
-    /* Seed the xorshift random number generator */
-    rng_state seed = xoshiro256ss_init(pars.Seed);
+    /* Seed the random number generator */
+    rng_state seed = rand_uint64_init(pars.Seed);
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
