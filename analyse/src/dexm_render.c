@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
 
     printf("The output directory is '%s'.\n", pars.OutputDirectory);
-    printf("Creating initial conditions for '%s'.\n", pars.Name);
+    printf("Rendering box for '%s'.\n", pars.Name);
 
     /* Read out particle types from the parameter file */
     readTypes(&pars, &types, fname);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
 
     sp.index_src = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
-    fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
+    //fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
 
     /* Export the real box */
     fft_c2r_export(fbox, N, boxlen, pars.OutputFilename);

@@ -25,7 +25,7 @@
 
 
 /* Generate standard normal variable with Box-Mueller */
-double sampleNorm(struct xoshiro256ss_state *state) {
+double sampleNorm(rng_state *state) {
     /* Generate random integers */
     const uint64_t A = xoshiro256ss(state);
     const uint64_t B = xoshiro256ss(state);
@@ -252,7 +252,7 @@ int cleanSampler(struct sampler *s) {
     return 0;
 }
 
-double samplerCustom(struct sampler *s, struct xoshiro256ss_state *state) {
+double samplerCustom(struct sampler *s, rng_state *state) {
     /* Generate uniform random variate */
     const uint64_t ul = xoshiro256ss(state);
     const double u = (double) ul / UINT64_MAX;

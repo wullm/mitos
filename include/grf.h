@@ -26,6 +26,6 @@
 #include "random.h"
 
 void generate_complex_grf(fftw_complex *fbox, int N, double boxlen,
-                          struct xoshiro256ss_state *seed);
+                          rng_state *seed);
 
 #endif

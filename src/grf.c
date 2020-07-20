@@ -24,7 +24,7 @@
 
 
 void generate_complex_grf(fftw_complex *fbox, int N, double boxlen,
-                          struct xoshiro256ss_state *seed) {
+                          rng_state *state) {
     const double dk = 2 * M_PI / boxlen;
     const double boxvol = boxlen*boxlen*boxlen;
     const double factor = sqrt(boxvol/2);
@@ -45,8 +45,8 @@ void generate_complex_grf(fftw_complex *fbox, int N, double boxlen,
 
                 /* Ignore the constant DC mode */
                 if (k > 0) {
-                    double a = sampleNorm(seed) * factor;
-                    double b = sampleNorm(seed) * factor;
+                    double a = sampleNorm(state) * factor;
+                    double b = sampleNorm(state) * factor;
                     fbox[row_major_half(x,y,z,N)] = a + b * I;
                 } else {
                     fbox[row_major_half(x,y,z,N)] = 0;

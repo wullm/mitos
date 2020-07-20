@@ -48,10 +48,7 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
-    printf("Creating initial conditions for: \"%s\".\n", pars.Name);
-
-    /* Seed the random number generator */
-    srand(pars.Seed);
+    printf("Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
     /* Open the file */
     hid_t h_file = H5Fopen(pars.InputFilename, H5F_ACC_RDONLY, H5P_DEFAULT);

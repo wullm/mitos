@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
     /* Seed the xorshift random number generator */
-    struct xoshiro256ss_state seed = xoshiro256ss_init(pars.Seed);
+    rng_state seed = xoshiro256ss_init(pars.Seed);
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
