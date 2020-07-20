@@ -43,6 +43,7 @@ static inline rng_state rand_uint64_init(uint64_t seed) {
 /* We allow for user-defined pdf's */
 typedef double (*pdf)(double x, void *params);
 
+/* Intervals used for the custom sampler */
 struct interval {
     int id;
     double l, r;            // endpoints left and right
@@ -52,6 +53,7 @@ struct interval {
     int nid;                // the next interval
 };
 
+/* A sampler that can be used for arbitrary distributions */
 struct sampler {
     /* The normalization of the pdf */
     double norm;
@@ -85,10 +87,19 @@ static inline int compareByLeft(const void *a, const void *b) {
     return ia->Fl >= ib->Fl;
 }
 
+/* Sample a standard Gaussian random number */
 double sampleNorm(rng_state *state);
+
+/* PDF for a Fermi-Dirac distribution */
 double fd_pdf(double x, void *params);
+
+/* PDF for a Bose-Einstein distribution */
 double be_pdf(double x, void *params);
+
+/* Numerically integrate a PDF to get a CDF */
 double numericalCDF(double xl, double xr, int samples, pdf f, void *params);
+
+/* Methods that allow one to sample from arbitrary distribution */
 int initSampler(struct sampler *s, pdf f, double xl, double xr, void *params);
 int splitInterval(struct sampler *s, int current_interval_id);
 int cleanSampler(struct sampler *s);
