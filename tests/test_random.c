@@ -26,8 +26,15 @@ int main() {
     readParams(&pars, fname);
     readUnits(&us, fname);
 
-    /* Seed the random number generator */
-    srand(pars.Seed);
+    // /* Seed the random number generator */
+    // srand(pars.Seed);
+
+    /* Seed the xorshift random number generator */
+    struct xoshiro256ss_state seed;
+    seed.s[0] = pars.Seed;
+    seed.s[1] = pars.Seed + 3;
+    seed.s[2] = pars.Seed + 1;
+    seed.s[3] = pars.Seed + 7;
 
     /* Test Gaussian random number generator */
     const int N = 1000000;
@@ -35,7 +42,7 @@ int main() {
 
     /* Generate the random numbers */
     for (int i=0; i<N; i++) {
-        x[i] = sampleNorm();
+        x[i] = sampleNorm(&seed);
     }
 
     /* Check sample mean */

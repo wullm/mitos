@@ -20,6 +20,9 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+/* Our pseudo-random number generator */
+#include "../include/random_xorshift.h"
+
 #define SEARCH_TABLE_LENGTH 1000
 #define NUMERICAL_CDF_SAMPLES 1000
 
@@ -73,13 +76,13 @@ static inline int compareByLeft(const void *a, const void *b) {
     return ia->Fl >= ib->Fl;
 }
 
-double sampleNorm();
+double sampleNorm(struct xoshiro256ss_state *state);
 double fd_pdf(double x, void *params);
 double be_pdf(double x, void *params);
 double numericalCDF(double xl, double xr, int samples, pdf f, void *params);
 int initSampler(struct sampler *s, pdf f, double xl, double xr, void *params);
 int splitInterval(struct sampler *s, int current_interval_id);
 int cleanSampler(struct sampler *s);
-double samplerCustom(struct sampler *s);
+double samplerCustom(struct sampler *s, struct xoshiro256ss_state *state);
 
 #endif

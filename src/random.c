@@ -23,12 +23,20 @@
 #include "../include/random.h"
 #include "../include/dexm.h"
 
-/* Generate standard normal variable with Box-Mueller */
-double sampleNorm() {
-    double u = (double) rand()/RAND_MAX;
-    double v = (double) rand()/RAND_MAX;
 
-    double z0 = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
+/* Generate standard normal variable with Box-Mueller */
+double sampleNorm(struct xoshiro256ss_state *state) {
+    /* Generate random integers */
+    const uint64_t A = xoshiro256ss(state);
+    const uint64_t B = xoshiro256ss(state);
+    const double RM = (double) UINT64_MAX + 1;
+
+    /* Map the random integers to the open (!) unit interval */
+    const double u = ((double) A + 0.5) / RM;
+    const double v = ((double) B + 0.5) / RM;
+
+    /* Map to two Gaussians (the second is not used - inefficient) */
+    const double z0 = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
     //double z1 = sqrt(-2 * log(u)) * sin(2 * M_PI * v);
 
     return z0;
@@ -244,9 +252,10 @@ int cleanSampler(struct sampler *s) {
     return 0;
 }
 
-double samplerCustom(struct sampler *s) {
+double samplerCustom(struct sampler *s, struct xoshiro256ss_state *state) {
     /* Generate uniform random variate */
-    double u = (double) rand()/RAND_MAX;
+    const uint64_t ul = xoshiro256ss(state);
+    const double u = (double) ul / UINT64_MAX;
 
     /* Use the search table to find a nearby interval */
     const int I_max = s->I_max;

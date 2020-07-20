@@ -23,6 +23,9 @@
 #include <complex.h>
 #include <fftw3.h>
 
-void generate_complex_grf(fftw_complex *fbox, int N, double boxlen);
+#include "random.h"
+
+void generate_complex_grf(fftw_complex *fbox, int N, double boxlen,
+                          struct xoshiro256ss_state *seed);
 
 #endif

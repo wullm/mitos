@@ -111,8 +111,12 @@ int main(int argc, char *argv[]) {
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
-    /* Seed the random number generator */
-    srand(pars.Seed);
+    /* Seed the xorshift random number generator */
+    struct xoshiro256ss_state seed;
+    seed.s[0] = pars.Seed;
+    seed.s[1] = pars.Seed + 3;
+    seed.s[2] = pars.Seed + 1;
+    seed.s[3] = pars.Seed + 7;
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
@@ -140,7 +144,7 @@ int main(int argc, char *argv[]) {
 
     /* Generate a complex Hermitian Gaussian random field */
     printheader("Generating Primordial Fluctuations");
-    generate_complex_grf(grf, N, boxlen);
+    generate_complex_grf(grf, N, boxlen, &seed);
 
     /* Apply the bare power spectrum, without any transfer functions */
     fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
@@ -464,7 +468,7 @@ int main(int argc, char *argv[]) {
                 /* Add thermal velocities to the particles in this chunk */
                 for (int i=0; i<chunk_size; i++) {
                     /* Draw a momentum in eV from the thermal distribution */
-                    double p0_eV = samplerCustom(&thermal_sampler); //present-day momentum
+                    double p0_eV = samplerCustom(&thermal_sampler, &seed); //present-day momentum
                     double p_eV = p0_eV / a_ini; //redshifted momentum
 
                     if (isnan(p_eV) || p_eV <= 0) {
@@ -477,9 +481,9 @@ int main(int argc, char *argv[]) {
                     double V = p_eV / ptype->MicroscopicMass_eV * us.SpeedOfLight;
 
                     /* Generate a random point on the sphere using Gaussians */
-                    double x = sampleNorm();
-                    double y = sampleNorm();
-                    double z = sampleNorm();
+                    double x = sampleNorm(&seed);
+                    double y = sampleNorm(&seed);
+                    double z = sampleNorm(&seed);
 
                     /* And normalize */
                     double length = hypot(x, hypot(y, z));
@@ -487,6 +491,11 @@ int main(int argc, char *argv[]) {
                         x /= length;
                         y /= length;
                         z /= length;
+                    }
+
+                    if (isnan(x) || isnan(y) || isnan(z)) {
+                        printf("ERROR: invalid random velocity v = [%e, %e, %e]\n", x, y, z);
+                        exit(1);
                     }
 
                     /* Add the thermal velocities */
