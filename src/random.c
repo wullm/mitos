@@ -27,8 +27,8 @@
 /* Generate standard normal variable with Box-Mueller */
 double sampleNorm(rng_state *state) {
     /* Generate random integers */
-    const uint64_t A = xoshiro256ss(state);
-    const uint64_t B = xoshiro256ss(state);
+    const uint64_t A = rand_uint64(state);
+    const uint64_t B = rand_uint64(state);
     const double RM = (double) UINT64_MAX + 1;
 
     /* Map the random integers to the open (!) unit interval */
@@ -254,7 +254,7 @@ int cleanSampler(struct sampler *s) {
 
 double samplerCustom(struct sampler *s, rng_state *state) {
     /* Generate uniform random variate */
-    const uint64_t ul = xoshiro256ss(state);
+    const uint64_t ul = rand_uint64(state);
     const double u = (double) ul / UINT64_MAX;
 
     /* Use the search table to find a nearby interval */

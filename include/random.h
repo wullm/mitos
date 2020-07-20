@@ -20,9 +20,13 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-/* Our pseudo-random number generator */
+/* We use the xoshiro256** pseudo-random number generator */
 #include "../include/random_xorshift.h"
 typedef struct xoshiro256ss_state rng_state;
+
+static inline uint64_t rand_uint64(rng_state *state) {
+    return xoshiro256ss(state);
+}
 
 #define SEARCH_TABLE_LENGTH 1000
 #define NUMERICAL_CDF_SAMPLES 1000
