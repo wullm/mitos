@@ -86,8 +86,8 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
                 tp->ChunkSize = tp->TotalNumber;
             }
 
-            /* Use the grand particle counter to assign the particle ids */
-            tp->FirstID = grand_counter;
+            /* Use the grand particle counter + 1 to assign the particle ids */
+            tp->FirstID = grand_counter + 1;
             grand_counter += tp->TotalNumber;
 
             num++;
@@ -240,14 +240,14 @@ int fillExportGroups(struct params *pars, struct particle_type **tps, struct exp
         if (!found) {
             /* Create a new export_group */
             struct export_group *grp = *grps + pars->NumExportGroups;
+            pars->NumExportGroups++;
 
+            /* Copy over the number of particles and the name */
             grp->TotalNumber = ptype->TotalNumber;
             grp->ExportName = malloc(strlen(ptype->ExportName)+1);
             strcpy(grp->ExportName, ptype->ExportName);
 
-            pars->NumExportGroups++;
-
-            /* First Particle Type in this Export Group */
+            /* For the Particle Type, record that it comes first in this Group */
             ptype->PositionInExportGroup = 0;
         }
     }
