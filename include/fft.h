@@ -22,8 +22,10 @@
 
 #include <complex.h>
 #include <fftw3.h>
+#include <math.h>
 
 #define wrap(i,N) ((i)%N+N)%N
+#define fwrap(x,L) fmod(fmod((x),L)+L,L)
 
 /* A structure for calculating kernel functions */
 struct kernel {

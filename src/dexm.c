@@ -103,8 +103,10 @@ int main(int argc, char *argv[]) {
 
         printf("Using weights [w_cdm, w_b] = [%f, %f]\n", weight_cdm, weight_b);
 
+        /* Merge the density & velocity transfer runctions, replacing cdm */
         mergeTransferFunctions(&ptdat, "d_cdm", "d_b", weight_cdm, weight_b);
         mergeTransferFunctions(&ptdat, "t_cdm", "t_b", weight_cdm, weight_b);
+        /* Merge the background densities, replacing cdm */
         mergeBackgroundDensities(&ptdat, "d_cdm", "d_b", 1.0, 1.0); //replace with sum
     }
 
@@ -476,7 +478,7 @@ int main(int argc, char *argv[]) {
                      * the spatial part of the relativistic 4-velocity. */
                     double V = p_eV / ptype->MicroscopicMass_eV * us.SpeedOfLight;
 
-                    /* Generate a random point on the sphere using Gaussians */
+                    /* Generate a random point on the unit sphere using Gaussians */
                     double x = sampleNorm(&seed);
                     double y = sampleNorm(&seed);
                     double z = sampleNorm(&seed);
@@ -504,13 +506,26 @@ int main(int argc, char *argv[]) {
             /* Unit conversions */
             /* (...) */
 
+            /* Make sure that particle coordinates wrap around */
+            #pragma omp parallel for
+            for (int i=0; i<chunk_size; i++) {
+                parts[i].X = fwrap(parts[i].X, boxlen);
+                parts[i].Y = fwrap(parts[i].Y, boxlen);
+                parts[i].Z = fwrap(parts[i].Z, boxlen);
+            }
+
             /* Before writing particle data to disk, we need to choose the
              * hyperslabs, i.e. the parts of memory where the data is stored.
-             * In our case, these correspond to the contiguous chunks of particle
+             * In our case, these correspond to the chunks of particle
              * data, specified by a start and a dimensions vector.
              */
 
-            /* Create scalar & vector datapsace for smaller chunks of data */
+            /* Recall that multiple particle types can map into the same group.
+             * For each particle type, we have already recorded the position of
+             * its first particle in the group at ptype->PositionInExportGroup.
+             */
+
+            /* Create vector & scalar datapsace for smaller chunks of data */
             const hsize_t ch_vdims[2] = {chunk_size, 3};
             const hsize_t ch_sdims[2] = {chunk_size};
             hid_t h_ch_vspace = H5Screate_simple(vrank, ch_vdims, NULL);
