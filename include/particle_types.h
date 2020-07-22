@@ -41,6 +41,10 @@ struct particle_type {
     double MicroscopyTemperature;
     char *ThermalMotionType;
 
+    /* Firebolt settings */
+    char UseFirebolt;
+    double FireboltMaxPerturbation;
+
     /* Position in the output file and group, assigned automatically */
     long long int FirstID;
     long long int PositionInExportGroup;

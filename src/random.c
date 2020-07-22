@@ -24,6 +24,13 @@
 #include "../include/dexm.h"
 
 
+/* Generate a uniform variable on the open unit interval */
+double sampleUniform(rng_state *state) {
+    const uint64_t A = rand_uint64(state);
+    const double RM = (double) UINT64_MAX + 1;
+    return ((double) A + 0.5) / RM;
+}
+
 /* Generate standard normal variable with Box-Mueller */
 double sampleNorm(rng_state *state) {
     /* Generate random integers */

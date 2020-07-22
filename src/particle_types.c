@@ -68,6 +68,10 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             ini_gets(seek_str, "ThermalMotionType", "", tp->ThermalMotionType, 20, fname);
 
 
+            /* Firebolt rejection sampler settings */
+            tp->FireboltMaxPerturbation = ini_getd(seek_str, "FireboltMaxPerturbation", 0.01, fname);
+            tp->UseFirebolt = ini_getbool(seek_str, "UseFirebolt", 0, fname);
+
             /* Infer total number from cube root number or vice versa */
             if (tp->TotalNumber == 0 && tp->CubeRootNumber > 0) {
                 int crn = tp->CubeRootNumber;

@@ -13,9 +13,13 @@ GSL_INCLUDES =
 HDF5_INCLUDES += -I/usr/lib/x86_64-linux-gnu/hdf5/serial/include
 HDF5_LIBRARIES += -L/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/include/hdf5/serial
 
+FIREBOLT_PATH = /home/qvgd89/firebolt2/firebolt
+FIREBOLT_INCLUDES += -I$(FIREBOLT_PATH)/include
+FIREBOLT_LIBRARIES += -L$(FIREBOLT_PATH) -lfirebolt -Wl,-rpath=$(FIREBOLT_PATH)
+
 #Putting it together
-INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
-LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
+INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES) $(FIREBOLT_INCLUDES)
+LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES) $(FIREBOLT_LIBRARIES)
 CFLAGS = -Wall -fopenmp -march=native -O4
 
 OBJECTS = lib/*.o
@@ -41,6 +45,8 @@ all:
 
 	$(GCC) src/perturb_data.c -c -o lib/perturb_data.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
+
+	$(GCC) src/firebolt_interface.c -c -o lib/firebolt_interface.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)

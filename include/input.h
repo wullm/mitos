@@ -61,6 +61,16 @@ struct params {
     /* Input parameters */
     char *InputFilename;
     size_t SlabSize;
+
+    /* Parameters for the Firebolt Boltzmann solver */
+    int MaxMultipole;
+    int MaxMultipoleConvert;
+    int NumberMomentumBins;
+    int NumberWavenumbers;
+    double MinMomentum;
+    double MaxMomentum;
+    double FireboltTolerance;
+    short FireboltVerbose;
 };
 
 struct units {
