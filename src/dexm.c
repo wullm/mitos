@@ -27,9 +27,14 @@
 #include <assert.h>
 
 #include "../include/dexm.h"
-#include "../include/firebolt_interface.h"
 
+#define COMPILED_WITH_FIREBOLT 1
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
+
+#if(COMPILED_WITH_FIREBOLT)
+#include "../include/firebolt_interface.h"
+#endif
+
 
 const char *fname;
 
@@ -57,7 +62,10 @@ int main(int argc, char *argv[]) {
     struct perturb_data ptdat;
     struct perturb_spline spline;
     struct perturb_params ptpars;
+
+    #if(COMPILED_WITH_FIREBOLT)
     struct firebolt_interface firebolt;
+    #endif
 
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
@@ -320,7 +328,9 @@ int main(int argc, char *argv[]) {
         struct sampler thermal_sampler;
 
         /* Small grid, potentially used for the Firebolt Boltzmann code */
+        #if(COMPILED_WITH_FIREBOLT)
         fftw_complex *small_grf = NULL;
+        #endif
 
         /* Microscopic particle mass, temperature, and chemical potential */
         double M_eV = 0;
@@ -377,6 +387,7 @@ int main(int argc, char *argv[]) {
              * linear theory perturbation from a Boltzmann code. */
 
             /* Use the Firebolt sampler */
+            #if(COMPILED_WITH_FIREBOLT)
             if (ptype->UseFirebolt) {
 
                 /* Smaller grid size used for the Firebolt Boltzmann code */
@@ -407,6 +418,7 @@ int main(int argc, char *argv[]) {
                 /* Initialize the Firebolt Boltzmann code */
                 initFirebolt(&pars, &cosmo, &us, &ptdat, &spline, &firebolt, small_grf, M_eV, T_eV);
             }
+            #endif
         }
 
         /* The particle group in the output file */
@@ -550,6 +562,7 @@ int main(int argc, char *argv[]) {
 
                         /* If desired, compute the linear theory perturbation */
                         if (ptype->UseFirebolt) {
+                        #if(COMPILED_WITH_FIREBOLT)
                             int mode = 2;
                             double q = p0_eV / T_eV;
                             double Psi = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
@@ -576,6 +589,10 @@ int main(int argc, char *argv[]) {
                             if (u < p_accept) {
                                 accept = 1;
                             }
+                        #else
+                        printf("ERROR: not compiled with Firebolt.\n");
+                        exit(1);
+                        #endif
                         } else {
                             /* Otherwise, always accept */
                             accept = 1;
@@ -684,6 +701,7 @@ int main(int argc, char *argv[]) {
             /* Clean the random sampler */
             cleanSampler(&thermal_sampler);
 
+            #if(COMPILED_WITH_FIREBOLT)
             if (ptype->UseFirebolt) {
                 /* Calculate the acceptance rate */
                 double p_accept = (double) ptype->TotalNumber / thermal_draws;
@@ -695,6 +713,7 @@ int main(int argc, char *argv[]) {
                 /* Free the small complex Gaussian random field */
                 free(small_grf);
             }
+            #endif
         }
 
         /* Close the scalar and vector dataspaces */
