@@ -21,7 +21,7 @@
 #include <math.h>
 
 #include "../include/particle.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 int cleanParticles(struct particle **particles, const struct params *pars,
                    const struct particle_type *ptype) {

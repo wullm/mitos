@@ -23,7 +23,7 @@
 
 #include "../include/shrink_grids.h"
 #include "../include/output.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 /* Shrink an N*N*N grid into an M*M*M grid, where M divides N */
 int shrinkGrid(double *out, const double *in, int M, int N) {

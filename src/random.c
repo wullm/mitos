@@ -21,7 +21,7 @@
 #include <math.h>
 
 #include "../include/random.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 
 /* Generate standard normal variable with Box-Mueller */

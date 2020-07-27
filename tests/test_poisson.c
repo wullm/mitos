@@ -4,7 +4,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 #include "derivatives.h"
 
 static inline void sucmsg(const char *msg) {

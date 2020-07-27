@@ -5,7 +5,7 @@
 #include <string.h>
 #include <hdf5.h>
 
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 #define NUMBER_ONE 42
 #define NUMBER_TWO 12345

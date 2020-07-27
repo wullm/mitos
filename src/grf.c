@@ -18,7 +18,7 @@
  ******************************************************************************/
 
 #include "../include/grf.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 #include <math.h>
 

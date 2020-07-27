@@ -25,7 +25,7 @@
 #include <fftw3.h>
 #include <sys/time.h>
 
-#include "../../include/dexm.h"
+#include "../../include/mitos.h"
 
 #define outname(s,x) sprintf(s, "%s/%s", pars.OutputDirectory, x);
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);

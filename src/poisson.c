@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "../include/poisson.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
 int solvePoisson(double *phi, double *f, int N, double boxlen) {

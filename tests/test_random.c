@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 static inline void sucmsg(const char *msg) {
     printf("%s%s%s\n\n", TXT_GREEN, msg, TXT_RESET);

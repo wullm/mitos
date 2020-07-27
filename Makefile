@@ -43,7 +43,7 @@ all:
 	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
-	$(GCC) src/dexm.c -o dexm $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
 	make analyse_tools
 

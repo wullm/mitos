@@ -18,7 +18,7 @@
  ******************************************************************************/
 
 #include "../include/derivatives.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 /* Compute a derivative with O(h^5) error using a five-point stencil */
 void compute_derivative_x(double *d_dx, const double *in, int N, double len) {

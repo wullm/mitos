@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <assert.h>
 
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
 

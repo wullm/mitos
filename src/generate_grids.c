@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "../include/generate_grids.h"
-#include "../include/dexm.h"
+#include "../include/mitos.h"
 
 /* Generate a perturbation theory grid for each particle type by applying the
  * desired transfer function (given by the titles array) to the random phases.

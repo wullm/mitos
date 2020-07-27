@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "../../include/dexm.h"
+#include "../../include/mitos.h"
 
 const char *fname;
 
