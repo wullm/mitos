@@ -20,7 +20,7 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include "dexm.h"
+#include "mitos.h"
 
 struct particle {
     float X,Y,Z;
