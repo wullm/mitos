@@ -224,8 +224,8 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
                 fprintf(f, "\n");
             }
         }
-        fprintf(f, "\n");
     }
+    fprintf(f, "\n");
 
     /* Some reasonable SWIFT parameters that can be easily changed */
     double dt_min = 1e-10;
