@@ -396,9 +396,12 @@ int readPerturbParams(struct params *pars, struct units *us,
     H5Aclose(h_attr);
     if (h_err < 0) return 1;
 
+
     /* Allocate memory for ncdm attributes */
-    ptpars->T_ncdm = malloc(ptpars->N_ncdm * sizeof(double));
-    ptpars->M_ncdm_eV = malloc(ptpars->N_ncdm * sizeof(double));
+    if (ptpars->N_ncdm > 0) {
+        ptpars->T_ncdm = malloc(ptpars->N_ncdm * sizeof(double));
+        ptpars->M_ncdm_eV = malloc(ptpars->N_ncdm * sizeof(double));
+    }
 
     /* Hubble parameter in units of 100 km/s/Mpc */
     h_attr = H5Aopen(h_grp, "h", H5P_DEFAULT);
@@ -416,17 +419,19 @@ int readPerturbParams(struct params *pars, struct units *us,
     ptpars->T_CMB *= temperature_unit_factor;
 
     /* Neutrino temperatures (as fraction of T_CMB) */
-    h_attr = H5Aopen(h_grp, "T_ncdm (T_CMB)", H5P_DEFAULT);
-    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->T_ncdm);
-    H5Aclose(h_attr);
-    if (h_err < 0) return 1;
+    if (ptpars->N_ncdm > 0) {
+        h_attr = H5Aopen(h_grp, "T_ncdm (T_CMB)", H5P_DEFAULT);
+        h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->T_ncdm);
+        H5Aclose(h_attr);
+        if (h_err < 0) return 1;
 
-    /* Neutrino masses in eV */
-    h_attr = H5Aopen(h_grp, "M_ncdm (eV)", H5P_DEFAULT);
-    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->M_ncdm_eV);
-    H5Aclose(h_attr);
-    if (h_err < 0) return 1;
-
+        /* Neutrino masses in eV */
+        h_attr = H5Aopen(h_grp, "M_ncdm (eV)", H5P_DEFAULT);
+        h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, ptpars->M_ncdm_eV);
+        H5Aclose(h_attr);
+        if (h_err < 0) return 1;
+    }
+    
     /* The present energy density from matter (excluding ncdm) */
     h_attr = H5Aopen(h_grp, "Omega_m", H5P_DEFAULT);
     h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_m);
