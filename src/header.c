@@ -198,7 +198,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     double a_first = 1.0 / (cosmo->z_ini + 1.0);
     double T_CMB = ptpars->T_CMB;
     /* SWIFT only supports one neutrino temperature, so use the first one */
-    double T_nu;
+    double T_nu = 0;
     if (ptpars->N_ncdm > 0) {
         T_nu = ptpars->T_ncdm[0] * T_CMB;
     }
@@ -216,7 +216,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "  N_nu:\t\t%d\n", ptpars->N_ncdm);
     if (ptpars->N_ncdm > 0) {
         fprintf(f, "  T_nu:\t\t%.10f\n", T_nu);
-    
+
         /* Print the number of neutrino species and their masses */
         fprintf(f, "  M_nu:\t\t");
         for (int i=0; i<ptpars->N_ncdm; i++) {
