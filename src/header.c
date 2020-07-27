@@ -197,11 +197,6 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     /* Determine cosmological parameters */
     double a_first = 1.0 / (cosmo->z_ini + 1.0);
     double T_CMB = ptpars->T_CMB;
-    /* SWIFT only supports one neutrino temperature, so use the first one */
-    double T_nu = 0;
-    if (ptpars->N_ncdm > 0) {
-        T_nu = ptpars->T_ncdm[0] * T_CMB;
-    }
 
     fprintf(f, "Cosmology:\n");
     fprintf(f, "  Omega_m:\t%.10f\n", ptpars->Omega_m);
@@ -215,9 +210,11 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "  T_CMB:\t%.10f\n", T_CMB);
     fprintf(f, "  N_nu:\t\t%d\n", ptpars->N_ncdm);
     if (ptpars->N_ncdm > 0) {
-        fprintf(f, "  T_nu:\t\t%.10f\n", T_nu);
+        /* SWIFT only supports one neutrino temperature, so use the first one */
+        double T_nu = ptpars->T_ncdm[0] * T_CMB;
 
-        /* Print the number of neutrino species and their masses */
+        /* Print the temperature & number of neutrino species and their masses */
+        fprintf(f, "  T_nu:\t\t%.10f\n", T_nu);
         fprintf(f, "  M_nu:\t\t");
         for (int i=0; i<ptpars->N_ncdm; i++) {
             fprintf(f, "%.10f", ptpars->M_ncdm_eV[i]);
