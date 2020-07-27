@@ -40,14 +40,14 @@ int main(int argc, char *argv[]) {
 
     /* Read options */
     const char *fname = argv[1];
-    printheader("DEXM Initial Condition Generator");
+    printheader("Mitos Initial Condition Generator");
     printf("The parameter file is '%s'\n", fname);
 
     /* Timer */
     struct timeval stop, start;
     gettimeofday(&start, NULL);
 
-    /* DEXM structures */
+    /* Mitos structuress */
     struct params pars;
     struct units us;
     struct particle_type *types = NULL;

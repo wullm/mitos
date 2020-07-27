@@ -17,8 +17,8 @@
  *
  ******************************************************************************/
 
-#ifndef DEXM_H
-#define DEXM_H
+#ifndef MITOS_H
+#define MITOS_H
 
 #include "input.h"
 #include "output.h"
@@ -46,7 +46,7 @@
 #define TXT_RESET "\033[0m"
 
 #define GRID_NAME_GAUSSIAN "gaussian_pure"      // the Gaussian random field
-#define GRID_NAME_GAUSSIAN_SMALL "gaussian_small" // a smaller copy of the GRF 
+#define GRID_NAME_GAUSSIAN_SMALL "gaussian_small" // a smaller copy of the GRF
 #define GRID_NAME_DENSITY "density"             // energy density
 #define GRID_NAME_THETA "theta"                 // energy flux theta
 #define GRID_NAME_POTENTIAL "potential"         // Newtonian potential
