@@ -204,6 +204,11 @@ int main(int argc, char *argv[]) {
     /* Get rid of the random phases field */
     fftw_free(grf);
 
+    /* Compute SPT grids */
+    printheader("Computing SPT Corrections");
+    err = computePerturbedGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_THETA);
+    if (err > 0) exit(1);
+
     /* Compute the potential grids */
     printheader("Computing Gravitational Potentials");
     err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL, /* withELPT = */ 1);

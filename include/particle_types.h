@@ -33,6 +33,7 @@ struct particle_type {
     int Chunks;
     int ChunkSize; //except possibly the last chunk
     int CyclesOfELPT;
+    int CyclesOfSPT;
 
     char *TransferFunctionDensity;
     char *TransferFunctionVelocity;

@@ -31,10 +31,8 @@
 #include "../include/poisson.h"
 #include "../include/calc_powerspec.h"
 
-/* Solve the Monge-Ampere equation |D.phi| = f using FFT, stopping after a
- * given number of cycles. Store the resulting potential phi as a file
- * at fname. We use chunked grids to facilitate fitting more into the memory. */
-int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char *fname) {
+int sptChunked(int N, double boxlen, int cycles, char *basename,
+               char *input_density_fname, char *input_flux_density_fname) {
 
     /* Arrays and FFT plans */
     double *box = calloc(N*N*N, sizeof(double));
@@ -87,16 +85,27 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
     sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, 0);
     sprintf(cur_flux_fname, "%s_%03d.hdf5", flux_fname, 0);
 
-    /* Store the source grid as initial guess for both density and flux */
+    /* Read the input density field */
+    readGRF_inPlace_H5(box, input_density_fname);
+
+    /* Store it at a convenient location */
     writeFieldHeader_H5(N, boxlen, chunks, cur_density_fname);
+    writeField_H5(box, cur_density_fname);
+
+    /* Read the input flux density field */
+    readGRF_inPlace_H5(box, input_flux_density_fname);
+
+    /* Divide out a factor of a*H*f */
+    for (int i=0; i<N*N*N; i++) {
+        box[i] /= -0.248312170561146;
+    }
+
+    /* Store it at a convenient location */
     writeFieldHeader_H5(N, boxlen, chunks, cur_flux_fname);
-    writeField_H5(f, cur_density_fname);
-    writeField_H5(f, cur_flux_fname);
+    writeField_H5(box, cur_flux_fname);
 
     /* For each GridSPT cycle */
     for (int ITER = 0; ITER < cycles; ITER++) {
-        /* Current order in perturbation theory */
-        int n = ITER + 2;
 
         /* Update filenames pointing to current density and flux fields */
         sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, ITER);
@@ -219,10 +228,10 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
             memset(chunk_output, 0, chunk_size * sizeof(double));
 
             /* For each order m < n */
-            for (int m = 1; m < n; m++) {
+            for (int m = 0; m < ITER + 1; m++) {
                 /* We combine a grid of order m with a grid of order l = n - m */
-                int ITER_m = m - 1;
-                int ITER_l = (n - m) - 1;
+                int ITER_m = m;
+                int ITER_l = ITER - m;
 
                 printf("Doing %d and %d\n", ITER_m, ITER_l);
 
@@ -265,10 +274,10 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
             memset(chunk_output, 0, chunk_size * sizeof(double));
 
             /* For each order m < n */
-            for (int m = 1; m < n; m++) {
+            for (int m = 0; m < ITER + 1; m++) {
                 /* We combine a grid of order m with a grid of order l = n - m */
-                int ITER_m = m - 1;
-                int ITER_l = (n - m) - 1;
+                int ITER_m = m;
+                int ITER_l = ITER - m;
 
                 printf("Doing %d and %d\n", ITER_m, ITER_l);
 
@@ -313,42 +322,27 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
             writeFieldChunk_H5(chunk_output, N, chunks, j, source2_fname);
         }
 
-        /* Load the source fields and apply low-pass filters */
-        readGRF_inPlace_H5(box, source1_fname);
+        /* Apply low-pass filters to the source fields to mitigate aliasing errors */
+        char *source_fnames[] = {source1_fname, source2_fname};
+        for (int i=0; i<2; i++) {
+            /* Load the respective source field */
+            readGRF_inPlace_H5(box, source_fnames[i]);
 
-        /* Fourier transform it */
-        fft_execute(r2c);
-        fft_normalize_r2c(fbox, N, boxlen);
+            /* Fourier transform it */
+            fft_execute(r2c);
+            fft_normalize_r2c(fbox, N, boxlen);
 
-        /* Apply the filter */
-        fft_apply_kernel(fbox, fbox, N, boxlen, lowpass, NULL);
-        fft_apply_kernel(fbox, fbox, N, boxlen, hipass, NULL);
+            /* Apply the filter */
+            fft_apply_kernel(fbox, fbox, N, boxlen, lowpass, NULL);
 
-        /* Fourier transform back */
-        fft_execute(c2r);
-        fft_normalize_c2r(box, N, boxlen);
+            /* Fourier transform back */
+            fft_execute(c2r);
+            fft_normalize_c2r(box, N, boxlen);
 
-        /* Store the resulting derivative grid */
-        writeField_H5(box, source1_fname);
+            /* Store the resulting grid at the same location */
+            writeField_H5(box, source_fnames[i]);
+        }
 
-
-        /* Load the source fields and apply low-pass filters */
-        readGRF_inPlace_H5(box, source2_fname);
-
-        /* Fourier transform it */
-        fft_execute(r2c);
-        fft_normalize_r2c(fbox, N, boxlen);
-
-        /* Apply the filter */
-        fft_apply_kernel(fbox, fbox, N, boxlen, lowpass, NULL);
-        fft_apply_kernel(fbox, fbox, N, boxlen, hipass, NULL);
-
-        /* Fourier transform back */
-        fft_execute(c2r);
-        fft_normalize_c2r(box, N, boxlen);
-
-        /* Store the resulting derivative grid */
-        writeField_H5(box, source2_fname);
 
         /* Filenames pointing to the updated density and flux fields */
         char next_density_fname[DEFAULT_STRING_LENGTH];
@@ -359,6 +353,9 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
         /* Prepare the new files */
         writeFieldHeader_H5(N, boxlen, chunks, next_density_fname);
         writeFieldHeader_H5(N, boxlen, chunks, next_flux_fname);
+
+        /* Next order in perturbation theory */
+        int n = ITER + 2;
 
         double global_factor = 2.0 / ((2*n + 3) * (n - 1));
         double eps_d = 0.d;
@@ -382,8 +379,8 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
                 chunk_output[k] += factor2 * chunk_input2[k];
 
                 /* For diagnostics */
-                eps_d += factor1 * factor1 * chunk_input1[k] *chunk_input1[k];
-                eps_d += factor2 * factor2 * chunk_input2[k] *chunk_input2[k];
+                eps_d += factor1 * factor1 * chunk_input1[k] * chunk_input1[k];
+                eps_d += factor2 * factor2 * chunk_input2[k] * chunk_input2[k];
             }
 
             /* Store the updated density grid */
@@ -408,8 +405,8 @@ int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char
                 chunk_output[k] += factor2 * chunk_input2[k];
 
                 /* For diagnostics */
-                eps_t += factor1 * factor1 * chunk_input1[k] *chunk_input1[k];
-                eps_t += factor2 * factor2 * chunk_input2[k] *chunk_input2[k];
+                eps_t += factor1 * factor1 * chunk_input1[k] * chunk_input1[k];
+                eps_t += factor2 * factor2 * chunk_input2[k] * chunk_input2[k];
             }
 
             /* Store the updated density grid */

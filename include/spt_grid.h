@@ -32,6 +32,7 @@
 #define SPT_VELOCITY "vel"
 #define SPT_TIDAL "tidal"
 
-int sptChunked(double *f, int N, double boxlen, int cycles, char *basename, char *fname);
+int sptChunked(int N, double boxlen, int cycles, char *basename,
+               char *input_density_fname, char *input_flux_density_fname);
 
 #endif

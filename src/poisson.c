@@ -96,7 +96,7 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
         if (withELPT && ptype->CyclesOfELPT > 0) {
             /* Base filename for the intermediate step eLPT grids */
             char elptbox_fname[DEFAULT_STRING_LENGTH];
-            sprintf(elptbox_fname, "%s/%s_%s", pars->OutputDirectory, "elpt", Identifier);
+            sprintf(elptbox_fname, "%s/%s_%s", pars->OutputDirectory, ELPT_BASENAME, Identifier);
 
             /* Solve the Monge-Ampere equation */
             elptChunked(rho, N, boxlen, ptype->CyclesOfELPT, elptbox_fname, pbox_fname);
@@ -182,6 +182,49 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
     free(fbox);
     fftw_destroy_plan(c2r);
     fftw_destroy_plan(r2c);
+
+    return 0;
+}
+
+
+/* Compute higher order perturbed grids for each particle type */
+int computePerturbedGrids(const struct params *pars, const struct units *us,
+                          const struct cosmology *cosmo,
+                          struct particle_type *types,
+                          const char *density_grid_name,
+                          const char *flux_density_grid_name) {
+
+    /* Grid dimensions */
+    const int N = pars->GridSize;
+    const double boxlen = pars->BoxLen;
+
+
+    /* For each particle type */
+    for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
+
+        /* The current particle type */
+        struct particle_type *ptype = types + pti;
+        const char *Identifier = ptype->Identifier;
+
+        /* Skip if we don't need SPT at all */
+        if (ptype->CyclesOfSPT == 0) continue;
+
+        /* Filename of the density grid (should have been stored earlier) */
+        char density_fname[DEFAULT_STRING_LENGTH];
+        sprintf(density_fname, "%s/%s_%s%s", pars->OutputDirectory, density_grid_name, Identifier, ".hdf5");
+
+        /* Filename of the flux density grid (should have been stored earlier) */
+        char flux_density_fname[DEFAULT_STRING_LENGTH];
+        sprintf(flux_density_fname, "%s/%s_%s%s", pars->OutputDirectory, flux_density_grid_name, Identifier, ".hdf5");
+
+        /* Base filename for the intermediate step SPT grids */
+        char sptbox_fname[DEFAULT_STRING_LENGTH];
+        sprintf(sptbox_fname, "%s/%s_%s", pars->OutputDirectory, SPT_BASENAME, Identifier);
+
+        /* Execute the SPT program for the desired number of cycles */
+        sptChunked(N, boxlen, ptype->CyclesOfSPT, sptbox_fname, density_fname, flux_density_fname);
+
+    }
 
     return 0;
 }
