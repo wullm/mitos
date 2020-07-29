@@ -62,6 +62,11 @@ static inline void inverse_row_major(long long int id, int *x, int *y, int *z, i
     *x = k;
 }
 
+static inline double hypot3(double x, double y, double z) {
+    return hypot(x, hypot(y, z));
+}
+
+
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
                     double *ky, double *kz, double *k);
 

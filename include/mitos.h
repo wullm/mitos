@@ -36,6 +36,8 @@
 #include "shrink_grids.h"
 #include "poisson.h"
 #include "elpt.h"
+#include "spt_convolve.h"
+#include "spt_grid.h"
 #include "grids_interp.h"
 #include "perturb_data.h"
 #include "perturb_spline.h"

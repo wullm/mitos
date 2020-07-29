@@ -25,6 +25,17 @@
 
 typedef void (*kernel_func)(struct kernel *the_kernel);
 
+static inline void lowpass(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    the_kernel->kern = (k < 1.0) ? 1.0 : 0.0;
+}
+
+static inline void hipass(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    the_kernel->kern = (k > 0.5) ? 1.0 : 0.0;
+}
+
+
 static inline void kernel_inv_poisson(struct kernel *the_kernel) {
     double k = the_kernel->k;
     the_kernel->kern = (k > 0) ? -1.0/k/k : 1.0;

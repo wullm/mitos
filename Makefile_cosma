@@ -43,6 +43,9 @@ all:
 	$(GCC) src/poisson.c -c -o lib/poisson.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/elpt.c -c -o lib/elpt.o $(INCLUDES) $(CFLAGS)
 
+	$(GCC) src/spt_convolve.c -c -o lib/spt_convolve.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/spt_grid.c -c -o lib/spt_grid.o $(INCLUDES) $(CFLAGS)
+
 	$(GCC) src/perturb_data.c -c -o lib/perturb_data.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
 
