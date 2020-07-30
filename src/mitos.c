@@ -451,7 +451,7 @@ int main(int argc, char *argv[]) {
                     double z = parts[i].Z;
 
                     /* Find the velocity in the given direction */
-                    double vel = gridPSC(grid, N, boxlen, x, y, z);
+                    double vel = gridPCS(grid, N, boxlen, x, y, z);
 
                     /* Add the velocity component */
                     if (dir == 0) {
