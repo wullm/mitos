@@ -163,7 +163,7 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
             fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i], NULL);
 
             /* Undo the TSC window function for later */
-            undoTSCWindow(fbox, N, boxlen);
+            undoPCSWindow(fbox, N, boxlen);
 
             /* Fourier transform back */
             fft_execute(c2r);

@@ -114,7 +114,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         box[i] /= -aHf;
     }
 
-    printf("Inferred flux density to density ratio -aHf = %f U_T^-1.\n", aHf);
+    printf("Inferred flux density to density ratio -aHf = %f U_T^-1.\n", -aHf);
 
     /* Store it at a convenient location */
     writeFieldHeader_H5(N, boxlen, chunks, cur_flux_density_fname);
@@ -350,7 +350,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
             fft_normalize_r2c(fbox, N, boxlen);
 
             /* Apply the filter */
-            fft_apply_kernel(fbox, fbox, N, boxlen, kernel_gaussian, &R_smooth);
+            // fft_apply_kernel(fbox, fbox, N, boxlen, kernel_gaussian, &R_smooth);
 
             /* Fourier transform back */
             fft_execute(c2r);
@@ -457,7 +457,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     double *chunk_input2 = malloc(chunk_size * sizeof(double));
 
     /* Add all the perturbation on top of the first order grids */
-    for (int i = 1; i < cycles; i++) {
+    for (int i = 1; i <= cycles; i++) {
 
         /* Update filenames pointing to current density and flux fields */
         sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, i);

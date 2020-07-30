@@ -420,7 +420,7 @@ int main(int argc, char *argv[]) {
                     double z = parts[i].Z;
 
                     /* Find the displacement */
-                    double disp = gridTSC(grid, N, boxlen, x, y, z);
+                    double disp = gridPCS(grid, N, boxlen, x, y, z);
 
                     /* Displace the particles */
                     if (dir == 0) {
@@ -451,7 +451,7 @@ int main(int argc, char *argv[]) {
                     double z = parts[i].Z;
 
                     /* Find the velocity in the given direction */
-                    double vel = gridTSC(grid, N, boxlen, x, y, z);
+                    double vel = gridPSC(grid, N, boxlen, x, y, z);
 
                     /* Add the velocity component */
                     if (dir == 0) {
