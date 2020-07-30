@@ -222,7 +222,7 @@ int computePerturbedGrids(const struct params *pars, const struct units *us,
         sprintf(sptbox_fname, "%s/%s_%s", pars->OutputDirectory, SPT_BASENAME, Identifier);
 
         /* Execute the SPT program for the desired number of cycles */
-        sptChunked(N, boxlen, ptype->CyclesOfSPT, sptbox_fname, density_fname, flux_density_fname);
+        sptChunked(N, boxlen, ptype->CyclesOfSPT, sptbox_fname, density_fname, flux_density_fname, density_fname, flux_density_fname);
 
     }
 

@@ -25,14 +25,30 @@
 
 typedef void (*kernel_func)(struct kernel *the_kernel);
 
-static inline void lowpass(struct kernel *the_kernel) {
+static inline void kernel_lowpass(struct kernel *the_kernel) {
     double k = the_kernel->k;
-    the_kernel->kern = (k < 1.0) ? 1.0 : 0.0;
+    double k_max = *((double*) the_kernel->params);
+    the_kernel->kern = (k < k_max) ? 1.0 : 0.0;
 }
 
-static inline void hipass(struct kernel *the_kernel) {
+static inline void kernel_hipass(struct kernel *the_kernel) {
     double k = the_kernel->k;
-    the_kernel->kern = (k > 0.5) ? 1.0 : 0.0;
+    double k_min = *((double*) the_kernel->params);
+    the_kernel->kern = (k > k_min) ? 1.0 : 0.0;
+}
+
+static inline void kernel_gaussian(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double R = *((double*) the_kernel->params);
+    double kR = k * R;
+    the_kernel->kern = exp(-kR * kR);
+}
+
+static inline void kernel_gaussian_inv(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double R = *((double*) the_kernel->params);
+    double kR = k * R;
+    the_kernel->kern = exp(kR * kR);
 }
 
 

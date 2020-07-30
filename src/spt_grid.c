@@ -32,7 +32,8 @@
 #include "../include/calc_powerspec.h"
 
 int sptChunked(int N, double boxlen, int cycles, char *basename,
-               char *input_density_fname, char *input_flux_density_fname) {
+               char *input_density_fname, char *input_flux_density_fname,
+               char *output_density_fname, char *output_flux_density_fname) {
 
     /* Arrays and FFT plans */
     double *box = calloc(N*N*N, sizeof(double));
@@ -81,12 +82,18 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
 
     /* Filenames for current density and flux grids */
     char cur_density_fname[DEFAULT_STRING_LENGTH];
-    char cur_flux_fname[DEFAULT_STRING_LENGTH];
+    char cur_flux_density_fname[DEFAULT_STRING_LENGTH];
     sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, 0);
-    sprintf(cur_flux_fname, "%s_%03d.hdf5", flux_fname, 0);
+    sprintf(cur_flux_density_fname, "%s_%03d.hdf5", flux_fname, 0);
 
     /* Read the input density field */
     readGRF_inPlace_H5(box, input_density_fname);
+
+    /* Record the mean square fluctuation */
+    double ss_density = 0;
+    for (int i=0; i<N*N*N; i++) {
+        ss_density += box[i]*box[i];
+    }
 
     /* Store it at a convenient location */
     writeFieldHeader_H5(N, boxlen, chunks, cur_density_fname);
@@ -95,21 +102,30 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     /* Read the input flux density field */
     readGRF_inPlace_H5(box, input_flux_density_fname);
 
-    /* Divide out a factor of a*H*f */
+    /* Record the mean square fluctuation */
+    double ss_flux = 0;
     for (int i=0; i<N*N*N; i++) {
-        box[i] /= -0.248312170561146;
+        ss_flux += box[i]*box[i];
     }
 
+    /* Compute the ratio flux_density / density ~ a*H*f */
+    double aHf = sqrt(ss_flux / ss_density);
+    for (int i=0; i<N*N*N; i++) {
+        box[i] /= -aHf;
+    }
+
+    printf("Inferred flux density to density ratio -aHf = %f U_T^-1.\n", aHf);
+
     /* Store it at a convenient location */
-    writeFieldHeader_H5(N, boxlen, chunks, cur_flux_fname);
-    writeField_H5(box, cur_flux_fname);
+    writeFieldHeader_H5(N, boxlen, chunks, cur_flux_density_fname);
+    writeField_H5(box, cur_flux_density_fname);
 
     /* For each GridSPT cycle */
     for (int ITER = 0; ITER < cycles; ITER++) {
 
         /* Update filenames pointing to current density and flux fields */
         sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, ITER);
-        sprintf(cur_flux_fname, "%s_%03d.hdf5", flux_fname, ITER);
+        sprintf(cur_flux_density_fname, "%s_%03d.hdf5", flux_fname, ITER);
 
         /* Compute the 3 derivatives of the density field */
         for (int j=0; j<3; j++) {
@@ -137,7 +153,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         /* Compute the 3 derivatives of the flux field */
         for (int j=0; j<3; j++) {
             /* Read the current flux field */
-            readGRF_inPlace_H5(box, cur_flux_fname);
+            readGRF_inPlace_H5(box, cur_flux_density_fname);
 
             /* Fourier transform it */
             fft_execute(r2c);
@@ -158,7 +174,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         }
 
         /* Solve Poisson's equation, sourced by the current flux field */
-        readGRF_inPlace_H5(box, cur_flux_fname);
+        readGRF_inPlace_H5(box, cur_flux_density_fname);
 
         /* Solve Poisson's equation */
         solvePoisson(box, box, N, boxlen);
@@ -324,6 +340,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
 
         /* Apply low-pass filters to the source fields to mitigate aliasing errors */
         char *source_fnames[] = {source1_fname, source2_fname};
+        double R_smooth = 1;
         for (int i=0; i<2; i++) {
             /* Load the respective source field */
             readGRF_inPlace_H5(box, source_fnames[i]);
@@ -333,7 +350,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
             fft_normalize_r2c(fbox, N, boxlen);
 
             /* Apply the filter */
-            fft_apply_kernel(fbox, fbox, N, boxlen, lowpass, NULL);
+            fft_apply_kernel(fbox, fbox, N, boxlen, kernel_gaussian, &R_smooth);
 
             /* Fourier transform back */
             fft_execute(c2r);
@@ -363,8 +380,8 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
 
         /* For each chunk */
         for (int j=0; j<chunks; j++) {
-            /* Read the density field into the output grid */
-            readFieldChunk_H5(chunk_output, N, chunks, j, cur_density_fname);
+            /* Reset the output chunk */
+            memset(chunk_output, 0, chunk_size * sizeof(double));
 
             /* Read the source grids into the inout grids */
             readFieldChunk_H5(chunk_input1, N, chunks, j, source1_fname);
@@ -389,8 +406,8 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
 
         /* For each chunk */
         for (int j=0; j<chunks; j++) {
-            /* Read the flux field into the output grid */
-            readFieldChunk_H5(chunk_output, N, chunks, j, cur_flux_fname);
+            /* Reset the output chunk */
+            memset(chunk_output, 0, chunk_size * sizeof(double));
 
             /* Read the source grids into the inout grids */
             readFieldChunk_H5(chunk_input1, N, chunks, j, source1_fname);
@@ -411,7 +428,15 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
 
             /* Store the updated density grid */
             writeFieldChunk_H5(chunk_output, N, chunks, j, next_flux_fname);
+
+
+
         }
+
+        /* Free memory */
+        free(chunk_output);
+        free(chunk_input1);
+        free(chunk_input2);
 
         eps_d = sqrt(eps_d / (N * N * N));
         eps_t = sqrt(eps_t / (N * N * N));
@@ -419,6 +444,65 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         printf("%03d] Finished SPT cycle, eps = (%e, %e)\n", ITER, eps_d, eps_t);
 
     }
+
+    /* Filenames pointing to the updated density and flux fields */
+    char first_density_fname[DEFAULT_STRING_LENGTH];
+    char first_flux_density_fname[DEFAULT_STRING_LENGTH];
+    sprintf(first_density_fname, "%s_%03d.hdf5", density_fname, 0);
+    sprintf(first_flux_density_fname, "%s_%03d.hdf5", flux_fname, 0);
+
+    /* Allocate memory for one chunk of the output grid and two input grids */
+    double *chunk_output = malloc(chunk_size * sizeof(double));
+    double *chunk_input1 = malloc(chunk_size * sizeof(double));
+    double *chunk_input2 = malloc(chunk_size * sizeof(double));
+
+    /* Add all the perturbation on top of the first order grids */
+    for (int i = 1; i < cycles; i++) {
+
+        /* Update filenames pointing to current density and flux fields */
+        sprintf(cur_density_fname, "%s_%03d.hdf5", density_fname, i);
+        sprintf(cur_flux_density_fname, "%s_%03d.hdf5", flux_fname, i);
+
+        /* For each chunk */
+        for (int j=0; j<chunks; j++) {
+
+            /* Read the perturbations into the input grid */
+            readFieldChunk_H5(chunk_input1, N, chunks, j, cur_density_fname);
+            readFieldChunk_H5(chunk_input2, N, chunks, j, cur_flux_density_fname);
+
+            /* Read the first order density field into the output grid */
+            readFieldChunk_H5(chunk_output, N, chunks, j, output_density_fname);
+
+            printf("Read %s\n", cur_density_fname);
+
+            /* Add the density perturbation */
+            for (int k=0; k<chunk_size; k++) {
+                chunk_output[k] += chunk_input1[k];
+            }
+
+            /* Store the updated density grid */
+            writeFieldChunk_H5(chunk_output, N, chunks, j, output_density_fname);
+
+            printf("Wrote %s\n", output_density_fname);
+
+            /* Read the first order flux density field into the output grid */
+            readFieldChunk_H5(chunk_output, N, chunks, j, output_flux_density_fname);
+
+            /* Add the density perturbation */
+            for (int k=0; k<chunk_size; k++) {
+                chunk_output[k] += chunk_input2[k] * (-aHf);
+            }
+
+            /* Store the updated density grid */
+            writeFieldChunk_H5(chunk_output, N, chunks, j, output_flux_density_fname);
+
+        }
+    }
+
+    /* Free memory */
+    free(chunk_output);
+    free(chunk_input1);
+    free(chunk_input2);
 
     /* Free the memory */
     free(box);
