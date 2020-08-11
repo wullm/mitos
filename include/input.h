@@ -44,6 +44,7 @@ struct params {
     double BoxLen;
     int Splits; //for folding & position dependent power spectra
 
+
     /* Simulation parameters */
     char *Name;
     int MaxParticleTypes;
@@ -52,6 +53,7 @@ struct params {
     char *PerturbFile;
     char MergeDarkMatterBaryons;
     char Homogeneous;
+    int Threads;
 
     /* Output parameters */
     char *OutputDirectory;

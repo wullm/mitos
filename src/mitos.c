@@ -64,6 +64,11 @@ int main(int argc, char *argv[]) {
 
     printf("The output directory is '%s'.\n", pars.OutputDirectory);
     printf("Creating initial conditions for '%s'.\n", pars.Name);
+    printf("Running with %d threads.\n", pars.Threads);
+
+    /* Allow multi-threaded FFT */
+    fftw_init_threads();
+    fftw_plan_with_nthreads(1);
 
     /* Read out particle types from the parameter file */
     readTypes(&pars, &types, fname);
@@ -148,16 +153,16 @@ int main(int argc, char *argv[]) {
     fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
 
     /* Convert from complex phases to real Gaussian variates and export the box */
-    char box_fname[DEFAULT_STRING_LENGTH];
-    sprintf(box_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
-    fft_c2r_export(grf, N, boxlen, box_fname);
-    printf("Pure Gaussian Random Field exported to '%s'.\n", box_fname);
+    char grf_fname[DEFAULT_STRING_LENGTH];
+    sprintf(grf_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
+    fft_c2r_export_and_free(grf, N, boxlen, grf_fname); //frees grf
+    printf("Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
 
     /* Create a smaller (zoomed out) copy of the Gaussian random field */
     if (pars.SmallGridSize > 0) {
         char small_fname[DEFAULT_STRING_LENGTH];
         sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
-        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, box_fname);
+        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, grf_fname);
         if (errs > 0) exit(1);
         printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
     }
@@ -181,7 +186,7 @@ int main(int argc, char *argv[]) {
 
     /* Generate the density grids */
     printheader("Generating Density Grids");
-    int err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, grf, function_titles, GRID_NAME_DENSITY);
+    int err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_DENSITY);
     if (err > 0) exit(1);
 
     /* For each particle type, fetch the user-defined energy flux function title */
@@ -195,14 +200,11 @@ int main(int argc, char *argv[]) {
 
     /* Generate the energy flux (velocity divergence theta) grids */
     printheader("Generating Energy Flux Fields");
-    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, grf, function_titles, GRID_NAME_THETA);
+    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_THETA);
     if (err > 0) exit(1);
 
     /* Get rid of the perturbation vector function titles */
     free(function_titles);
-
-    /* Get rid of the random phases field */
-    fftw_free(grf);
 
     /* Compute SPT grids */
     printheader("Computing SPT Corrections");
@@ -613,6 +615,8 @@ int main(int argc, char *argv[]) {
     /* Close the output file */
     H5Fclose(h_out_file);
 
+    /* Clean up FFTW structures */
+    fftw_cleanup_threads();
 
     /* Clean up */
     cleanExportGroups(&pars, &export_groups);

@@ -431,7 +431,7 @@ int readPerturbParams(struct params *pars, struct units *us,
         H5Aclose(h_attr);
         if (h_err < 0) return 1;
     }
-    
+
     /* The present energy density from matter (excluding ncdm) */
     h_attr = H5Aopen(h_grp, "Omega_m", H5P_DEFAULT);
     h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &ptpars->Omega_m);
@@ -472,8 +472,10 @@ int readPerturbParams(struct params *pars, struct units *us,
 }
 
 int cleanPerturbParams(struct perturb_params *ptpars) {
-    free(ptpars->M_ncdm_eV);
-    free(ptpars->T_ncdm);
-
+    if (ptpars->N_ncdm > 0) {
+        free(ptpars->M_ncdm_eV);
+        free(ptpars->T_ncdm);
+    }
+    
     return 0;
 }

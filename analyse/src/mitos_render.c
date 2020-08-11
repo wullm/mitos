@@ -119,13 +119,12 @@ int main(int argc, char *argv[]) {
     //fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
 
     /* Export the real box */
-    fft_c2r_export(fbox, N, boxlen, pars.OutputFilename);
+    fft_c2r_export_and_free(fbox, N, boxlen, pars.OutputFilename);
     printf("Resulting field exported to '%s'.\n", pars.OutputFilename);
 
 
     /* Free up memory */
     free(rho);
-    free(fbox);
     fftw_destroy_plan(r2c);
 
     /* Clean up */

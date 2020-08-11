@@ -30,7 +30,6 @@
 int generatePerturbationGrids(const struct params *pars, const struct units *us,
                               const struct cosmology *cosmo,
                               const struct perturb_spline *spline,
-                              struct particle_type *types,
-                              const fftw_complex *grf, char **titles,
-                              const char *grid_name);
+                              struct particle_type *types, char **titles,
+                              const char *grf_fname, const char *grid_name);
 #endif

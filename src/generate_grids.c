@@ -32,9 +32,8 @@
 int generatePerturbationGrids(const struct params *pars, const struct units *us,
                               const struct cosmology *cosmo,
                               const struct perturb_spline *spline,
-                              struct particle_type *types,
-                              const fftw_complex *grf, char **titles,
-                              const char *grid_name) {
+                              struct particle_type *types, char **titles,
+                              const char *grf_fname, const char *grid_name) {
 
     /* Grid dimensions */
     const int N = pars->GridSize;
@@ -45,9 +44,6 @@ int generatePerturbationGrids(const struct params *pars, const struct units *us,
     int tau_index; //greatest lower bound bin index
     double u_tau; //spacing between subsequent bins
     perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
-
-    /* Create complex 3D arrays */
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* For each particle type, create the corresponding density field */
     for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
@@ -68,8 +64,24 @@ int generatePerturbationGrids(const struct params *pars, const struct units *us,
             return 1;
         }
 
-        /* Copy the complex random field into the complex array */
-        memcpy(fbox, grf, N*N*(N/2+1)*sizeof(fftw_complex));
+        /* Create 3D arrays */
+        double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+
+        /* Load the Gaussian random field */
+        int err = readGRF_inPlace_H5(box, grf_fname);
+        if (err > 0) return err;
+
+        /* Create FFT plans (destroys input) */
+        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+
+        /* Execute and normalize */
+        fft_execute(r2c);
+        fft_normalize_r2c(fbox,N,boxlen);
+
+        /* Free the destroyed real-space box */
+        fftw_free(box);
+        fftw_destroy_plan(r2c);
 
         /* Package the spline parameters */
         struct spline_params sp = {spline, index_src, tau_index, u_tau};
@@ -80,12 +92,9 @@ int generatePerturbationGrids(const struct params *pars, const struct units *us,
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];
         sprintf(dbox_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
-        fft_c2r_export(fbox, N, boxlen, dbox_fname);
+        fft_c2r_export_and_free(fbox, N, boxlen, dbox_fname); //frees fbox
         printf("Perturbation field '%s' exported to '%s'.\n", title, dbox_fname);
     }
-
-    /* Free all the FFT objects */
-    fftw_free(fbox);
 
     return 0;
 }
