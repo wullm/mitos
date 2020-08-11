@@ -71,11 +71,6 @@ int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
 
 /* Create hdf5 file for a 3-dimensional grid, without writing any data */
 int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char *fname) {
-    /* Verify dimensions */
-    if ((N/NX)*NX != N) {
-        printf("Error: chunk dimensions do not divide grid dimensions.\n");
-        return 1;
-    }
 
     /* Create the file */
     hid_t h_file = createFile_MPI(comm, fname);

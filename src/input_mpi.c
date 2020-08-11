@@ -28,13 +28,6 @@
 int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
                   const char *fname) {
 
-    /* Verify dimensions */
-    if ((N/NX)*NX != N) {
-        printf("Error: chunk dimensions do not divide grid dimensions.\n");
-        return 1;
-    }
-
-
     /* Open the hdf5 file */
     hid_t h_file = openFile_MPI(comm, fname);
 
