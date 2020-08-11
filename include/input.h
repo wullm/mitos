@@ -33,6 +33,7 @@
 
 /* The .ini parser library is minIni */
 #include "../parser/minIni.h"
+#include "../include/output.h"
 
 struct params {
     /* Random parameters */
@@ -101,6 +102,9 @@ int readUnits(struct units *us, const char *fname);
 int readCosmology(struct cosmology *cosmo, struct units *us, const char *fname);
 
 int cleanParams(struct params *parser);
+
+int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
+                  const char *fname);
 
 int readGRF_H5(double **box, int *N, double *box_len, const char *fname);
 int readGRF_inPlace_H5(double *box, const char *fname);

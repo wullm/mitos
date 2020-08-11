@@ -37,14 +37,14 @@ int solvePoisson(double *phi, double *f, int N, double boxlen) {
 
     /* Execute and normalize */
     fft_execute(r2c);
-    fft_normalize_r2c(fbox, N, boxlen);
+    fft_normalize_r2c(fbox, N, N, 0, boxlen);
 
     /* Apply the inverse Poisson kernel 1/k^2 */
-    fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_poisson, NULL);
+    fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, kernel_inv_poisson, NULL);
 
     /* FFT back */
     fft_execute(c2r);
-    fft_normalize_c2r(phi, N, boxlen);
+    fft_normalize_c2r(phi, N, N, 0, boxlen);
 
     /* Free all the FFT objects */
     fftw_free(fbox);
@@ -58,16 +58,12 @@ int solvePoisson(double *phi, double *f, int N, double boxlen) {
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
                           struct particle_type *types, const char *grid_name,
-                          const char *out_grid_name, char withELPT) {
-
-    /* Grid dimensions */
-    const int N = pars->GridSize;
-    const double boxlen = pars->BoxLen;
+                          const char *out_grid_name, char withELPT,
+                          int N, int NX, int X0, long int block_size,
+                          double boxlen, MPI_Comm comm) {
 
     /* For each particle type, create the corresponding density field */
     for (int pti = 0; pti < pars->NumParticleTypes; pti++) {
-        /* We will read the density into this array and do in-place calculations */
-        double *rho;
 
         /* The current particle type */
         struct particle_type *ptype = types + pti;
@@ -78,15 +74,13 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
         sprintf(dbox_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
         printf("Reading density field '%s'.\n", dbox_fname);
 
-        /* Read the density field from file */
-        int read_N;
-        double read_boxlen;
-        readGRF_H5(&rho, &read_N, &read_boxlen, dbox_fname);
+        /* Create 3D arrays */
+        double *rho = fftw_alloc_real(NX*N*(N+2));
+        fftw_complex *fbox = fftw_alloc_complex(NX*N*(N/2+1));
 
-        if (N != read_N || boxlen != read_boxlen) {
-            printf("Error: grid dimensions do not match file.\n");
-            return 1;
-        }
+        /* Load the density field */
+        int err = readField_MPI(rho, N, NX, X0, comm, dbox_fname);
+        if (err > 0) return err;
 
         /* Filename of the potential grid that is to be computed */
         char pbox_fname[DEFAULT_STRING_LENGTH];
@@ -101,16 +95,32 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
             /* Solve the Monge-Ampere equation */
             elptChunked(rho, N, boxlen, ptype->CyclesOfELPT, elptbox_fname, pbox_fname);
         } else {
-            /* Solve Poisson's equation and store the result back in rho */
-            solvePoisson(rho, rho, N, boxlen);
+            /* Create MPI FFTW plans */
+            fftw_plan r2c_mpi = fftw_mpi_plan_dft_r2c_3d(N, N, N, rho, fbox, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+            fftw_plan c2r_mpi = fftw_mpi_plan_dft_c2r_3d(N, N, N, fbox, rho, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+
+            /* Execute and normalize */
+            fft_execute(r2c_mpi);
+            fft_normalize_r2c(fbox, N, NX, X0, boxlen);
+            fftw_destroy_plan(r2c_mpi);
+
+            /* Apply the inverse Poisson kernel 1/k^2 */
+            fft_apply_kernel(fbox, fbox, N, NX, X0, boxlen, kernel_inv_poisson, NULL);
+
+            /* Execute and normalize */
+            fft_execute(c2r_mpi);
+            fft_normalize_c2r(rho, N, NX, X0, boxlen);
+            fftw_destroy_plan(c2r_mpi);
 
             /* Export the potential */
+            err = writeFieldFile_MPI(rho, N, NX, X0, boxlen, MPI_COMM_WORLD, pbox_fname);
+            if (err > 0) return err;
             printf("Potential field written to '%s'.\n", pbox_fname);
-            writeGRF_H5(rho, N, boxlen, pbox_fname);
         }
 
         /* Free up memory */
-        free(rho);
+        fftw_free(rho);
+        fftw_free(fbox);
     }
 
     return 0;
@@ -120,17 +130,15 @@ int computePotentialGrids(const struct params *pars, const struct units *us,
 int computeGridDerivatives(const struct params *pars, const struct units *us,
                            const struct cosmology *cosmo,
                            struct particle_type *types, const char *grid_name,
-                           const char *out_grid_name) {
+                           const char *out_grid_name, int N, int NX, int X0,
+                           long int block_size, double boxlen, MPI_Comm comm) {
 
-    /* Grid dimensions */
-    const int N = pars->GridSize;
-    const double boxlen = pars->BoxLen;
-
-    /* Arrays and FFT plans */
-    double *box =  calloc(N*N*N, sizeof(double));
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
-    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+    /* Create 3D arrays */
+    double *box = fftw_alloc_real(2*block_size);
+    fftw_complex *fbox = fftw_alloc_complex(block_size);
+    /* Create MPI FFTW plans */
+    fftw_plan r2c_mpi = fftw_mpi_plan_dft_r2c_3d(N, N, N, box, fbox, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+    fftw_plan c2r_mpi = fftw_mpi_plan_dft_c2r_3d(N, N, N, fbox, box, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
 
     /* We calculate derivatives using FFT kernels */
     const kernel_func derivatives[] = {kernel_dx, kernel_dy, kernel_dz};
@@ -152,36 +160,34 @@ int computeGridDerivatives(const struct params *pars, const struct units *us,
             printf("Reading input field '%s'.\n", box_fname);
 
             /* Read the potential field from file */
-            int err = readGRF_inPlace_H5(box, box_fname);
+            int err = readField_MPI(box, N, NX, X0, comm, box_fname);
             if (err > 0) return err;
 
             /* Compute the Fourier transform */
-            fft_execute(r2c);
-            fft_normalize_r2c(fbox, N, boxlen);
+            fft_execute(r2c_mpi);
+            fft_normalize_r2c(fbox, N, NX, X0, boxlen);
 
             /* Compute the derivative */
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[i], NULL);
-
-            /* Undo the TSC window function for later */
-            undoPCSWindow(fbox, N, boxlen);
+            fft_apply_kernel(fbox, fbox, N, NX, X0, boxlen, derivatives[i], NULL);
 
             /* Fourier transform back */
-            fft_execute(c2r);
-            fft_normalize_c2r(box, N, boxlen);
+            fft_execute(c2r_mpi);
+            fft_normalize_c2r(box, N, NX, X0, boxlen);
 
             /* Filename of the potential grid */
             char dbox_fname[DEFAULT_STRING_LENGTH];
             sprintf(dbox_fname, "%s/%s_%c_%s%s", pars->OutputDirectory, out_grid_name, letters[i], Identifier, ".hdf5");
+            err = writeFieldFile_MPI(box, N, NX, X0, boxlen, MPI_COMM_WORLD, dbox_fname);
+            if (err > 0) return err;
             printf("Derivative field written to '%s'.\n", dbox_fname);
-            writeGRF_H5(box, N, boxlen, dbox_fname);
         }
     }
 
     /* Free up memory */
-    free(box);
-    free(fbox);
-    fftw_destroy_plan(c2r);
-    fftw_destroy_plan(r2c);
+    fftw_free(box);
+    fftw_free(fbox);
+    fftw_destroy_plan(r2c_mpi);
+    fftw_destroy_plan(c2r_mpi);
 
     return 0;
 }

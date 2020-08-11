@@ -20,9 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <hdf5.h>
-#include <fftw3.h>
 #include <sys/time.h>
 #include <assert.h>
 
@@ -38,10 +35,21 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    /* Initialize MPI for distributed memory parallelization */
+    MPI_Init(&argc, &argv);
+    fftw_mpi_init();
+
+    /* Get the dimensions of the cluster */
+    int MPI_Rank_ID, MPI_Rank_Count;
+    MPI_Comm_rank(MPI_COMM_WORLD, &MPI_Rank_ID);
+    MPI_Comm_size(MPI_COMM_WORLD, &MPI_Rank_Count);
+
     /* Read options */
     const char *fname = argv[1];
-    printheader("Mitos Initial Condition Generator");
-    printf("The parameter file is '%s'\n", fname);
+    if (MPI_Rank_ID == 0) {
+        printheader("Mitos Initial Condition Generator");
+        printf("The parameter file is '%s'\n", fname);
+    }
 
     /* Timer */
     struct timeval stop, start;
@@ -62,13 +70,15 @@ int main(int argc, char *argv[]) {
     readUnits(&us, fname);
     readCosmology(&cosmo, &us, fname);
 
-    printf("The output directory is '%s'.\n", pars.OutputDirectory);
-    printf("Creating initial conditions for '%s'.\n", pars.Name);
-    printf("Running with %d threads.\n", pars.Threads);
+    if (MPI_Rank_ID == 0) {
+        printf("The output directory is '%s'.\n", pars.OutputDirectory);
+        printf("Creating initial conditions for '%s'.\n", pars.Name);
+    }
 
     /* Allow multi-threaded FFT */
-    fftw_init_threads();
-    fftw_plan_with_nthreads(1);
+    // fftw_init_threads();
+    // fftw_plan_with_nthreads(1);
+    // printf("Running with %d threads.\n", pars.Threads);
 
     /* Read out particle types from the parameter file */
     readTypes(&pars, &types, fname);
@@ -88,6 +98,7 @@ int main(int argc, char *argv[]) {
 
     /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
     if (pars.MergeDarkMatterBaryons) {
+        if (MPI_Rank_ID == 0)
         printheader("Merging cdm & baryon transfer functions, replacing cdm.");
 
         /* The indices of the density transfer functions */
@@ -106,6 +117,7 @@ int main(int argc, char *argv[]) {
         double weight_cdm = Omega_cdm / (Omega_cdm + Omega_b);
         double weight_b = Omega_b / (Omega_cdm + Omega_b);
 
+        if (MPI_Rank_ID == 0)
         printf("Using weights [w_cdm, w_b] = [%f, %f]\n", weight_cdm, weight_b);
 
         /* Merge the density & velocity transfer runctions, replacing cdm */
@@ -119,74 +131,109 @@ int main(int argc, char *argv[]) {
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
     /* Seed the random number generator */
-    rng_state seed = rand_uint64_init(pars.Seed);
+    rng_state seed = rand_uint64_init(pars.Seed + MPI_Rank_ID);
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
 
-    printheader("Settings");
-    printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
-    printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
-    printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
-    printf("\n");
+    if (MPI_Rank_ID == 0) {
+        printheader("Settings");
+        printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
+        printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+        printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
+        printf("\n");
 
-    printheader("Requested Particle Types");
-    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
-        /* The current particle type */
-        struct particle_type *ptype = types + pti;
-        printf("Particle type '%s' (N^3 = %d^3).\n", ptype->Identifier, ptype->CubeRootNumber);
+        printheader("Requested Particle Types");
+        for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+            /* The current particle type */
+            struct particle_type *ptype = types + pti;
+            printf("Particle type '%s' (N^3 = %d^3).\n", ptype->Identifier, ptype->CubeRootNumber);
+        }
     }
-
 
     /* Create Gaussian random field */
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
 
+    long int local_NX;     //the portion on this rank will be NX * N * (N/2 + 1)
+    long int local_X0;     //location along the X-axis of the portion
+    long int local_size;   //number of elements on this rank
+
+    /* Determine the portion allocated on this rank, sliced along the X-axis */
+    local_size = fftw_mpi_local_size_3d(N, N, N/2+1, MPI_COMM_WORLD, &local_NX, &local_X0);
+
+    /* Allocate a portion of the Gaussian random field */
+    fftw_complex *grf = fftw_alloc_complex(local_size);
+    double *box = fftw_alloc_real(2*local_size);
+
+    /* Create MPI FFTW plan */
+    fftw_plan r2c_mpi = fftw_mpi_plan_dft_c2r_3d(N, N, N, grf, box, MPI_COMM_WORLD, FFTW_ESTIMATE);
+
+    // printf("Local size is %ld, local n0 is %ld %ld\n", local_size, local_NX, local_X0);
+
     /* Allocate 3D array */
-    fftw_complex *grf = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    // fftw_complex *grf = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Generate a complex Hermitian Gaussian random field */
-    printheader("Generating Primordial Fluctuations");
-    generate_complex_grf(grf, N, boxlen, &seed);
+    if (MPI_Rank_ID == 0) printheader("Generating Primordial Fluctuations");
+    generate_complex_grf(grf, N, local_NX, local_X0, boxlen, &seed);
+    enforce_hermiticity(grf, N, local_NX, local_X0, boxlen, &seed, MPI_COMM_WORLD);
 
     /* Apply the bare power spectrum, without any transfer functions */
-    fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
+    fft_apply_kernel(grf, grf, N, local_NX, local_X0, boxlen, kernel_power_no_transfer, &cosmo);
 
-    /* Convert from complex phases to real Gaussian variates and export the box */
+    /* Execute the Fourier transform and normalize */
+    fft_execute(r2c_mpi);
+    fft_normalize_c2r(box, N, local_NX, local_X0, boxlen);
+
+    /* Free up memory */
+    fftw_free(grf);
+    fftw_destroy_plan(r2c_mpi);
+
+    /* Export the real GRF */
     char grf_fname[DEFAULT_STRING_LENGTH];
     sprintf(grf_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
-    fft_c2r_export_and_free(grf, N, boxlen, grf_fname); //frees grf
-    printf("Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
+    int err = writeFieldFile_MPI(box, N, local_NX, local_X0, boxlen, MPI_COMM_WORLD, grf_fname);
+    if (err > 0) printf("Error while writing '%s'.\n", fname);
+    if (MPI_Rank_ID == 0) printf("Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
 
-    /* Create a smaller (zoomed out) copy of the Gaussian random field */
-    if (pars.SmallGridSize > 0) {
-        char small_fname[DEFAULT_STRING_LENGTH];
-        sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
-        int errs = shrinkGridExport(pars.SmallGridSize, small_fname, grf_fname);
-        if (errs > 0) exit(1);
-        printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
-    }
+    /* Free memory of the real-space GRF */
+    fftw_free(box);
+
+    // /* Convert from complex phases to real Gaussian variates and export the box */
+    // char grf_fname[DEFAULT_STRING_LENGTH];
+    // sprintf(grf_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
+    // fft_c2r_export_and_free(grf, N, boxlen, grf_fname); //frees grf
+    // printf("Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
+
+    // /* Create a smaller (zoomed out) copy of the Gaussian random field */
+    // if (pars.SmallGridSize > 0) {
+    //     char small_fname[DEFAULT_STRING_LENGTH];
+    //     sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+    //     int errs = shrinkGridExport(pars.SmallGridSize, small_fname, grf_fname);
+    //     if (errs > 0) exit(1);
+    //     printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+    // }
 
 
     /* Retrieve background densities from the perturbations data file */
-    printheader("Fetching Background Densities");
+    if (MPI_Rank_ID == 0) printheader("Fetching Background Densities");
     retrieveDensities(&pars, &cosmo, &types, &ptdat);
     retrieveMicroMasses(&pars, &cosmo, &types, &ptpars);
 
-
     /* For each particle type, fetch the user-defined density function title */
-    printheader("Fetching Density Perturbations");
+    if (MPI_Rank_ID == 0) printheader("Fetching Density Perturbations");
     char **function_titles = malloc(pars.NumParticleTypes * sizeof(char*));
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
         struct particle_type *ptype = types + pti;
         const char *Identifier = ptype->Identifier;
         function_titles[pti] = ptype->TransferFunctionDensity;
-        printf("Particle type '%s' uses density vector '%s'.\n", Identifier, function_titles[pti]);
+        if (MPI_Rank_ID == 0) printf("Particle type '%s' uses density vector '%s'.\n", Identifier, function_titles[pti]);
     }
 
     /* Generate the density grids */
-    printheader("Generating Density Grids");
-    int err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_DENSITY);
+    if (MPI_Rank_ID == 0) printheader("Generating Density Grids");
+    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_DENSITY, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
 
     /* For each particle type, fetch the user-defined energy flux function title */
@@ -200,7 +247,7 @@ int main(int argc, char *argv[]) {
 
     /* Generate the energy flux (velocity divergence theta) grids */
     printheader("Generating Energy Flux Fields");
-    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_THETA);
+    err = generatePerturbationGrids(&pars, &us, &cosmo, &spline, types, function_titles, grf_fname, GRID_NAME_THETA, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
 
     /* Get rid of the perturbation vector function titles */
@@ -213,22 +260,25 @@ int main(int argc, char *argv[]) {
 
     /* Compute the potential grids */
     printheader("Computing Gravitational Potentials");
-    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL, /* withELPT = */ 1);
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_DENSITY, GRID_NAME_POTENTIAL, /* withELPT = */ 1, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the potential grids */
     printheader("Computing Potential Derivatives (Displacements)");
-    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT);
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_POTENTIAL, GRID_NAME_DISPLACEMENT, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    exit(0);
 
     /* Compute the energy flux potential grids */
     printheader("Computing Energy Flux Potentials");
-    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_THETA_POTENTIAL, /* withELPT = */ 0);
+    err = computePotentialGrids(&pars, &us, &cosmo, types, GRID_NAME_THETA, GRID_NAME_THETA_POTENTIAL, /* withELPT = */ 0, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
 
     /* Compute derivatives of the energy flux grids */
     printheader("Computing Energy Flux Derivatives (Velocities)");
-    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY);
+    err = computeGridDerivatives(&pars, &us, &cosmo, types, GRID_NAME_THETA_POTENTIAL, GRID_NAME_VELOCITY, N, local_NX, local_X0, local_size, boxlen, MPI_COMM_WORLD);
     if (err > 0) exit(1);
 
     /* Create the beginning of a SWIFT parameter file */
@@ -616,7 +666,10 @@ int main(int argc, char *argv[]) {
     H5Fclose(h_out_file);
 
     /* Clean up FFTW structures */
-    fftw_cleanup_threads();
+    // fftw_cleanup_threads();
+
+    /* Done with MPI parallelization */
+    MPI_Finalize();
 
     /* Clean up */
     cleanExportGroups(&pars, &export_groups);

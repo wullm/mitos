@@ -22,6 +22,8 @@
 
 #include "input.h"
 #include "output.h"
+#include "input_mpi.h"
+#include "output_mpi.h"
 #include "header.h"
 #include "random.h"
 #include "fft.h"

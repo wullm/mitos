@@ -20,9 +20,44 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <hdf5.h>
 #include "../include/output.h"
 #include "../include/fft.h"
+
+
+
+hid_t openFile(const char *fname) {
+    /* Open the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDWR, H5P_DEFAULT);
+    return h_file;
+}
+
+hid_t createFile(const char *fname) {
+    /* Create the hdf5 file */
+    hid_t h_file = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    return h_file;
+}
+
+int writeFieldHeader(double boxlen, hid_t h_file) {
+    /* Create the Header group */
+    hid_t h_grp = H5Gcreate(h_file, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+    /* Create dataspace for BoxSize attribute */
+    const hsize_t arank = 1;
+    const hsize_t adims[1] = {3}; //3D space
+    hid_t h_aspace = H5Screate_simple(arank, adims, NULL);
+
+    /* Create the BoxSize attribute and write the data */
+    hid_t h_attr = H5Acreate1(h_grp, "BoxSize", H5T_NATIVE_DOUBLE, h_aspace, H5P_DEFAULT);
+    double boxsize[3] = {boxlen, boxlen, boxlen};
+    H5Awrite(h_attr, H5T_NATIVE_DOUBLE, boxsize);
+
+    /* Close the attribute, corresponding dataspace, and the Header group */
+    H5Aclose(h_attr);
+    H5Sclose(h_aspace);
+    H5Gclose(h_grp);
+
+    return 0;
+}
 
 int writeGRF_H5(const double *box, int N, double boxlen, const char *fname) {
     /* Create the hdf5 file */
@@ -175,7 +210,6 @@ int writeField_H5(const double *box, const char *fname) {
 
     return 0;
 }
-
 
 int writeFieldChunk_H5(const double *chunk_data, int N, int num_chunks,
                        int chunk_id, const char *fname) {

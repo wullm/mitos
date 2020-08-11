@@ -35,27 +35,31 @@ void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
 }
 
 /* Normalize the complex array after transforming to momentum space */
-void fft_normalize_r2c(fftw_complex *arr, int N, double boxlen) {
+int fft_normalize_r2c(fftw_complex *arr, int N, int NX, int X0, double boxlen) {
     const double boxvol = boxlen*boxlen*boxlen;
-    for (int x=0; x<N; x++) {
+    for (int x=0; x<NX; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
             }
         }
     }
+
+    return 0;
 }
 
 /* Normalize the real array after transforming to configuration space */
-void fft_normalize_c2r(double *arr, int N, double boxlen) {
+int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen) {
     const double boxvol = boxlen*boxlen*boxlen;
-    for (int x=0; x<N; x++) {
+    for (int x=0; x<NX; x++) {
         for (int y=0; y<N; y++) {
-            for (int z=0; z<N; z++) {
-                arr[row_major(x, y, z, N)] /= boxvol;
+            for (int z=0; z<N+2; z++) {
+                arr[row_major_padded(x, y, z, N, NX)] /= boxvol;
             }
         }
     }
+
+    return 0;
 }
 
 /* Execute an FFTW plan */
@@ -64,18 +68,19 @@ void fft_execute(fftw_plan plan) {
 }
 
 /* Apply a kernel to a 3D array after transforming to momentum space */
-void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, void (*compute)(struct kernel* the_kernel),
+int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
+                      int NX, int X0, double boxlen,
+                      void (*compute)(struct kernel* the_kernel),
                       void *params) {
-    const double dk = 2 * M_PI / len;
+    const double dk = 2 * M_PI / boxlen;
 
     #pragma omp parallel for
-    for (int x=0; x<N; x++) {
+    for (int x=0; x<NX; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 /* Calculate the wavevector */
                 double kx,ky,kz,k;
-                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
+                fft_wavevector(x+X0, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* Compute the kernel */
                 struct kernel the_kernel = {kx, ky, kz, k, 0.f, params};
@@ -87,6 +92,8 @@ void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
             }
         }
     }
+
+    return 0;
 }
 
 /* Perform real-to-complex FFT and export, then frees the memory of the input */
@@ -99,7 +106,7 @@ int fft_c2r_export_and_free(fftw_complex *farr, int N, double boxlen, const char
 
     /* Execute and normalize */
     fft_execute(c2r);
-    fft_normalize_c2r(box,N,boxlen);
+    fft_normalize_c2r(box,N,N,0,boxlen);
 
     /* Free the destroyed input */
     fftw_free(farr);

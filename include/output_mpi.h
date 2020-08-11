@@ -17,21 +17,19 @@
  *
  ******************************************************************************/
 
-#ifndef GENERATE_GRIDS_H
-#define GENERATE_GRIDS_H
+#ifndef OUTPUT_MPI_H
+#define OUTPUT_MPI_H
 
-#include <fftw3.h>
-#include "input.h"
-#include "particle_types.h"
-#include "perturb_spline.h"
+#include <mpi.h>
+#include <hdf5.h>
 
-/* Generate perturbation theory grids by applying transfer functions to
- * the random phases. */
-int generatePerturbationGrids(const struct params *pars, const struct units *us,
-                              const struct cosmology *cosmo,
-                              const struct perturb_spline *spline,
-                              struct particle_type *types, char **titles,
-                              const char *grf_fname, const char *grid_name,
-                              int N, int NX, int X0, long int block_size,
-                              double boxlen, MPI_Comm comm);
+hid_t openFile_MPI(MPI_Comm comm, const char *fname);
+hid_t createFile_MPI(MPI_Comm comm, const char *fname);
+int createFieldGroup_MPI(int N, int NX, hid_t h_file);
+
+int writeFieldFile_MPI(double *data, int N, int NX, int X0, double boxlen, MPI_Comm comm, const char *fname);
+int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char *fname);
+int writeData_MPI(const double *data, int N, int NX, int X0,
+                  MPI_Comm comm, const hid_t h_file);
+
 #endif

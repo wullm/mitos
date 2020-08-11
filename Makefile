@@ -1,17 +1,17 @@
 #Compiler options
-GCC = gcc
+GCC = mpicc
 
 #Libraries
 INI_PARSER = parser/minIni.o
 STD_LIBRARIES = -lm
-FFTW_LIBRARIES = -lfftw3 -lfftw3_omp
+FFTW_LIBRARIES = -lfftw3 -lfftw3_omp -lfftw3_mpi
 HDF5_LIBRARIES = -lhdf5
 GSL_LIBRARIES = -lgsl -lgslcblas
 
 GSL_INCLUDES =
 
-HDF5_INCLUDES += -I/usr/lib/x86_64-linux-gnu/hdf5/serial/include
-HDF5_LIBRARIES += -L/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/include/hdf5/serial
+HDF5_INCLUDES += -I/usr/lib/x86_64-linux-gnu/hdf5/openmpi/include
+HDF5_LIBRARIES += -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -I/usr/include/hdf5/openmpi
 
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
@@ -25,6 +25,10 @@ all:
 	mkdir -p lib
 	$(GCC) src/input.c -c -o lib/input.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/output.c -c -o lib/output.o $(INCLUDES) $(CFLAGS)
+
+	$(GCC) src/input_mpi.c -c -o lib/input_mpi.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/output_mpi.c -c -o lib/output_mpi.o $(INCLUDES) $(CFLAGS)
+
 	$(GCC) src/header.c -c -o lib/header.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/fft.c -c -o lib/fft.o $(INCLUDES) $(CFLAGS)
@@ -48,7 +52,7 @@ all:
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
-	make analyse_tools
+	# make analyse_tools
 
 analyse_tools:
 	cd analyse && make

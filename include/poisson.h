@@ -31,12 +31,15 @@ int solvePoisson(double *phi, double *f, int N, double boxlen);
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
                           struct particle_type *types, const char *grid_name,
-                          const char *out_grid_name, char withELPT);
+                          const char *out_grid_name, char withELPT,
+                          int N, int NX, int X0, long int block_size,
+                          double boxlen, MPI_Comm comm);
 /* For each particle type, compute derivatives of a certain grid type */
 int computeGridDerivatives(const struct params *pars, const struct units *us,
                            const struct cosmology *cosmo,
                            struct particle_type *types, const char *grid_name,
-                           const char *out_grid_name);
+                           const char *out_grid_name, int N, int NX, int X0,
+                           long int block_size, double boxlen, MPI_Comm comm);
 /* For each particle type, compute higher order perturbation theory grids */
 int computePerturbedGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,

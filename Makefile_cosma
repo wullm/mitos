@@ -4,7 +4,7 @@ GCC = gcc
 #Libraries
 INI_PARSER = parser/minIni.o
 STD_LIBRARIES = -lm
-FFTW_LIBRARIES = -lfftw3 -lfftw3_threads
+FFTW_LIBRARIES = -lfftw3 -lfftw3_threads -lfftw3_mpi
 HDF5_LIBRARIES = -lhdf5
 GSL_LIBRARIES = -lgsl -lgslcblas
 
@@ -29,6 +29,10 @@ all:
 	mkdir -p lib
 	$(GCC) src/input.c -c -o lib/input.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/output.c -c -o lib/output.o $(INCLUDES) $(CFLAGS)
+
+	$(GCC) src/input_mpi.c -c -o lib/input_mpi.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/output_mpi.c -c -o lib/output_mpi.o $(INCLUDES) $(CFLAGS)
+
 	$(GCC) src/header.c -c -o lib/header.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/fft.c -c -o lib/fft.o $(INCLUDES) $(CFLAGS)

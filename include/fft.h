@@ -24,8 +24,10 @@
 #include <fftw3.h>
 #include <math.h>
 
-#define wrap(i,N) ((i)%N+N)%N
-#define fwrap(x,L) fmod(fmod((x),L)+L,L)
+#include <fftw3-mpi.h>
+
+#define wrap(i,N) ((i)%(N)+(N))%(N)
+#define fwrap(x,L) fmod(fmod((x),(L))+(L),(L))
 
 /* A structure for calculating kernel functions */
 struct kernel {
@@ -52,6 +54,13 @@ static inline int row_major_half(int i, int j, int k, int N) {
     return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
+static inline int row_major_padded(int i, int j, int k, int N, int NX) {
+    i = wrap(i,NX);
+    j = wrap(j,N);
+    k = wrap(k,N+2);
+    return i*N*(N+2) + j*(N+2) + k;
+}
+
 static inline void inverse_row_major(long long int id, int *x, int *y, int *z, int N) {
     int i = id % N;
     int j = (id - i)/N % N;
@@ -70,13 +79,14 @@ static inline double hypot3(double x, double y, double z) {
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
                     double *ky, double *kz, double *k);
 
-void fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
-void fft_normalize_c2r(double *arr, int N, double boxlen);
+int fft_normalize_r2c(fftw_complex *arr, int N, int NX, int X0, double boxlen);
+int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen);
 
 void fft_execute(fftw_plan plan);
 
-void fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double len, void (*kern)(struct kernel* the_kernel),
+int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
+                      int NX, int X0, double boxlen,
+                      void (*compute)(struct kernel* the_kernel),
                       void *params);
 
 /* Some useful I/O functions for debugging */

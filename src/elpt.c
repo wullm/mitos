@@ -95,15 +95,15 @@ int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, cha
 
             /* Fourier transform it */
             fft_execute(r2c);
-            fft_normalize_r2c(fbox, N, boxlen);
+            fft_normalize_r2c(fbox, N, N, 0, boxlen);
 
             /* Compute the derivative d^2 / (dx_i dx_j) */
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_a[j]], NULL);
-            fft_apply_kernel(fbox, fbox, N, boxlen, derivatives[index_b[j]], NULL);
+            fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[index_a[j]], NULL);
+            fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[index_b[j]], NULL);
 
             /* Fourier transform back */
             fft_execute(c2r);
-            fft_normalize_c2r(box, N, boxlen);
+            fft_normalize_c2r(box, N, N, 0, boxlen);
 
             /* Store the resulting derivative grid */
             char outname[DEFAULT_STRING_LENGTH];

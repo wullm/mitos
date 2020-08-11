@@ -1,5 +1,5 @@
 #Compiler options
-GCC = gcc
+GCC = mpicc
 
 #Libraries
 INI_PARSER = ../parser/minIni.o

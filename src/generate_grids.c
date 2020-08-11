@@ -33,11 +33,9 @@ int generatePerturbationGrids(const struct params *pars, const struct units *us,
                               const struct cosmology *cosmo,
                               const struct perturb_spline *spline,
                               struct particle_type *types, char **titles,
-                              const char *grf_fname, const char *grid_name) {
-
-    /* Grid dimensions */
-    const int N = pars->GridSize;
-    const double boxlen = pars->BoxLen;
+                              const char *grf_fname, const char *grid_name,
+                              int N, int NX, int X0, long int block_size,
+                              double boxlen, MPI_Comm comm) {
 
     /* Find the interpolation index along the time dimension */
     double log_tau = cosmo->log_tau_ini; //log of conformal time
@@ -64,36 +62,50 @@ int generatePerturbationGrids(const struct params *pars, const struct units *us,
             return 1;
         }
 
-        /* Create 3D arrays */
-        double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
-        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        /* Create 3D arrays (block_size nominally is NX*N*(N/2+1), but FFTW
+         * may sometimes require more memory for intermediate steps. */
+        double *box = fftw_alloc_real(2*block_size);
+        fftw_complex *fbox = fftw_alloc_complex(block_size);
 
         /* Load the Gaussian random field */
-        int err = readGRF_inPlace_H5(box, grf_fname);
+        int err = readField_MPI(box, N, NX, X0, comm, grf_fname);
         if (err > 0) return err;
 
         /* Create FFT plans (destroys input) */
-        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+        // fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+
+        /* Create MPI FFTW plans */
+        fftw_plan r2c_mpi = fftw_mpi_plan_dft_r2c_3d(N, N, N, box, fbox, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+        fftw_plan c2r_mpi = fftw_mpi_plan_dft_c2r_3d(N, N, N, fbox, box, MPI_COMM_WORLD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
 
         /* Execute and normalize */
-        fft_execute(r2c);
-        fft_normalize_r2c(fbox,N,boxlen);
-
-        /* Free the destroyed real-space box */
-        fftw_free(box);
-        fftw_destroy_plan(r2c);
+        fft_execute(r2c_mpi);
+        fft_normalize_r2c(fbox, N, NX, X0, boxlen);
+        fftw_destroy_plan(r2c_mpi);
 
         /* Package the spline parameters */
         struct spline_params sp = {spline, index_src, tau_index, u_tau};
 
         /* Apply the transfer function to fbox */
-        fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
+        fft_apply_kernel(fbox, fbox, N, NX, X0, boxlen, kernel_transfer_function, &sp);
+
+        /* Execute and normalize */
+        fft_execute(c2r_mpi);
+        fft_normalize_c2r(box, N, NX, X0, boxlen);
+        fftw_destroy_plan(c2r_mpi);
 
         /* Export the real box */
         char dbox_fname[DEFAULT_STRING_LENGTH];
         sprintf(dbox_fname, "%s/%s_%s%s", pars->OutputDirectory, grid_name, Identifier, ".hdf5");
-        fft_c2r_export_and_free(fbox, N, boxlen, dbox_fname); //frees fbox
+        err = writeFieldFile_MPI(box, N, NX, X0, boxlen, MPI_COMM_WORLD, dbox_fname);
+        if (err > 0) return err;
         printf("Perturbation field '%s' exported to '%s'.\n", title, dbox_fname);
+
+        // fft_c2r_export_and_free(fbox, N, boxlen, dbox_fname); //frees fbox
+
+        /* Free memory */
+        fftw_free(fbox);
+        fftw_free(box);
     }
 
     return 0;

@@ -176,7 +176,7 @@ int undoNGPWindow(fftw_complex *farr, int N, double boxlen) {
     Hkp.boxlen = boxlen;
 
     /* Apply the kernel */
-    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+    fft_apply_kernel(farr, farr, N, 0, 0, boxlen, kernel_undo_Hermite_window, &Hkp);
 
     return 0;
 }
@@ -190,7 +190,7 @@ int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
     Hkp.boxlen = boxlen;
 
     /* Apply the kernel */
-    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+    fft_apply_kernel(farr, farr, N, 0, 0, boxlen, kernel_undo_Hermite_window, &Hkp);
 
     return 0;
 }
@@ -203,7 +203,7 @@ int undoTSCWindow(fftw_complex *farr, int N, double boxlen) {
     Hkp.boxlen = boxlen;
 
     /* Apply the kernel */
-    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+    fft_apply_kernel(farr, farr, N, 0, 0, boxlen, kernel_undo_Hermite_window, &Hkp);
 
     return 0;
 }
@@ -216,7 +216,7 @@ int undoPCSWindow(fftw_complex *farr, int N, double boxlen) {
     Hkp.boxlen = boxlen;
 
     /* Apply the kernel */
-    fft_apply_kernel(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+    fft_apply_kernel(farr, farr, N, 0, 0, boxlen, kernel_undo_Hermite_window, &Hkp);
 
     return 0;
 }
