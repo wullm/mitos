@@ -58,25 +58,12 @@ int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
     const hsize_t fdims[3] = {N, N, N+2}; //3D space
     hid_t h_fspace = H5Screate_simple(frank, fdims, NULL);
 
-    /* Create property list for chunking (if needed) */
-    hid_t h_prop;
-    if (NX < N) {
-        const hsize_t chunk_rank = 3;
-        const hsize_t chunk_dims[3] = {NX, N, N+2}; //3D space
-        h_prop = H5Pcreate(H5P_DATASET_CREATE);
-        H5Pset_chunk(h_prop, chunk_rank, chunk_dims);
-    } else {
-        /* Not chunked, use default properties */
-        h_prop = H5P_DEFAULT;
-    }
-
     /* Create the dataset for the field */
-    hid_t h_data = H5Dcreate(h_grp, "Field", H5T_NATIVE_DOUBLE, h_fspace, H5P_DEFAULT, h_prop, H5P_DEFAULT);
+    hid_t h_data = H5Dcreate(h_grp, "Field", H5T_NATIVE_DOUBLE, h_fspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
     /* Close the dataset, corresponding dataspace, property list, and the Field group */
     H5Dclose(h_data);
     H5Sclose(h_fspace);
-    H5Pclose(h_prop);
     H5Gclose(h_grp);
 
     return 0;
