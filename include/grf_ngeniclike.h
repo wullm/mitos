@@ -27,6 +27,6 @@
 #include "mitos.h"
 
 int generate_ngeniclike_grf(fftw_complex *fbox, int N, int NX, int X0,
-                            long int block_size, double boxlen, MPI_Comm comm);
+                            long int block_size, double boxlen, long int seed);
 
 #endif

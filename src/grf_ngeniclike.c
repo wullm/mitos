@@ -26,19 +26,18 @@
 #include <mpi.h>
 
 int generate_ngeniclike_grf(fftw_complex * fbox, int N, int NX, int X0,
-			                long int block_size, double boxlen, MPI_Comm comm) {
+			                long int block_size, double boxlen, long int seed) {
 
 
     /* Convert Mitos variables to Ngenic variables */
     double Box = boxlen;
-    long int Seed = 100;
+    long int Seed = seed;
     long int Nmesh = N;
     long int Nsample = N;
     int Local_nx = NX;
     int Local_x_start = X0;
     int SphereMode = 0;
     double PI = M_PI;
-    long int total_size = block_size;
     fftw_complex *Cdata = fbox;
 
     gsl_rng *random_generator;
@@ -49,7 +48,9 @@ int generate_ngeniclike_grf(fftw_complex * fbox, int N, int NX, int X0,
     unsigned int *seedtable;
 
     /* Unused variables */
-    (void) hubble_a, vel_prefac;
+    (void) hubble_a;
+	(void) vel_prefac;
+	(void) kk;
 
     /* We do not backscale */
     double Dplus = 1.0;
