@@ -20,7 +20,7 @@ HDF5_LIBRARIES += -L/cosma/local/parmetis/intel_2018_intel_mpi_2018/4.0.3/lib -L
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
-CFLAGS = -Wall -fopenmp -march=native -O4
+CFLAGS = -Wall -fopenmp -march=native -Ofast
 
 OBJECTS = lib/*.o
 
