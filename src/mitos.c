@@ -24,6 +24,7 @@
 #include <assert.h>
 
 #include "../include/mitos.h"
+#include "../include/grf_ngeniclike.h"
 
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
 
@@ -177,7 +178,8 @@ int main(int argc, char *argv[]) {
     /* Generate a complex Hermitian Gaussian random field */
     if (MPI_Rank_ID == 0) printheader("Generating Primordial Fluctuations");
     generate_complex_grf(grf, N, local_NX, local_X0, boxlen, &seed);
-    // enforce_hermiticity(grf, N, local_NX, local_X0, boxlen, &seed, MPI_COMM_WORLD);
+    // generate_ngeniclike_grf(grf, N, local_NX, local_X0, local_size, boxlen, pars.Seed);
+    enforce_hermiticity(grf, N, local_NX, local_X0, boxlen, &seed, MPI_COMM_WORLD);
 
     /* Apply the bare power spectrum, without any transfer functions */
     fft_apply_kernel(grf, grf, N, local_NX, local_X0, boxlen, kernel_power_no_transfer, &cosmo);

@@ -55,7 +55,70 @@ int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
         }
     }
 
-    // /* Enforce hermiticity: f(k) = f*(-k) */
+    return 0;
+}
+
+int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
+                         double boxlen, rng_state *state, MPI_Comm comm) {
+
+    /* The first (k=0) and last (k=N/2+1) planes need hermiticity enforced */
+
+    /* Collect the plane on all nodes */
+    fftw_complex *our_slice = fftw_alloc_complex(NX * N);
+    fftw_complex *plane = fftw_alloc_complex(N * N);
+
+    /* For both planes */
+    for (int z=0; z<=N/2; z+=N/2) { //runs over z=0 and z=N/2
+
+        /* Fill our local slice of the plane */
+        for (int x=0; x<NX; x++) {
+            for (int y=0; y<N; y++) {
+                int id = row_major_half(x,y,z,N);
+                our_slice[x*N + y] = fbox[id];
+            }
+        }
+
+        /* Gather all the slices on all the nodes */
+        MPI_Allgather(our_slice, NX * N, MPI_DOUBLE_COMPLEX, plane, NX * N,
+                      MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD);
+
+        /* Enforce hermiticity: f(k) = f*(-k) */
+        for (int x=X0; x<X0 + NX; x++) {
+            for (int y=0; y<N; y++) {
+                if (x > N/2) continue; //skip the upper half
+                if ((x == 0 || x == N/2) && y > N/2) continue; //skip two strips
+
+                int invx = (x > 0) ? N - x : 0;
+                int invy = (y > 0) ? N - y : 0;
+                int invz = (z > 0) ? N - z : 0; //maps 0->0 and (N/2)->(N/2)
+
+                int id = row_major_half(x-X0,y,z,N);
+
+                /* If the point maps to itself, throw away the imaginary part */
+                if (invx == x && invy == y && invz == z) {
+                    fbox[id] = creal(fbox[id]);
+                } else {
+                    /* Otherwise, set it to the conjugate of its mirror point */
+                    fbox[id] = conj(plane[invx*N + invy]);
+                }
+            }
+        }
+
+        /* Wait until all the ranks are finished */
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    /* Free the memory */
+    fftw_free(our_slice);
+    fftw_free(plane);
+
+    // fftw_complex *box = fftw_alloc_complex(N * N * (N/2+1));
+    //
+    // /* Gather all the slices on all the nodes */
+    // MPI_Allgather(fbox, NX * N * (N/2+1), MPI_DOUBLE_COMPLEX, box, NX * N * (N/2+1),
+    //               MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD);
+    //
+    // /* Check that it is hermitian */
     // for (int x=0; x<N; x++) {
     //     for (int y=0; y<N; y++) {
     //         for (int z=0; z<=N/2; z+=N/2) { //loops over z=0, N/2 only
@@ -65,63 +128,14 @@ int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
     //
     //             int id = row_major_half(x,y,z,N);
     //             int invid = row_major_half(invx,invy,invz,N);
-    //             fbox[id] =  conj(fbox[invid]);
+    //
+    //             if (box[id] != conj(box[invid]))
+    //             printf("Not Hermitian at %d %d %d\n", x, y, z);
     //         }
     //     }
     // }
-
-    return 0;
-}
-
-int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
-                         double boxlen, rng_state *state, MPI_Comm comm) {
-    const double dk = 2 * M_PI / boxlen;
-    const double boxvol = boxlen*boxlen*boxlen;
-    const double factor = sqrt(boxvol/2);
-
-    /* Fetch the mirror slice to enforce hermiticity: f(k) = f*(-k) */
-    fftw_complex *mirror = fftw_alloc_complex(NX * (N/2+1) * 1);
-
-
-    if (X0 >= N/2) {
-        printf("X0=%d\n", X0);
-        /* Send */
-        for (int x=0; x<NX; x++) {
-            for (int y=N/2; y<N; y++) {
-                int z = 0;
-                int id = row_major_half(x,y,z,N);
-                mirror[x*(N/2+1) + y];
-            }
-        }
-
-        int ranks = N/NX;
-        int rank = X0/NX;
-        int dest = ranks - rank - 1;
-        printf("rank=%d, sending to %d (%d)\n", rank, dest, ranks);
-        MPI_Send(mirror, NX*(N/2+1), MPI_DOUBLE, dest, 0, comm);
-    } else {
-        /* Receive */
-        int ranks = N/NX;
-        int rank = X0/NX;
-        int src = ranks - rank - 1;
-        printf("rank=%d, getting from %d (%d)\n", rank, src, ranks);
-        MPI_Recv(mirror, NX*(N/2+1), MPI_DOUBLE, src, 0, comm, NULL);
-
-        /* Enforce hermiticity: f(k) = f*(-k) */
-        for (int x=0; x<NX; x++) {
-            for (int y=0; y<N; y++) {
-                int z = 0;
-
-                int invx = (x > 0) ? NX - x : 0;
-                int invy = (y > 0) ? N - y : 0;
-                int invz = (z > 0) ? N - z : 0;
-
-                int id = row_major_half(x,y,z,N);
-                int invid = row_major_half(invx,invy,invz,N);
-                fbox[id] =  conj(mirror[invx*(N/2+1) + invy]);
-            }
-        }
-    }
+    //
+    // fftw_free(box);
 
     return 0;
 }
