@@ -17,21 +17,16 @@
  *
  ******************************************************************************/
 
-#ifndef OUTPUT_MPI_H
-#define OUTPUT_MPI_H
+#ifndef GRF_NGENICLIKE_H
+#define GRF_NGENICLIKE_H
 
-#define HDF5_PARALLEL_IO_MAX_BYTES 2000000000LL
-
+#include <complex.h>
+#include <fftw3.h>
 #include <mpi.h>
-#include <hdf5.h>
 
-hid_t openFile_MPI(MPI_Comm comm, const char *fname);
-hid_t createFile_MPI(MPI_Comm comm, const char *fname);
-int createFieldGroup_MPI(int N, int NX, hid_t h_file);
+#include "mitos.h"
 
-int writeFieldFile_MPI(double *data, int N, int NX, int X0, double boxlen, MPI_Comm comm, const char *fname);
-int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char *fname);
-int writeData_MPI(const double *data, int N, int NX, int X0,
-                  MPI_Comm comm, const hid_t h_file);
+int generate_ngeniclike_grf(fftw_complex *fbox, int N, int NX, int X0,
+                            long int block_size, double boxlen, MPI_Comm comm);
 
 #endif
