@@ -50,6 +50,11 @@ hid_t createFile_MPI(MPI_Comm comm, const char *fname) {
 }
 
 int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
+    if (NX * N * (N+2) * sizeof(double) > HDF5_PARALLEL_IO_MAX_BYTES) {
+        printf("Error: parallel HDF5 cannot handle more than 2GB per chunk.\n");
+        return 1;
+    }
+
     /* Create the Field group */
     hid_t h_grp = H5Gcreate(h_file, "/Field", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
