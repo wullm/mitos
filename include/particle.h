@@ -40,4 +40,8 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
                           const struct particle_type *ptype, int chunk,
                           long long int id_first_particle);
 
+int genParticlesFromGrid_local(struct particle **particles, const struct params *pars,
+                               const struct units *us, const struct cosmology *cosmo,
+                               const struct particle_type *ptype, int MX, int X_min,
+                               int offset, long long int id_first_particle);
 #endif

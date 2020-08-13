@@ -23,11 +23,15 @@
 #include <math.h>
 
 
-int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
-                         double boxlen, rng_state *state) {
-    const double dk = 2 * M_PI / boxlen;
+int generate_complex_grf(struct distributed_grid *dg, rng_state *state) {
+    /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
+    const int N = dg->N;
+    const int NX = dg->NX;
+    const int X0 = dg->X0; //the local portion starts at X = X0
+    const double boxlen = dg->boxlen;
     const double boxvol = boxlen*boxlen*boxlen;
     const double factor = sqrt(boxvol/2);
+    const double dk = 2 * M_PI / boxlen;
 
     /* Refer to fourier.pdf for details. */
 
@@ -37,19 +41,19 @@ int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
      */
 
     double kx,ky,kz,k;
-    for (int x=0; x<NX; x++) {
+    for (int x=X0; x<X0 + NX; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 /* Calculate the wavevector */
-                fft_wavevector(x+X0, y, z, N, dk, &kx, &ky, &kz, &k);
+                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* Ignore the constant DC mode */
                 if (k > 0) {
                     double a = sampleNorm(state) * factor;
                     double b = sampleNorm(state) * factor;
-                    fbox[row_major_half(x,y,z,N)] = a + b * I;
+                    dg->fbox[row_major_half_dg(x,y,z,dg)] = a + b * I;
                 } else {
-                    fbox[row_major_half(x,y,z,N)] = 0;
+                    dg->fbox[row_major_half_dg(x,y,z,dg)] = 0;
                 }
             }
         }
@@ -58,8 +62,11 @@ int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
     return 0;
 }
 
-int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
-                         double boxlen, rng_state *state, MPI_Comm comm) {
+int enforce_hermiticity(struct distributed_grid *dg) {
+    /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
+    const int N = dg->N;
+    const int NX = dg->NX;
+    const int X0 = dg->X0; //the local portion starts at X = X0
 
     /* The first (k=0) and last (k=N/2+1) planes need hermiticity enforced */
 
@@ -71,16 +78,16 @@ int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
     for (int z=0; z<=N/2; z+=N/2) { //runs over z=0 and z=N/2
 
         /* Fill our local slice of the plane */
-        for (int x=0; x<NX; x++) {
+        for (int x=X0; x<X0 + NX; x++) {
             for (int y=0; y<N; y++) {
-                int id = row_major_half(x,y,z,N);
-                our_slice[x*N + y] = fbox[id];
+                int id = row_major_half_dg(x,y,z,dg);
+                our_slice[(x-X0)*N + y] = dg->fbox[id];
             }
         }
 
         /* Gather all the slices on all the nodes */
         MPI_Allgather(our_slice, NX * N, MPI_DOUBLE_COMPLEX, plane, NX * N,
-                      MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD);
+                      MPI_DOUBLE_COMPLEX, dg->comm);
 
         /* Enforce hermiticity: f(k) = f*(-k) */
         for (int x=X0; x<X0 + NX; x++) {
@@ -92,20 +99,20 @@ int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
                 int invy = (y > 0) ? N - y : 0;
                 int invz = (z > 0) ? N - z : 0; //maps 0->0 and (N/2)->(N/2)
 
-                int id = row_major_half(x-X0,y,z,N);
+                int id = row_major_half_dg(x,y,z,dg);
 
                 /* If the point maps to itself, throw away the imaginary part */
                 if (invx == x && invy == y && invz == z) {
-                    fbox[id] = creal(fbox[id]);
+                    dg->fbox[id] = creal(dg->fbox[id]);
                 } else {
                     /* Otherwise, set it to the conjugate of its mirror point */
-                    fbox[id] = conj(plane[invx*N + invy]);
+                    dg->fbox[id] = conj(plane[invx*N + invy]);
                 }
             }
         }
 
         /* Wait until all the ranks are finished */
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(dg->comm);
     }
 
     /* Free the memory */

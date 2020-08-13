@@ -94,33 +94,36 @@ int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char
     return 0;
 }
 
+int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
+
+        /* Create the file */
+        hid_t h_file = createFile_MPI(dg->comm, fname);
+
+        /* Write the header */
+        int err = writeFieldHeader(dg->boxlen, h_file);
+        if (err > 0) return err;
+
+        /* Create the Field group */
+        err = createFieldGroup_MPI(dg->N, dg->NX, h_file);
+        if (err > 0) return err;
+
+        /* Write the data */
+        err = writeData_dg(dg, h_file);
+        if (err > 0) return 0;
+
+        /* Close the file */
+        H5Fclose(h_file);
+
+        return 0;
+}
+
 
 /* Create hdf5 file for a 3-dimensional grid and immediately write the data */
 int writeFieldFile_MPI(double *data, int N, int NX, int X0, double boxlen, MPI_Comm comm, const char *fname) {
-
-    /* Create the file */
-    hid_t h_file = createFile_MPI(comm, fname);
-
-    /* Write the header */
-    int err = writeFieldHeader(boxlen, h_file);
-    if (err > 0) return err;
-
-    /* Create the Field group */
-    err = createFieldGroup_MPI(N, NX, h_file);
-    if (err > 0) return err;
-
-    /* Write the data */
-    err = writeData_MPI(data, N, NX, X0, comm, h_file);
-    if (err > 0) return 0;
-
-    /* Close the file */
-    H5Fclose(h_file);
-
     return 0;
 }
 
-int writeData_MPI(const double *data, int N, int NX, int X0,
-                  MPI_Comm comm, hid_t h_file) {
+int writeData_dg(struct distributed_grid *dg, hid_t h_file) {
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
@@ -133,17 +136,17 @@ int writeData_MPI(const double *data, int N, int NX, int X0,
 
     /* The chunk in question */
     const hsize_t chunk_rank = 3;
-    const hsize_t chunk_dims[3] = {NX, N, N+2}; //3D space
+    const hsize_t chunk_dims[3] = {dg->NX, dg->N, dg->N+2}; //3D space
 
     /* Offset of the chunk inside the grid */
-    const hsize_t chunk_offset[3] = {X0, 0, 0};
+    const hsize_t chunk_offset[3] = {dg->X0, 0, 0};
 
     /* Create memory space for the chunk */
     hid_t h_memspace = H5Screate_simple(chunk_rank, chunk_dims, NULL);
     H5Sselect_hyperslab(h_space, H5S_SELECT_SET, chunk_offset, NULL, chunk_dims, NULL);
 
     /* Write the data */
-    hid_t h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, data);
+    hid_t h_err = H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, dg->box);
     if (h_err < 0) {
         printf("Error: writing chunk of hdf5 data.\n");
         return 1;

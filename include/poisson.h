@@ -23,23 +23,23 @@
 #include <fftw3.h>
 #include "input.h"
 #include "particle_types.h"
+#include "distributed_grid.h"
 
 /* Solve the Poisson equation D.phi = f using FFT */
 int solvePoisson(double *phi, double *f, int N, double boxlen);
+int solvePoisson_dg(struct distributed_grid *dg);
 
 /* Solve the Poisson equation for each density grid */
 int computePotentialGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,
                           struct particle_type *types, const char *grid_name,
                           const char *out_grid_name, char withELPT,
-                          int N, int NX, int X0, long int block_size,
-                          double boxlen, MPI_Comm comm);
+                          MPI_Comm comm);
 /* For each particle type, compute derivatives of a certain grid type */
 int computeGridDerivatives(const struct params *pars, const struct units *us,
                            const struct cosmology *cosmo,
                            struct particle_type *types, const char *grid_name,
-                           const char *out_grid_name, int N, int NX, int X0,
-                           long int block_size, double boxlen, MPI_Comm comm);
+                           const char *out_grid_name, MPI_Comm comm);
 /* For each particle type, compute higher order perturbation theory grids */
 int computePerturbedGrids(const struct params *pars, const struct units *us,
                           const struct cosmology *cosmo,

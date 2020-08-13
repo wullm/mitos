@@ -22,12 +22,10 @@
 
 #include <complex.h>
 #include <fftw3.h>
+#include <fftw3-mpi.h>
 #include <math.h>
 
-#include <fftw3-mpi.h>
-
-#define wrap(i,N) ((i)%(N)+(N))%(N)
-#define fwrap(x,L) fmod(fmod((x),(L))+(L),(L))
+#include "distributed_grid.h"
 
 /* A structure for calculating kernel functions */
 struct kernel {
@@ -40,6 +38,7 @@ struct kernel {
     void *params;
 };
 
+/* DEPRECATED */
 static inline int row_major(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
@@ -50,7 +49,7 @@ static inline int row_major(int i, int j, int k, int N) {
 static inline int row_major_half(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
-    k = wrap(k,N);
+    k = wrap(k,N/2+1);
     return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
@@ -88,6 +87,14 @@ int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                       int NX, int X0, double boxlen,
                       void (*compute)(struct kernel* the_kernel),
                       void *params);
+
+/* Functions for distributed grids */
+int fft_r2c_dg(struct distributed_grid *dg);
+int fft_c2r_dg(struct distributed_grid *dg);
+int fft_apply_kernel_dg(struct distributed_grid *dg_write,
+                        struct distributed_grid *dg_read,
+                        void (*compute)(struct kernel* the_kernel),
+                        void *params);
 
 /* Some useful I/O functions for debugging */
 void write_floats(const char *fname, const float *floats, int n);

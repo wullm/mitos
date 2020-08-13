@@ -25,10 +25,9 @@
 #include <mpi.h>
 
 #include "random.h"
+#include "distributed_grid.h"
 
-int generate_complex_grf(fftw_complex *fbox, int N, int NX, int X0,
-                         double boxlen, rng_state *state);
+int generate_complex_grf(struct distributed_grid *dg, rng_state *state);
+int enforce_hermiticity(struct distributed_grid *dg);
 
-int enforce_hermiticity(fftw_complex *fbox, int N, int NX, int X0,
-                        double boxlen, rng_state *state, MPI_Comm comm);
 #endif

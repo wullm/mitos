@@ -28,6 +28,7 @@ all:
 
 	$(GCC) src/input_mpi.c -c -o lib/input_mpi.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/output_mpi.c -c -o lib/output_mpi.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/distributed_grid.c -c -o lib/distributed_grid.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/header.c -c -o lib/header.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)

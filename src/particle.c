@@ -83,3 +83,48 @@ int genParticles_FromGrid(struct particle **particles, const struct params *pars
 
     return 0;
 }
+
+int genParticlesFromGrid_local(struct particle **particles, const struct params *pars,
+                               const struct units *us, const struct cosmology *cosmo,
+                               const struct particle_type *ptype, int MX, int X_min,
+                               int offset, long long int id_first_particle) {
+
+    long long int partnum = ptype->TotalNumber;
+    long long int chunk_size = ceil((double) partnum / ptype->Chunks);
+    int M = ptype->CubeRootNumber;
+
+    /* Throw an error if the particle number is not a cube */
+    if (M*M*M != partnum) {
+        printf("ERROR: Number is not a cube; cannot generate particles from grid.\n");
+        return 1;
+    }
+
+    /* Physical spacing and mass of the particles */
+    float len = pars->BoxLen;
+    float spacing = len / M;
+    float mass = ptype->Mass;
+
+    int counter = 0;
+
+    for (int x = X_min - offset; x < X_min - offset + MX; x++) {
+        for (int y = 0; y < M; y++) {
+            for (int z = 0; z < M; z++) {
+                long long id = row_major(x, y, z, M) + id_first_particle;
+
+                struct particle *part = &(*particles)[counter];
+                part->X = wrap(x, M) * spacing;
+                part->Y = wrap(y, M) * spacing;
+                part->Z = wrap(z, M) * spacing;
+                part->v_X = 0.f;
+                part->v_Y = 0.f;
+                part->v_Z = 0.f;
+                part->mass = mass;
+                part->id = id;
+
+                counter++;
+            }
+        }
+    }
+
+    return 0;
+}

@@ -62,6 +62,44 @@ int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen) {
     return 0;
 }
 
+
+/* Normalize the complex array after transforming to momentum space */
+int fft_normalize_r2c_dg(struct distributed_grid *dg) {
+    const int N = dg->N;
+    const int NX = dg->NX;
+    const int X0 = dg->X0;
+    const double boxlen = dg->boxlen;
+    const double boxvol = boxlen*boxlen*boxlen;
+    for (int x=X0; x<X0 + NX; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<=N/2; z++) {
+                dg->fbox[row_major_half_dg(x, y, z, dg)] *= boxvol/(N*N*N);
+            }
+        }
+    }
+
+    return 0;
+}
+
+/* Normalize the real array after transforming to configuration space */
+int fft_normalize_c2r_dg(struct distributed_grid *dg) {
+    const int N = dg->N;
+    const int NX = dg->NX;
+    const int X0 = dg->X0;
+    const double boxlen = dg->boxlen;
+    const double boxvol = boxlen*boxlen*boxlen;
+    for (int x=X0; x<X0 + NX; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<N+2; z++) {
+                dg->box[row_major_dg(x, y, z, dg)] /= boxvol;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
 /* Execute an FFTW plan */
 void fft_execute(fftw_plan plan) {
     fftw_execute(plan);
@@ -140,4 +178,75 @@ void write_doubles_as_floats(const char *fname, const double *doubles, int n) {
   fwrite(floats, sizeof(float), n, f);
   fclose(f);
   free(floats);
+}
+
+int fft_r2c_dg(struct distributed_grid *dg) {
+    /* Create MPI FFTW plan */
+    fftw_plan r2c_mpi = fftw_mpi_plan_dft_r2c_3d(dg->N, dg->N, dg->N, dg->box,
+                                                 dg->fbox, dg->comm, FFTW_ESTIMATE);
+
+    /* Execute the Fourier transform and normalize */
+    fft_execute(r2c_mpi);
+    fft_normalize_r2c_dg(dg);
+
+    /* Destroy the plan */
+    fftw_destroy_plan(r2c_mpi);
+
+    return 0;
+}
+
+
+int fft_c2r_dg(struct distributed_grid *dg) {
+    /* Create MPI FFTW plan */
+    fftw_plan c2r_mpi = fftw_mpi_plan_dft_c2r_3d(dg->N, dg->N, dg->N, dg->fbox,
+                                                 dg->box, dg->comm, FFTW_ESTIMATE);
+
+    /* Execute the Fourier transform and normalize */
+    fft_execute(c2r_mpi);
+    fft_normalize_c2r_dg(dg);
+
+    /* Destroy the plan */
+    fftw_destroy_plan(c2r_mpi);
+
+    return 0;
+}
+
+/* Apply a kernel to a 3D array after transforming to momentum space */
+int fft_apply_kernel_dg(struct distributed_grid *dg_write,
+                        struct distributed_grid *dg_read,
+                        void (*compute)(struct kernel* the_kernel),
+                        void *params) {
+
+    /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
+    const int N = dg_read->N;
+    const int NX = dg_read->NX;
+    const int X0 = dg_read->X0; //the local portion starts at X = X0
+    const double boxlen = dg_read->boxlen;
+    const double dk = 2 * M_PI / boxlen;
+
+    if (dg_read->NX != dg_write->NX || dg_read->N != dg_write->N) {
+        printf("Error: non-matching grid dimensions between read/write.\n");
+        return 1;
+    }
+
+    #pragma omp parallel for
+    for (int x=X0; x<X0 + NX; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<=N/2; z++) {
+                /* Calculate the wavevector */
+                double kx,ky,kz,k;
+                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
+
+                /* Compute the kernel */
+                struct kernel the_kernel = {kx, ky, kz, k, 0.f, params};
+                compute(&the_kernel);
+
+                /* Apply the kernel */
+                const int id = row_major_half_dg(x, y, z, dg_write);
+                dg_write->fbox[id] = dg_read->fbox[id] * the_kernel.kern;
+            }
+        }
+    }
+
+    return 0;
 }

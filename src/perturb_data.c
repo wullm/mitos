@@ -23,10 +23,11 @@
 #include <math.h>
 #include "../include/perturb_data.h"
 #include "../include/titles.h"
+#include "../include/message.h"
 
 /* Read the perturbation data from file */
 int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) {
-    printf("Reading cosmological perturbations from '%s'.\n", pars->PerturbFile);
+    message(pars->rank, "Reading cosmological perturbations from '%s'.\n", pars->PerturbFile);
 
     /* Open the hdf5 file (file exists error handled by HDF5) */
     hid_t h_file = H5Fopen(pars->PerturbFile, H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -175,7 +176,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     const double unit_time_factor = UnitTimeSeconds / us->UnitTimeSeconds;
 
     if (fabs(1./unit_time_factor - 1) > 1e-5 ) {
-      printf("Velocity factor = %e\n", 1./unit_time_factor);
+      message(pars->rank, "Velocity factor = %e\n", 1./unit_time_factor);
     }
 
     /* Perform unit conversions for the transfer functions */
@@ -185,7 +186,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
         double unit_factor = unitConversionFactor(title, unit_length_factor, unit_time_factor);
 
         if (fabs(unit_factor - 1) > 1e-5 ) {
-          printf("Unit conversion factor for '%s' is %f\n", title, unit_factor);
+          message(pars->rank, "Unit conversion factor for '%s' is %f\n", title, unit_factor);
         }
 
         /* Convert from input units to internal units */
@@ -325,7 +326,7 @@ int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title
 int readPerturbParams(struct params *pars, struct units *us,
                       struct perturb_params *ptpars) {
 
-    printf("Reading cosmological parameters from '%s'.\n", pars->PerturbFile);
+    message(pars->rank, "Reading cosmological parameters from '%s'.\n", pars->PerturbFile);
 
     /* Open the hdf5 file (file exists error handled by HDF5) */
     hid_t h_file = H5Fopen(pars->PerturbFile, H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -476,6 +477,6 @@ int cleanPerturbParams(struct perturb_params *ptpars) {
         free(ptpars->M_ncdm_eV);
         free(ptpars->T_ncdm);
     }
-    
+
     return 0;
 }

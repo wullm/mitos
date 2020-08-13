@@ -17,13 +17,41 @@
  *
  ******************************************************************************/
 
-#ifndef INPUT_MPI_H
-#define INPUT_MPI_H
+#ifndef MESSAGE_H
+#define MESSAGE_H
 
-#include "../include/output_mpi.h"
+#include <stdlib.h>
+#include <stdarg.h>
 
-int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
-                  const char *fname);
-int readField_dg(struct distributed_grid *dg, const char *fname);
+#define TXT_RED "\033[31;1m"
+#define TXT_GREEN "\033[32;1m"
+#define TXT_BLUE "\033[34;1m"
+#define TXT_RESET "\033[0m"
+
+static inline void header(int rank, const char *s) {
+    if (rank == 0) {
+        printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
+    }
+}
+
+static inline void message(int rank, const char *format, ...) {
+    if (rank == 0) {
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+    }
+}
+
+static inline void catch_error(int err, const char *format, ...) {
+    if (err > 0) {
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+        exit(err);
+    }
+}
+
 
 #endif

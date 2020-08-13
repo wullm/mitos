@@ -20,10 +20,12 @@
 #ifndef MITOS_H
 #define MITOS_H
 
+
 #include "input.h"
 #include "output.h"
 #include "input_mpi.h"
 #include "output_mpi.h"
+#include "distributed_grid.h"
 #include "header.h"
 #include "random.h"
 #include "fft.h"
@@ -44,10 +46,7 @@
 #include "perturb_data.h"
 #include "perturb_spline.h"
 
-#define TXT_RED "\033[31;1m"
-#define TXT_GREEN "\033[32;1m"
-#define TXT_BLUE "\033[34;1m"
-#define TXT_RESET "\033[0m"
+#include "message.h"
 
 #define GRID_NAME_GAUSSIAN "gaussian_pure"      // the Gaussian random field
 #define GRID_NAME_GAUSSIAN_SMALL "gaussian_small" // a smaller copy of the GRF

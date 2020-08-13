@@ -17,13 +17,32 @@
  *
  ******************************************************************************/
 
-#ifndef INPUT_MPI_H
-#define INPUT_MPI_H
+#include <stdlib.h>
+#include "../include/distributed_grid.h"
 
-#include "../include/output_mpi.h"
+int alloc_local_grid(struct distributed_grid *dg, int N, double boxlen, MPI_Comm comm) {
+    /* Determine the size of the local portion */
+    dg->local_size = fftw_mpi_local_size_3d(N, N, N/2+1, comm, &dg->NX, &dg->X0);
 
-int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
-                  const char *fname);
-int readField_dg(struct distributed_grid *dg, const char *fname);
+    /* Store a reference to the communicator */
+    dg->comm = comm;
 
-#endif
+    /* Store basic attributes */
+    dg->N = N;
+    dg->boxlen = boxlen;
+
+    /* Allocate memory for the complex and real arrays */
+    dg->fbox = fftw_alloc_complex(dg->local_size);
+    dg->box = fftw_alloc_real(2*dg->local_size);
+
+    return 0;
+}
+
+int free_local_grid(struct distributed_grid *dg) {
+
+    /* Free memory */
+    fftw_free(dg->fbox);
+    fftw_free(dg->box);
+
+    return 0;
+}

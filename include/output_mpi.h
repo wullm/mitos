@@ -25,13 +25,16 @@
 #include <mpi.h>
 #include <hdf5.h>
 
+#include "distributed_grid.h"
+
 hid_t openFile_MPI(MPI_Comm comm, const char *fname);
 hid_t createFile_MPI(MPI_Comm comm, const char *fname);
 int createFieldGroup_MPI(int N, int NX, hid_t h_file);
 
 int writeFieldFile_MPI(double *data, int N, int NX, int X0, double boxlen, MPI_Comm comm, const char *fname);
 int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char *fname);
-int writeData_MPI(const double *data, int N, int NX, int X0,
-                  MPI_Comm comm, const hid_t h_file);
+
+int writeData_dg(struct distributed_grid *dg, hid_t h_file);
+int writeFieldFile_dg(struct distributed_grid *dg, const char *fname);
 
 #endif

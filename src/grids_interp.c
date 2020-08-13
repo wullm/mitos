@@ -22,6 +22,169 @@
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 
+double access_grid(struct left_local_slice *lls, int iX, int iY, int iZ, int N) {
+
+    /* Make sure that the X-coordinate is wrapped around the box */
+    iX = wrap(iX, N);
+
+    /* Are we in the left slice or the local slice? */
+    if (iX >= lls->left_X0 && iX < lls->left_X0 + lls->left_NX) {
+        return lls->left_slice[row_major(iX - lls->left_X0, iY, iZ, N)];
+    } else if (iX >= lls->local_X0 && iX < lls->local_X0 + lls->local_NX) {
+        return lls->local_slice[row_major(iX - lls->local_X0, iY, iZ, N)];
+    } else {
+        printf("ERROR: outside of bounds.\n");
+    }
+
+    return 0;
+}
+
+double gridNGP_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    return access_grid(lls, iX, iY, iZ, N);
+}
+
+double gridCIC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    /* Intepolate the necessary fields with CIC or TSC */
+    double lookLength = 1.0;
+    int lookLftX = (int) floor((X-iX) - lookLength);
+    int lookRgtX = (int) floor((X-iX) + lookLength);
+    int lookLftY = (int) floor((Y-iY) - lookLength);
+    int lookRgtY = (int) floor((Y-iY) + lookLength);
+    int lookLftZ = (int) floor((Z-iZ) - lookLength);
+    int lookRgtZ = (int) floor((Z-iZ) + lookLength);
+
+    /* Accumulate */
+    double sum = 0;
+    for (int i=lookLftX; i<=lookRgtX; i++) {
+        for (int j=lookLftY; j<=lookRgtY; j++) {
+            for (int k=lookLftZ; k<=lookRgtZ; k++) {
+                double xx = fabs(X - (iX+i));
+                double yy = fabs(Y - (iY+j));
+                double zz = fabs(Z - (iZ+k));
+
+                double part_x = xx <= 1 ? 1-xx : 0;
+                double part_y = yy <= 1 ? 1-yy : 0;
+                double part_z = zz <= 1 ? 1-zz : 0;
+
+                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+            }
+        }
+    }
+
+    return sum;
+}
+
+double gridTSC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    /* Intepolate the necessary fields with CIC or TSC */
+    double lookLength = 1.5;
+    int lookLftX = (int) floor((X-iX) - lookLength);
+    int lookRgtX = (int) floor((X-iX) + lookLength);
+    int lookLftY = (int) floor((Y-iY) - lookLength);
+    int lookRgtY = (int) floor((Y-iY) + lookLength);
+    int lookLftZ = (int) floor((Z-iZ) - lookLength);
+    int lookRgtZ = (int) floor((Z-iZ) + lookLength);
+
+    /* Accumulate */
+    double sum = 0;
+    for (int i=lookLftX; i<=lookRgtX; i++) {
+        for (int j=lookLftY; j<=lookRgtY; j++) {
+            for (int k=lookLftZ; k<=lookRgtZ; k++) {
+                double xx = fabs(X - (iX+i));
+                double yy = fabs(Y - (iY+j));
+                double zz = fabs(Z - (iZ+k));
+
+                double part_x = xx < 0.5 ? (0.75-xx*xx)
+                                        : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
+				double part_y = yy < 0.5 ? (0.75-yy*yy)
+                                        : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
+				double part_z = zz < 0.5 ? (0.75-zz*zz)
+                                        : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
+
+                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+            }
+        }
+    }
+
+    return sum;
+}
+
+double gridPCS_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+    /* Convert to float grid dimensions */
+    double X = x*N/boxlen;
+    double Y = y*N/boxlen;
+    double Z = z*N/boxlen;
+
+    /* Integer grid position */
+    int iX = (int) floor(X);
+    int iY = (int) floor(Y);
+    int iZ = (int) floor(Z);
+
+    /* Intepolate the necessary fields with QIP */
+    double lookLength = 2;
+    int lookLftX = (int) floor((X-iX) - lookLength);
+    int lookRgtX = (int) floor((X-iX) + lookLength);
+    int lookLftY = (int) floor((Y-iY) - lookLength);
+    int lookRgtY = (int) floor((Y-iY) + lookLength);
+    int lookLftZ = (int) floor((Z-iZ) - lookLength);
+    int lookRgtZ = (int) floor((Z-iZ) + lookLength);
+
+    /* Accumulate */
+    double sum = 0;
+    for (int i=lookLftX; i<=lookRgtX; i++) {
+        for (int j=lookLftY; j<=lookRgtY; j++) {
+            for (int k=lookLftZ; k<=lookRgtZ; k++) {
+                double xx = fabs(X - (iX+i));
+                double yy = fabs(Y - (iY+j));
+                double zz = fabs(Z - (iZ+k));
+
+                double part_x = xx < 1.0 ? (4. - 6.*xx*xx + 3.*xx*xx*xx)
+                                        : (xx < 2.0 ? (2.-xx)*(2.-xx)*(2.-xx) : 0);
+				double part_y = yy < 1.0 ? (4. - 6.*yy*yy + 3.*yy*yy*yy)
+                                        : (yy < 2.0 ? (2.-yy)*(2.-yy)*(2.-yy) : 0);
+				double part_z = zz < 1.0 ? (4. - 6.*zz*zz + 3.*zz*zz*zz)
+                                        : (zz < 2.0 ? (2.-zz)*(2.-zz)*(2.-zz) : 0);
+
+                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+            }
+        }
+    }
+
+    /* Finally, apply the 1/6^3 factor of the Piecewise Cubic Spline */
+    sum /= 6 * 6 * 6;
+
+    return sum;
+}
+
 double gridNGP(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;

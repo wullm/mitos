@@ -45,7 +45,6 @@ struct params {
     double BoxLen;
     int Splits; //for folding & position dependent power spectra
 
-
     /* Simulation parameters */
     char *Name;
     int MaxParticleTypes;
@@ -64,6 +63,9 @@ struct params {
     /* Input parameters */
     char *InputFilename;
     size_t SlabSize;
+
+    /* MPI rank (generated automatically) */
+    int rank;
 };
 
 struct units {
@@ -110,5 +112,14 @@ int readGRF_H5(double **box, int *N, double *box_len, const char *fname);
 int readGRF_inPlace_H5(double *box, const char *fname);
 int readFieldChunk_H5(double *chunk_data, int N, int num_chunks, int chunk_id,
                       const char *fname);
+
+
+static inline void generateFieldFilename(const struct params *pars, char *fname,
+                                         const char *Identifier, const char *title,
+                                         const char *extra) {
+    sprintf(fname, "%s/%s_%s%s.%s", pars->OutputDirectory, title, extra,
+            Identifier, "hdf5");
+}
+
 
 #endif

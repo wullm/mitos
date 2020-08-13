@@ -32,13 +32,14 @@ all:
 
 	$(GCC) src/input_mpi.c -c -o lib/input_mpi.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/output_mpi.c -c -o lib/output_mpi.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/distributed_grid.c -c -o lib/distributed_grid.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/header.c -c -o lib/header.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/random.c -c -o lib/random.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/fft.c -c -o lib/fft.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/grf.c -c -o lib/grf.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/grf_ngeniclike.c -c -o lib/grf_ngeniclike.o $(INCLUDES) $(CFLAGS)
-	
+
 	$(GCC) src/particle_types.c -c -o lib/particle_types.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/titles.c -c -o lib/titles.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/particle.c -c -o lib/particle.o $(INCLUDES) $(CFLAGS)
