@@ -90,7 +90,6 @@ int genParticlesFromGrid_local(struct particle **particles, const struct params 
                                int offset, long long int id_first_particle) {
 
     long long int partnum = ptype->TotalNumber;
-    long long int chunk_size = ceil((double) partnum / ptype->Chunks);
     int M = ptype->CubeRootNumber;
 
     /* Throw an error if the particle number is not a cube */

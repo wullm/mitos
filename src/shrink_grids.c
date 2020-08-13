@@ -26,6 +26,48 @@
 #include "../include/mitos.h"
 
 /* Shrink an N*N*N grid into an M*M*M grid, where M divides N */
+int shrinkGrid_dg(struct distributed_grid *out, struct distributed_grid *in) {
+    /* Large and small grid sizes */
+    int N = in->N; //large
+    int M = out->N; //small
+
+    int K = N/M;
+    if (K*M != N) {
+        printf("Error: M = %d is not a divisor of N = %d.\n", M, N);
+        return 1;
+    }
+
+    /* Compute small equivalent of large grid MPI slicing */
+    out->NX = in->NX / K;
+    out->X0 = in->X0 / K;
+
+    if (out->NX * K != in->NX || out->X0 * K != in->X0) {
+        printf("Error: small grid does not divide over ranks (%ld, %ld).\n", out->NX, out->X0);
+        return 1;
+    }
+
+    /* Reset the output array (including padding) */
+    memset(out->box, 0, out->NX * M * (M + 2) * sizeof(double));
+
+    /* The zoom factor */
+    double factor = 1.0 / (K * K * K);
+
+    /* Create a zoomed out copy of the input array */
+    for (int i=in->X0; i<in->X0 + in->NX; i++) {
+        for (int j=0; j<N; j++) {
+            for (int k=0; k<N; k++) {
+                int x = floor(i / K);
+                int y = floor(j / K);
+                int z = floor(k / K);
+                out->box[row_major(x - out->X0, y, z, M)] += factor * in->box[row_major(i - in->X0, j, k, N)];
+            }
+        }
+    }
+
+    return 0;
+}
+
+/* Shrink an N*N*N grid into an M*M*M grid, where M divides N */
 int shrinkGrid(double *out, const double *in, int M, int N) {
     int K = N/M;
     if (K*M != N) {

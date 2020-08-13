@@ -22,6 +22,7 @@
 #include <math.h>
 #include "../include/particle_types.h"
 #include "../include/titles.h"
+#include "../include/message.h"
 
 int readTypes(struct params *pars, struct particle_type **tps, const char *fname) {
     /* We need look for no more than this many particle types */
@@ -151,8 +152,8 @@ int retrieveDensities(struct params *pars, struct cosmology *cosmo,
         double rho = Omega * cosmo->rho_crit * ptype->Multiplicity;
         double Mass = rho * box_vol / ptype->TotalNumber;
 
-        printf("Particle type '%s' has [Omega, Multiplicity, Mass] \t = " \
-               "[%f, %.2f, %f U_M]\n", Identifier, Omega, ptype->Multiplicity, Mass);
+        message(pars->rank, "Particle type '%s' has [Omega, Multiplicity, Mass] \t = " \
+                "[%f, %.2f, %f U_M]\n", Identifier, Omega, ptype->Multiplicity, Mass);
 
         /* Store in the particle-type structure */
         ptype->Omega = Omega;
@@ -198,7 +199,7 @@ int retrieveMicroMasses(struct params *pars, struct cosmology *cosmo,
         /* Also retrieve the temperature */
         ptype->MicroscopyTemperature = ptpars->T_ncdm[n_ncdm] * ptpars->T_CMB;
 
-        printf("Particle type '%s' has microscopic [M, T] = [%f eV, %f U_T].\n",
+        message(pars->rank, "Particle type '%s' has microscopic [M, T] = [%f eV, %f U_T].\n",
                 Identifier, ptype->MicroscopicMass_eV, ptype->MicroscopyTemperature);
     }
 

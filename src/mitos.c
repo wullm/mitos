@@ -167,14 +167,26 @@ int main(int argc, char *argv[]) {
     catch_error(err, "Error while writing '%s'.\n", fname);
     message(rank, "Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
 
-    // /* Create a smaller (zoomed out) copy of the Gaussian random field */
-    // if (pars.SmallGridSize > 0) {
-    //     char small_fname[DEFAULT_STRING_LENGTH];
-    //     sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
-    //     int errs = shrinkGridExport(pars.SmallGridSize, small_fname, grf_fname);
-    //     if (errs > 0) exit(1);
-    //     printf("Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
-    // }
+    /* Create a smaller (zoomed out) copy of the Gaussian random field */
+    if (pars.SmallGridSize > 0) {
+        /* Allocate distributed memory arrays for the smaller grid */
+        struct distributed_grid grf_small;
+        alloc_local_grid(&grf_small, pars.SmallGridSize, boxlen, MPI_COMM_WORLD);
+
+        /* Shrink the larger grf grid */
+        shrinkGrid_dg(&grf_small, &grf);
+
+        /* Generate a filename */
+        char small_fname[DEFAULT_STRING_LENGTH];
+        sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+
+        /* Export the small grid */
+        writeFieldFile_dg(&grf_small, small_fname);
+
+        /* Free the small grid */
+        free_local_grid(&grf_small);
+        message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+    }
 
     /* Go back to momentum space */
     fft_r2c_dg(&grf);
@@ -400,7 +412,6 @@ int main(int argc, char *argv[]) {
     /* Now open the file in parallel mode */
     hid_t h_out_file = openFile_MPI(MPI_COMM_WORLD, out_fname);
 
-    printf("ALL GOOD\n");
     MPI_Barrier(MPI_COMM_WORLD);
 
     /* For each user-defined particle type */
@@ -486,14 +497,20 @@ int main(int argc, char *argv[]) {
         hid_t h_sspace = H5Dget_space(h_data);
         H5Dclose(h_data);
 
-        /* Send our slice to the right and receive from the left */
+        /* When accessing the displacement & velocity grids, we need to account
+         * for the fact that each rank only contains a slice of the grid.
+         * To enable wrapping, we send a slice to the neighbour rank.
+         */
+
+        /* Send coordinates of our slice to the right and receive from the left */
         int local_NX_X0[] = {grf.NX, grf.X0};
         int left_NX_X0[2];
 
+        /* IDs of the neighbour ranks */
         int left_rank = (rank > 0) ? rank - 1 : MPI_Rank_Count-1;
         int right_rank = (rank + 1) % MPI_Rank_Count;
 
-        /* Start receiving on rank other than the first */
+        /* Send first on rank 0, receive first on the others */
         if (rank != 0) {
             MPI_Recv(&left_NX_X0, 2, MPI_INT, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Send(&local_NX_X0, 2, MPI_INT, right_rank, 0, MPI_COMM_WORLD);
@@ -502,12 +519,12 @@ int main(int argc, char *argv[]) {
             MPI_Recv(&left_NX_X0, 2, MPI_INT, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
-        printf("%d:  our size = %d, their size = %d\n", rank, local_NX_X0[1], left_NX_X0[1]);
-
-        int local_NX = local_NX_X0[0];
-        int left_NX = left_NX_X0[0];
-        int local_X0 = local_NX_X0[1];
+        /* The left slice runs from left_X0 <= X < left_X0 + left_NX */
         int left_X0 = left_NX_X0[1];
+        int left_NX = left_NX_X0[0];
+        /* The local slice runs from local_X0 <= X < local_X0 + local_NX */
+        int local_X0 = local_NX_X0[1];
+        int local_NX = local_NX_X0[0];
 
         /* Sanity check */
         assert(local_X0 == wrap(left_X0 + left_NX, N));
@@ -525,12 +542,6 @@ int main(int argc, char *argv[]) {
         lls.left_NX = left_NX;
         lls.left_X0 = left_X0;
 
-        /* Allocate enough memory for our chunk of particles */
-        struct particle *parts = malloc(local_NX * N * N * sizeof(struct particle));
-        // allocParticles(&parts, &pars, ptype);
-
-        MPI_Barrier(MPI_COMM_WORLD);
-
         /* The dimensions of this chunk */
         int M = ptype->CubeRootNumber;
         double fac = (double) M / N;
@@ -543,18 +554,17 @@ int main(int argc, char *argv[]) {
         const hsize_t remaining = ptype->TotalNumber - start;
         const hsize_t chunk_size = MX * M * M;
 
-        /* We will offset the particles by MX/2, so we can use the left slice */
-        int offset = MX/2;
+        /* Allocate enough memory for our chunk of particles */
+        struct particle *parts = malloc(chunk_size * sizeof(struct particle));
 
-        printf("%d: %d %d\n", rank, X_min, X_max);
+        /* We will offset the particles by MX/2, so we can wrap easily */
+        int offset = MX/2;
 
         /* Sanity check */
         assert(MX * M * M <= remaining);
 
-        printf("%d has %lld particles (%lld remaining)\n", rank, chunk_size, remaining);
-
-        // genParticles_FromGrid(&parts, &pars, &us, &cosmo, ptype, chunk, id_first_particle);
-        genParticlesFromGrid_local(&parts, &pars, &us, &cosmo, ptype, MX, X_min, offset, id_first_particle);
+        genParticlesFromGrid_local(&parts, &pars, &us, &cosmo, ptype, MX,
+                                   X_min, offset, id_first_particle);
 
         /* Interpolating displacements at the pre-initial particle locations */
         /* For x, y, and z */
@@ -566,6 +576,7 @@ int main(int argc, char *argv[]) {
 
             /* Read our slice of the displacement grid */
             int err = readField_MPI(local_slice, N, local_NX, local_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Send our slice to the right, receive from the left (start with 0) */
             if (rank != 0) {
@@ -607,6 +618,7 @@ int main(int argc, char *argv[]) {
 
             /* Read our slice of the velocity grid */
             int err = readField_MPI(local_slice, N, local_NX, local_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Send our slice to the right, receive from the left (start with 0) */
             if (rank != 0) {
@@ -788,6 +800,7 @@ int main(int argc, char *argv[]) {
     H5Fclose(h_out_file);
 
     /* Done with MPI parallelization */
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 
     /* Clean up */
@@ -799,6 +812,7 @@ int main(int argc, char *argv[]) {
 
     /* Release the interpolation splines */
     cleanPerturbSpline(&spline);
+
 
     /* Timer */
     gettimeofday(&stop, NULL);
