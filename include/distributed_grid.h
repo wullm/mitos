@@ -77,7 +77,7 @@ static inline int row_major_dg(int i, int j, int k, struct distributed_grid *dg)
     /* Wrap global coordinates */
     i = wrap(i,dg->N);
     j = wrap(j,dg->N);
-    k = wrap(k,dg->N);
+    k = wrap(k,dg->N + 2); //padding
 
     /* Map to local slice (no out of bounds handling) */
     i = i - dg->X0;
