@@ -429,8 +429,6 @@ int main(int argc, char *argv[]) {
     /* Now open the file in parallel mode */
     hid_t h_out_file = openFile_MPI(MPI_COMM_WORLD, out_fname);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     /* For each user-defined particle type */
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
         /* The current particle type */
@@ -533,10 +531,10 @@ int main(int argc, char *argv[]) {
         const hsize_t chunk_size = MX * M * M;
 
         /* Sanity check */
-        assert(MX * M * M <= remaining);
-        assert((local_X0 + local_NX) < N || MX * M * M == remaining);
+        assert(MX * M * M <= remaining); //not out of bounds
+        assert((local_X0 + local_NX) < N || MX * M * M == remaining); //exhaustive
 
-        /* Allocate enough memory for our chunk of particles */
+        /* Allocate memory for our local chunk of particles */
         struct particle *parts = malloc(chunk_size * sizeof(struct particle));
 
         /* Generate the particles */
@@ -544,7 +542,7 @@ int main(int argc, char *argv[]) {
         genParticlesFromGrid_local(&parts, &pars, &us, &cosmo, ptype, MX,
                                    X_min, offset, id_first_particle);
 
-        /* We will also read slivers on both the left and the right */
+        /* We will also read slivers of the grids on both the left and the right */
         int extra_width = 3; //piecewise cubic spline needs 2 on each side
         int left_sliver_X0 = wrap(local_X0 - extra_width, N);
         int right_sliver_X0 = wrap(local_X0 + local_NX, N);
