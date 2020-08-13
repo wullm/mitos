@@ -67,6 +67,18 @@ int enforce_hermiticity(struct distributed_grid *dg) {
     const int N = dg->N;
     const int NX = dg->NX;
     const int X0 = dg->X0; //the local portion starts at X = X0
+    const int slice_size = NX * N;
+    const int slice_offset = X0 * N;
+
+    /* Get the number of ranks */
+    int MPI_Rank_Count;
+    MPI_Comm_size(MPI_COMM_WORLD, &MPI_Rank_Count);
+
+    /* Get the X-dimension locations of the slices on each rank */
+    int *slice_sizes = malloc(MPI_Rank_Count * sizeof(int));
+    int *slice_offsets = malloc(MPI_Rank_Count * sizeof(int));
+    MPI_Allgather(&slice_size, 1, MPI_INT, slice_sizes, 1, MPI_INT, dg->comm);
+    MPI_Allgather(&slice_offset, 1, MPI_INT, slice_offsets, 1, MPI_INT, dg->comm);
 
     /* The first (k=0) and last (k=N/2+1) planes need hermiticity enforced */
 
@@ -86,8 +98,8 @@ int enforce_hermiticity(struct distributed_grid *dg) {
         }
 
         /* Gather all the slices on all the nodes */
-        MPI_Allgather(our_slice, NX * N, MPI_DOUBLE_COMPLEX, plane, NX * N,
-                      MPI_DOUBLE_COMPLEX, dg->comm);
+        MPI_Allgatherv(our_slice, NX * N, MPI_DOUBLE_COMPLEX, plane, slice_sizes,
+                       slice_offsets, MPI_DOUBLE_COMPLEX, dg->comm);
 
         /* Enforce hermiticity: f(k) = f*(-k) */
         for (int x=X0; x<X0 + NX; x++) {
@@ -118,6 +130,8 @@ int enforce_hermiticity(struct distributed_grid *dg) {
     /* Free the memory */
     fftw_free(our_slice);
     fftw_free(plane);
+    free(slice_sizes);
+    free(slice_offsets);
 
     // fftw_complex *box = fftw_alloc_complex(N * N * (N/2+1));
     //
