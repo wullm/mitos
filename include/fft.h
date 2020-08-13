@@ -53,8 +53,8 @@ static inline int row_major_half(int i, int j, int k, int N) {
     return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
-static inline int row_major_padded(int i, int j, int k, int N, int NX) {
-    i = wrap(i,NX);
+static inline int row_major_padded(int i, int j, int k, int N) {
+    i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N+2);
     return i*N*(N+2) + j*(N+2) + k;

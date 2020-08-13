@@ -37,11 +37,11 @@ double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N) 
 
     /* Are we in the local slice or should we use the left/right slivers? */
     if (iX >= cX0 && iX < cX0 + cNX) {
-        return lrs->local_slice[row_major(iX - cX0, iY, iZ, N)];
+        return lrs->local_slice[row_major_padded(iX - cX0, iY, iZ, N)];
     } else if (iX >= lX0 && iX < lX0 + lNX) {
-        return lrs->left_slice[row_major(iX - lX0, iY, iZ, N)];
+        return lrs->left_slice[row_major_padded(iX - lX0, iY, iZ, N)];
     } else if (iX >= rX0 && iX < rX0 + rNX) {
-        return lrs->right_slice[row_major(iX - rX0, iY, iZ, N)];
+        return lrs->right_slice[row_major_padded(iX - rX0, iY, iZ, N)];
     } else {
         printf("ERROR: outside of bounds %d %d %d.\n", iX, lX0, rX0 + rNX);
     }

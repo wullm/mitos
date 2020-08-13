@@ -54,7 +54,7 @@ int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen) {
     for (int x=0; x<NX; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<N+2; z++) {
-                arr[row_major_padded(x, y, z, N, NX)] /= boxvol;
+                arr[row_major_padded(x, y, z, N)] /= boxvol;
             }
         }
     }
