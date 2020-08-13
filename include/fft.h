@@ -56,7 +56,7 @@ static inline int row_major_half(int i, int j, int k, int N) {
 static inline int row_major_padded(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
-    k = wrap(k,N+2);
+    k = wrap(k,N); //we don't ever want to access the padded elements
     return i*N*(N+2) + j*(N+2) + k;
 }
 
