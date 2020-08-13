@@ -22,24 +22,34 @@
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 
-double access_grid(struct left_local_slice *lls, int iX, int iY, int iZ, int N) {
+double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N) {
 
     /* Make sure that the X-coordinate is wrapped around the box */
     iX = wrap(iX, N);
 
-    /* Are we in the left slice or the local slice? */
-    if (iX >= lls->left_X0 && iX < lls->left_X0 + lls->left_NX) {
-        return lls->left_slice[row_major(iX - lls->left_X0, iY, iZ, N)];
-    } else if (iX >= lls->local_X0 && iX < lls->local_X0 + lls->local_NX) {
-        return lls->local_slice[row_major(iX - lls->local_X0, iY, iZ, N)];
+    /* The edges to be checked */
+    const int lX0 = lrs->left_X0;
+    const int cX0 = lrs->local_X0;
+    const int rX0 = lrs->right_X0;
+    const int lNX = lrs->left_NX;
+    const int cNX = lrs->local_NX;
+    const int rNX = lrs->right_NX;
+
+    /* Are we in the local slice or should we use the left/right slivers? */
+    if (iX >= cX0 && iX < cX0 + cNX) {
+        return lrs->local_slice[row_major(iX - cX0, iY, iZ, N)];
+    } else if (iX >= lX0 && iX < lX0 + lNX) {
+        return lrs->left_slice[row_major(iX - lX0, iY, iZ, N)];
+    } else if (iX >= rX0 && iX < rX0 + rNX) {
+        return lrs->right_slice[row_major(iX - rX0, iY, iZ, N)];
     } else {
-        printf("ERROR: outside of bounds.\n");
+        printf("ERROR: outside of bounds %d %d %d.\n", iX, lX0, rX0 + rNX);
     }
 
     return 0;
 }
 
-double gridNGP_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+double gridNGP_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
     double Y = y*N/boxlen;
@@ -50,10 +60,10 @@ double gridNGP_local(struct left_local_slice *lls, double x, double y, double z,
     int iY = (int) floor(Y);
     int iZ = (int) floor(Z);
 
-    return access_grid(lls, iX, iY, iZ, N);
+    return access_grid(lrs, iX, iY, iZ, N);
 }
 
-double gridCIC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+double gridCIC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
     double Y = y*N/boxlen;
@@ -86,7 +96,7 @@ double gridCIC_local(struct left_local_slice *lls, double x, double y, double z,
                 double part_y = yy <= 1 ? 1-yy : 0;
                 double part_z = zz <= 1 ? 1-zz : 0;
 
-                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+                sum += access_grid(lrs, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
             }
         }
     }
@@ -94,7 +104,7 @@ double gridCIC_local(struct left_local_slice *lls, double x, double y, double z,
     return sum;
 }
 
-double gridTSC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+double gridTSC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
     double Y = y*N/boxlen;
@@ -130,7 +140,7 @@ double gridTSC_local(struct left_local_slice *lls, double x, double y, double z,
 				double part_z = zz < 0.5 ? (0.75-zz*zz)
                                         : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
 
-                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+                sum += access_grid(lrs, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
             }
         }
     }
@@ -138,7 +148,7 @@ double gridTSC_local(struct left_local_slice *lls, double x, double y, double z,
     return sum;
 }
 
-double gridPCS_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N) {
+double gridPCS_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
     double Y = y*N/boxlen;
@@ -174,7 +184,7 @@ double gridPCS_local(struct left_local_slice *lls, double x, double y, double z,
 				double part_z = zz < 1.0 ? (4. - 6.*zz*zz + 3.*zz*zz*zz)
                                         : (zz < 2.0 ? (2.-zz)*(2.-zz)*(2.-zz) : 0);
 
-                sum += access_grid(lls, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
+                sum += access_grid(lrs, iX+i, iY+j, iZ+k, N) * (part_x*part_y*part_z);
             }
         }
     }

@@ -212,6 +212,9 @@ int main(int argc, char *argv[]) {
     /* Sanity check */
     assert(grf.local_size == grid.local_size);
     assert(grf.local_size == derivative.local_size);
+    assert(grf.X0 == grid.X0);
+    assert(grf.X0 == derivative.X0);
+
 
     /* We calculate derivatives using FFT kernels */
     const kernel_func derivative_kernels[] = {kernel_dx, kernel_dy, kernel_dz};
@@ -497,74 +500,60 @@ int main(int argc, char *argv[]) {
         hid_t h_sspace = H5Dget_space(h_data);
         H5Dclose(h_data);
 
-        /* When accessing the displacement & velocity grids, we need to account
-         * for the fact that each rank only contains a slice of the grid.
-         * To enable wrapping, we send a slice to the neighbour rank.
-         */
-
-        /* Send coordinates of our slice to the right and receive from the left */
-        int local_NX_X0[] = {grf.NX, grf.X0};
-        int left_NX_X0[2];
-
-        /* IDs of the neighbour ranks */
-        int left_rank = (rank > 0) ? rank - 1 : MPI_Rank_Count-1;
-        int right_rank = (rank + 1) % MPI_Rank_Count;
-
-        /* Send first on rank 0, receive first on the others */
-        if (rank != 0) {
-            MPI_Recv(&left_NX_X0, 2, MPI_INT, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Send(&local_NX_X0, 2, MPI_INT, right_rank, 0, MPI_COMM_WORLD);
-        } else {
-            MPI_Send(&local_NX_X0, 2, MPI_INT, right_rank, 0, MPI_COMM_WORLD);
-            MPI_Recv(&left_NX_X0, 2, MPI_INT, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        /* The left slice runs from left_X0 <= X < left_X0 + left_NX */
-        int left_X0 = left_NX_X0[1];
-        int left_NX = left_NX_X0[0];
         /* The local slice runs from local_X0 <= X < local_X0 + local_NX */
-        int local_X0 = local_NX_X0[1];
-        int local_NX = local_NX_X0[0];
+        int local_X0 = grf.X0;
+        int local_NX = grf.NX;
 
-        /* Sanity check */
-        assert(local_X0 == wrap(left_X0 + left_NX, N));
-
-        /* Allocate memory for our slice and the left-hand slice */
-        double *left_slice = fftw_alloc_real(left_NX * N * (N + 2));
-        double *local_slice = fftw_alloc_real(local_NX * N * (N + 2));
-
-        /* Package the pointers and dimensions of these two slices */
-        struct left_local_slice lls;
-        lls.left_slice = left_slice;
-        lls.local_slice = local_slice;
-        lls.local_NX = local_NX;
-        lls.local_X0 = local_X0;
-        lls.left_NX = left_NX;
-        lls.left_X0 = left_X0;
-
-        /* The dimensions of this chunk */
+        /* The particles are also generated from a grid with dimension M^3 */
         int M = ptype->CubeRootNumber;
+
+        /* Determine what particles belong to this slice */
         double fac = (double) M / N;
-        int X_min = floor(local_X0 * fac);
-        int X_max = floor((local_X0 + local_NX) * fac);
+        int X_min = ceil(local_X0 * fac);
+        int X_max = ceil((local_X0 + local_NX) * fac);
         int MX = X_max - X_min;
 
-        /* The dimensions of this chunk */
+        /* The dimensions of this chunk of particles */
         const hsize_t start = (X_min * M * M);
         const hsize_t remaining = ptype->TotalNumber - start;
         const hsize_t chunk_size = MX * M * M;
 
+        /* Sanity check */
+        assert(MX * M * M <= remaining);
+        assert((local_X0 + local_NX) < N || MX * M * M == remaining);
+
         /* Allocate enough memory for our chunk of particles */
         struct particle *parts = malloc(chunk_size * sizeof(struct particle));
 
-        /* We will offset the particles by MX/2, so we can wrap easily */
-        int offset = MX/2;
-
-        /* Sanity check */
-        assert(MX * M * M <= remaining);
-
+        /* Generate the particles */
+        int offset = 0;
         genParticlesFromGrid_local(&parts, &pars, &us, &cosmo, ptype, MX,
                                    X_min, offset, id_first_particle);
+
+        /* We will also read slivers on both the left and the right */
+        int extra_width = 10;
+        int left_sliver_X0 = wrap(local_X0 - extra_width, N);
+        int right_sliver_X0 = wrap(local_X0 + local_NX, N);
+        int left_sliver_NX = extra_width;
+        int right_sliver_NX = extra_width;
+
+        /* Sanity check: the slivers should not overlap the fold */
+        assert(left_sliver_X0 + extra_width <= N);
+        assert(right_sliver_X0 + extra_width <= N);
+
+        printf("Local [%d, %d] left [%d, %d] right [%d, %d]\n", local_X0, local_X0 + local_NX, left_sliver_X0, left_sliver_X0 + left_sliver_NX, right_sliver_X0, right_sliver_X0 + right_sliver_NX);
+
+        /* Package pointers and dimensions of the local slice and adjacent slivers */
+        struct left_right_slice lrs;
+        lrs.left_slice = fftw_alloc_real(left_sliver_NX * N * (N + 2));
+        lrs.local_slice = fftw_alloc_real(local_NX * N * (N + 2));
+        lrs.right_slice = fftw_alloc_real(right_sliver_NX * N * (N + 2));
+        lrs.local_NX = local_NX;
+        lrs.local_X0 = local_X0;
+        lrs.left_NX = left_sliver_NX;
+        lrs.left_X0 = left_sliver_X0;
+        lrs.right_NX = right_sliver_NX;
+        lrs.right_X0 = right_sliver_X0;
 
         /* Interpolating displacements at the pre-initial particle locations */
         /* For x, y, and z */
@@ -575,17 +564,16 @@ int main(int argc, char *argv[]) {
             // printf("Displacement field read from '%s'.\n", dbox_fname);
 
             /* Read our slice of the displacement grid */
-            int err = readField_MPI(local_slice, N, local_NX, local_X0, MPI_COMM_WORLD, dbox_fname);
+            int err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
             catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
-            /* Send our slice to the right, receive from the left (start with 0) */
-            if (rank != 0) {
-                MPI_Recv(left_slice, 1, MPI_LONG, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Send(local_slice, 1, MPI_LONG, right_rank, 0, MPI_COMM_WORLD);
-            } else {
-                MPI_Send(local_slice, 1, MPI_LONG, right_rank, 0, MPI_COMM_WORLD);
-                MPI_Recv(left_slice, 1, MPI_LONG, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            }
+            /* Read a sliver on the left of the displacement grid */
+            err = readField_MPI(lrs.left_slice, N, lrs.left_NX, lrs.left_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
+
+            /* Read a sliver on the right of the displacement grid */
+            err = readField_MPI(lrs.right_slice, N, lrs.right_NX, lrs.right_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Displace the particles in this chunk */
             #pragma omp parallel for
@@ -596,7 +584,7 @@ int main(int argc, char *argv[]) {
                 double z = parts[i].Z;
 
                 /* Find the displacement */
-                double disp = gridTSC_local(&lls, x, y, z, boxlen, N);
+                double disp = gridTSC_local(&lrs, x, y, z, boxlen, N);
 
                 /* Displace the particles */
                 if (dir == 0) {
@@ -617,17 +605,16 @@ int main(int argc, char *argv[]) {
             // printf("Velocity field read from '%s'.\n", dbox_fname);
 
             /* Read our slice of the velocity grid */
-            int err = readField_MPI(local_slice, N, local_NX, local_X0, MPI_COMM_WORLD, dbox_fname);
+            int err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
             catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
-            /* Send our slice to the right, receive from the left (start with 0) */
-            if (rank != 0) {
-                MPI_Recv(left_slice, 1, MPI_LONG, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Send(local_slice, 1, MPI_LONG, right_rank, 0, MPI_COMM_WORLD);
-            } else {
-                MPI_Send(local_slice, 1, MPI_LONG, right_rank, 0, MPI_COMM_WORLD);
-                MPI_Recv(left_slice, 1, MPI_LONG, left_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            }
+            /* Read a sliver on the left of the velocity grid */
+            err = readField_MPI(lrs.left_slice, N, lrs.left_NX, lrs.left_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
+
+            /* Read a sliver on the right of the velocity grid */
+            err = readField_MPI(lrs.right_slice, N, lrs.right_NX, lrs.right_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Assign velocities to the particles in this chunk */
             #pragma omp parallel for
@@ -638,7 +625,7 @@ int main(int argc, char *argv[]) {
                 double z = parts[i].Z;
 
                 /* Find the velocity in the given direction */
-                double vel = gridTSC_local(&lls, x, y, z, boxlen, N);
+                double vel = gridTSC_local(&lrs, x, y, z, boxlen, N);
 
                 /* Add the velocity component */
                 if (dir == 0) {
@@ -777,8 +764,9 @@ int main(int argc, char *argv[]) {
         H5Sclose(h_ch_sspace);
 
         /* Free memory of the displacement and velocity grids */
-        fftw_free(local_slice);
-        fftw_free(left_slice);
+        fftw_free(lrs.local_slice);
+        fftw_free(lrs.left_slice);
+        fftw_free(lrs.right_slice);
 
         /* Clean up the random sampler if this particle type is thermal */
         if (strcmp(ptype->ThermalMotionType, "") != 0) {

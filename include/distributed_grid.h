@@ -58,6 +58,18 @@ struct distributed_grid {
      */
 };
 
+struct left_right_slice {
+    double *left_slice;
+    double *local_slice;
+    double *right_slice;
+    int left_NX;
+    int left_X0;
+    int local_NX;
+    int local_X0;
+    int right_NX;
+    int right_X0;
+};
+
 int alloc_local_grid(struct distributed_grid *dg, int N, double boxlen, MPI_Comm comm);
 int free_local_grid(struct distributed_grid *dg);
 

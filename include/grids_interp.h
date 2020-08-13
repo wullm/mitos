@@ -21,21 +21,13 @@
 #define GRIDS_INTERP_H
 
 #include "fft.h"
+#include "distributed_grid.h"
 
-struct left_local_slice {
-    double *left_slice;
-    double *local_slice;
-    int left_NX;
-    int left_X0;
-    int local_NX;
-    int local_X0;
-};
-
-double access_grid(struct left_local_slice *lls, int iX, int iY, int iZ, int N);
-double gridNGP_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N);
-double gridCIC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N);
-double gridTSC_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N);
-double gridPCS_local(struct left_local_slice *lls, double x, double y, double z, double boxlen, int N);
+double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N);
+double gridNGP_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridCIC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridTSC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridPCS_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
 
 double gridNGP(const double *box, int N, double boxlen, double x, double y, double z);
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z);
