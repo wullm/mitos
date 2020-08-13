@@ -131,7 +131,6 @@ int main(int argc, char *argv[]) {
         printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
         printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
         printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
-        printf("\n");
 
         header(rank, "Requested Particle Types");
         for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
@@ -531,7 +530,7 @@ int main(int argc, char *argv[]) {
                                    X_min, offset, id_first_particle);
 
         /* We will also read slivers on both the left and the right */
-        int extra_width = 10;
+        int extra_width = 3; //piecewise cubic spline needs 2 on each side
         int left_sliver_X0 = wrap(local_X0 - extra_width, N);
         int right_sliver_X0 = wrap(local_X0 + local_NX, N);
         int left_sliver_NX = extra_width;
@@ -541,7 +540,7 @@ int main(int argc, char *argv[]) {
         assert(left_sliver_X0 + extra_width <= N);
         assert(right_sliver_X0 + extra_width <= N);
 
-        printf("Local [%d, %d] left [%d, %d] right [%d, %d]\n", local_X0, local_X0 + local_NX, left_sliver_X0, left_sliver_X0 + left_sliver_NX, right_sliver_X0, right_sliver_X0 + right_sliver_NX);
+        printf("%03d: Local [%04d, %04d] left [%04d, %04d] right [%04d, %04d] particles [%04d, %04d]\n", rank, local_X0, local_X0 + local_NX, left_sliver_X0, left_sliver_X0 + left_sliver_NX, right_sliver_X0, right_sliver_X0 + right_sliver_NX, X_min, X_max);
 
         /* Package pointers and dimensions of the local slice and adjacent slivers */
         struct left_right_slice lrs;
