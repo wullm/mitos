@@ -46,14 +46,11 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
         return 1;
     }
 
-    /* Copy over the complex GRF */
-    memcpy(grid->fbox, grf->fbox, grid->local_size * sizeof(fftw_complex));
-
     /* Package the perturbation theory interpolation spline parameters */
     struct spline_params sp = {spline, index_src, tau_index, u_tau};
 
     /* Apply the transfer function */
-    fft_apply_kernel_dg(grid, grid, kernel_transfer_function, &sp);
+    fft_apply_kernel_dg(grid, grf, kernel_transfer_function, &sp);
 
     /* Transform back to configuration space */
     fft_c2r_dg(grid);

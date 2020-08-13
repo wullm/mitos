@@ -272,11 +272,8 @@ int main(int argc, char *argv[]) {
 
             /* Compute three derivatives of the potential grid */
             for (int i=0; i<3; i++) {
-                /* Copy over the complex potential grid from grid -> derivative */
-                memcpy(derivative.fbox, grid.fbox, grid.local_size * sizeof(fftw_complex));
-
                 /* Apply the derivative kernel */
-                fft_apply_kernel_dg(&derivative, &derivative, derivative_kernels[i], NULL);
+                fft_apply_kernel_dg(&derivative, &grid, derivative_kernels[i], NULL);
 
                 /* Fourier transform to get the real derivative grid */
                 fft_c2r_dg(&derivative);
@@ -312,11 +309,8 @@ int main(int argc, char *argv[]) {
 
             /* Compute three derivatives of the flux potential grid */
             for (int i=0; i<3; i++) {
-                /* Copy over the complex potential grid from grid -> derivative */
-                memcpy(derivative.fbox, grid.fbox, grid.local_size * sizeof(fftw_complex));
-
                 /* Apply the derivative kernel */
-                fft_apply_kernel_dg(&derivative, &derivative, derivative_kernels[i], NULL);
+                fft_apply_kernel_dg(&derivative, &grid, derivative_kernels[i], NULL);
 
                 /* Fourier transform to get the real derivative grid */
                 fft_c2r_dg(&derivative);
