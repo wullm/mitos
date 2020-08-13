@@ -126,6 +126,7 @@ int main(int argc, char *argv[]) {
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
 
+    /* Print some useful numbers */
     if (rank == 0) {
         header(rank, "Settings");
         printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
@@ -144,7 +145,7 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
 
-    /* Allocate distributed memory arrays */
+    /* Allocate distributed memory arrays (one complex & one real) */
     struct distributed_grid grf;
     alloc_local_grid(&grf, N, boxlen, MPI_COMM_WORLD);
 
@@ -159,32 +160,46 @@ int main(int argc, char *argv[]) {
     /* Execute the Fourier transform and normalize */
     fft_c2r_dg(&grf);
 
-    /* Export the real GRF */
+    /* Generate a filename */
     char grf_fname[DEFAULT_STRING_LENGTH];
     sprintf(grf_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
+
+    /* Export the real GRF */
     int err = writeFieldFile_dg(&grf, grf_fname);
     catch_error(err, "Error while writing '%s'.\n", fname);
     message(rank, "Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
 
     /* Create a smaller (zoomed out) copy of the Gaussian random field */
     if (pars.SmallGridSize > 0) {
-        /* Allocate distributed memory arrays for the smaller grid */
-        struct distributed_grid grf_small;
-        alloc_local_grid(&grf_small, pars.SmallGridSize, boxlen, MPI_COMM_WORLD);
+        /* Size of the smaller grid */
+        int M = pars.SmallGridSize;
 
-        /* Shrink the larger grf grid */
-        shrinkGrid_dg(&grf_small, &grf);
+        /* Allocate memory for the smaller grid on each node */
+        double *grf_small = fftw_alloc_real(M * M * M);
 
-        /* Generate a filename */
-        char small_fname[DEFAULT_STRING_LENGTH];
-        sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+        /* Shrink (our local slice of) the larger grf grid */
+        shrinkGrid_dg(grf_small, &grf, M, N);
 
-        /* Export the small grid */
-        writeFieldFile_dg(&grf_small, small_fname);
+        /* Add the contributions from all nodes and send it to the root node */
+        if (rank == 0) {
+            MPI_Reduce(MPI_IN_PLACE, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        } else {
+            MPI_Reduce(grf_small, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        }
+
+        /* Export the assembled smaller copy on the root node */
+        if (rank == 0) {
+            /* Generate a filename */
+            char small_fname[DEFAULT_STRING_LENGTH];
+            sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+
+            /* Export the small grid */
+            writeGRF_H5(grf_small, M, boxlen, small_fname);
+            message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+        }
 
         /* Free the small grid */
-        free_local_grid(&grf_small);
-        message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+        fftw_free(grf_small);
     }
 
     /* Go back to momentum space */
@@ -200,7 +215,7 @@ int main(int argc, char *argv[]) {
     double u_tau; //spacing between subsequent bins
     perturbSplineFindTau(&spline, cosmo.log_tau_ini, &tau_index, &u_tau);
 
-    /* Allocate a second grid */
+    /* Allocate a second grid to compute densities and potentials */
     struct distributed_grid grid;
     alloc_local_grid(&grid, N, boxlen, MPI_COMM_WORLD);
 

@@ -22,10 +22,11 @@
 
 #include "distributed_grid.h"
 
+/* Shrink an N*N*N distributed grid into an M*M*M grid, where M divides N */
+int shrinkGrid_dg(double *out, struct distributed_grid *in, int M, int N);
+
 /* Shrink an N*N*N grid into an M*M*M grid, where M divides N */
-int shrinkGrid_dg(struct distributed_grid *out, struct distributed_grid *in);
 int shrinkGrid(double *out, const double *in, int M, int N);
-int shrinkGridExport(int M, char *fname_out, char *fname_in);
 
 
 #endif
