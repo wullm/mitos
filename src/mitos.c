@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
             writeFieldFile_dg(&grid, potential_filename);
         }
 
-        /* Generate flux density field and compute the potential */
+        /* Generate flux density field, flux potential, and its derivatives */
         if (strcmp("", velocity_title) != 0) {
 
             message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
@@ -506,6 +506,10 @@ int main(int argc, char *argv[]) {
         hid_t h_sspace = H5Dget_space(h_data);
         H5Dclose(h_data);
 
+        /* We read the displacement & velocity fields as distributed grids.
+         * Once again, the local slice will be of size NX * N * (N + 2),
+         * where the last two rows are padding and contain no useful info. */
+
         /* The local slice runs from local_X0 <= X < local_X0 + local_NX */
         int local_X0 = grf.X0;
         int local_NX = grf.NX;
@@ -537,15 +541,17 @@ int main(int argc, char *argv[]) {
                                    X_min, offset, id_first_particle);
 
         /* We will also read slivers of the grids on both the left and the right */
-        int extra_width = 3; //piecewise cubic spline needs 2 on each side
+        int extra_width = 3; //safe: piecewise cubic spline needs 2 on each side
         int left_sliver_X0 = wrap(local_X0 - extra_width, N);
         int right_sliver_X0 = wrap(local_X0 + local_NX, N);
         int left_sliver_NX = extra_width;
         int right_sliver_NX = extra_width;
 
-        /* Sanity check: the slivers should not overlap the fold */
-        assert(left_sliver_X0 + extra_width <= N);
-        assert(right_sliver_X0 + extra_width <= N);
+        /* Sanity check: we don't want wrapping inside the slivers themselves  */
+        assert(left_sliver_X0 + left_sliver_NX <= N);
+        assert(right_sliver_X0 + right_sliver_NX <= N);
+        assert(left_sliver_X0 >= 0);
+        assert(right_sliver_X0 >= 0);
 
         printf("%03d: Local [%04d, %04d] left [%04d, %04d] right [%04d, %04d] particles [%04d, %04d]\n", rank, local_X0, local_X0 + local_NX, left_sliver_X0, left_sliver_X0 + left_sliver_NX, right_sliver_X0, right_sliver_X0 + right_sliver_NX, X_min, X_max);
 
@@ -567,7 +573,6 @@ int main(int argc, char *argv[]) {
         for (int dir=0; dir<3; dir++) {
             char dbox_fname[DEFAULT_STRING_LENGTH];
             sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
-            // printf("Displacement field read from '%s'.\n", dbox_fname);
 
             /* Read our slice of the displacement grid */
             int err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
