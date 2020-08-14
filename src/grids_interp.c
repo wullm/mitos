@@ -24,8 +24,10 @@
 
 double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N) {
 
-    /* Make sure that the X-coordinate is wrapped around the box */
+    /* Make sure that the coordinates wrap around the box */
     iX = wrap(iX, N);
+    iY = wrap(iY, N);
+    iZ = wrap(iZ, N); //we only want real data, so skip over the padded rows
 
     /* The edges to be checked */
     const int lX0 = lrs->left_X0;

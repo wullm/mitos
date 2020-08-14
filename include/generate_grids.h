@@ -26,15 +26,6 @@
 #include "perturb_spline.h"
 #include "distributed_grid.h"
 
-/* Generate perturbation theory grids by applying transfer functions to
- * the random phases. */
-int generatePerturbationGrids(const struct params *pars, const struct units *us,
-                              const struct cosmology *cosmo,
-                              const struct perturb_spline *spline,
-                              struct particle_type *types, char **titles,
-                              const char *grf_fname, const char *grid_name,
-                              MPI_Comm comm);
-
 int generatePerturbationGrid(const struct cosmology *cosmo,
                              const struct perturb_spline *spline,
                              struct distributed_grid *grf,

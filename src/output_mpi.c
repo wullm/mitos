@@ -74,26 +74,6 @@ int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
     return 0;
 }
 
-/* Create hdf5 file for a 3-dimensional grid, without writing any data */
-int prepareFieldFile_MPI(int N, int NX, double boxlen, MPI_Comm comm, const char *fname) {
-
-    /* Create the file */
-    hid_t h_file = createFile_MPI(comm, fname);
-
-    /* Write the header */
-    int err = writeFieldHeader(boxlen, h_file);
-    if (err > 0) return err;
-
-    /* Create the Field group */
-    err = createFieldGroup_MPI(N, NX, h_file);
-    if (err > 0) return err;
-
-    /* Close the file */
-    H5Fclose(h_file);
-
-    return 0;
-}
-
 int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
 
         /* Create the file */
@@ -115,12 +95,6 @@ int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
         H5Fclose(h_file);
 
         return 0;
-}
-
-
-/* Create hdf5 file for a 3-dimensional grid and immediately write the data */
-int writeFieldFile_MPI(double *data, int N, int NX, int X0, double boxlen, MPI_Comm comm, const char *fname) {
-    return 0;
 }
 
 int writeData_dg(struct distributed_grid *dg, hid_t h_file) {
