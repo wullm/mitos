@@ -58,7 +58,7 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->Chunks = ini_getl(seek_str, "Chunks", 0, fname);
             tp->ChunkSize = ini_getl(seek_str, "ChunkSize", 0, fname);
 
-            tp->CyclesOfELPT = ini_getl(seek_str, "CyclesOfELPT", 0, fname);
+            tp->CyclesOfMongeAmpere = ini_getl(seek_str, "CyclesOfMongeAmpere", 0, fname);
             tp->CyclesOfSPT = ini_getl(seek_str, "CyclesOfSPT", 0, fname);
 
             /* Further strings */

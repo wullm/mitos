@@ -39,7 +39,7 @@
 #include "generate_grids.h"
 #include "shrink_grids.h"
 #include "poisson.h"
-#include "elpt.h"
+#include "monge_ampere.h"
 #include "spt_convolve.h"
 #include "spt_grid.h"
 #include "grids_interp.h"

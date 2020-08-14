@@ -24,7 +24,7 @@
 #include <gsl/gsl_linalg.h>
 
 
-#include "../include/elpt.h"
+#include "../include/monge_ampere.h"
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 #include "../include/output.h"
@@ -43,7 +43,7 @@ static inline double det3(double *M) {
 /* Solve the Monge-Ampere equation |D.phi| = f using FFT, stopping after a
  * given number of cycles. Store the resulting potential phi as a file
  * at fname. We use chunked grids to facilitate fitting more into the memory. */
-int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, char *fname) {
+int solveMongeAmpere(double *f, int N, double boxlen, int cycles, char *basename, char *fname) {
 
     /* Arrays and FFT plans */
     double *box = calloc(N*N*N, sizeof(double));
@@ -70,10 +70,10 @@ int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, cha
     char resid_fname[DEFAULT_STRING_LENGTH];
     char phi_resid_fname[DEFAULT_STRING_LENGTH];
     char dphi_fname[DEFAULT_STRING_LENGTH];
-    sprintf(rho_fname, "%s_%s%s", basename, ELPT_RHO, ".hdf5");
-    sprintf(resid_fname, "%s_%s%s", basename, ELPT_RESID, ".hdf5");
-    sprintf(phi_resid_fname, "%s_%s%s", basename, ELPT_PHI_RESID, ".hdf5");
-    sprintf(dphi_fname, "%s_%s", basename, ELPT_DPHI);
+    sprintf(rho_fname, "%s_%s%s", basename, MA_RHO, ".hdf5");
+    sprintf(resid_fname, "%s_%s%s", basename, MA_RESID, ".hdf5");
+    sprintf(phi_resid_fname, "%s_%s%s", basename, MA_PHI_RESID, ".hdf5");
+    sprintf(dphi_fname, "%s_%s", basename, MA_DPHI);
 
     /* Prepare some hdf5 files in the chunked format */
     writeFieldHeader_H5(N, boxlen, chunks, rho_fname);
@@ -85,7 +85,7 @@ int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, cha
     writeField_H5(f, rho_fname);
     writeField_H5(box, fname);
 
-    /* For each eLPT cycle */
+    /* For each M-A cycle */
     for (int ITER = 0; ITER < cycles; ITER++) {
 
         /* Compute the 6 derivative components of the Hessian (not chunked) */
@@ -211,7 +211,7 @@ int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, cha
 
         /* Compute the root mean square residual, normalized by the source grid */
         double rms_eps = sqrt((eps / norm) / (N*N*N));
-        printf("%03d] Finished eLPT cycle: eps = %e\n", ITER, rms_eps);
+        printf("%03d] Finished MA cycle: eps = %e\n", ITER, rms_eps);
 
     }
 

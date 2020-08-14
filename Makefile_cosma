@@ -48,7 +48,7 @@ all:
 	$(GCC) src/generate_grids.c -c -o lib/generate_grids.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/shrink_grids.c -c -o lib/shrink_grids.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/poisson.c -c -o lib/poisson.o $(INCLUDES) $(CFLAGS)
-	$(GCC) src/elpt.c -c -o lib/elpt.o $(INCLUDES) $(CFLAGS)
+	$(GCC) src/monge_ampere.c -c -o lib/monge_ampere.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/spt_convolve.c -c -o lib/spt_convolve.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/spt_grid.c -c -o lib/spt_grid.o $(INCLUDES) $(CFLAGS)

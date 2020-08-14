@@ -32,7 +32,7 @@ struct particle_type {
     int CubeRootNumber;
     int Chunks;
     int ChunkSize; //except possibly the last chunk
-    int CyclesOfELPT;
+    int CyclesOfMongeAmpere;
     int CyclesOfSPT;
 
     char *TransferFunctionDensity;

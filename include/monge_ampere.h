@@ -17,18 +17,18 @@
  *
  ******************************************************************************/
 
-#ifndef ELPT_H
-#define ELPT_H
+#ifndef MONGE_AMPERE_H
+#define MONGE_AMPERE_H
 
 #include <fftw3.h>
 #include "input.h"
 
-#define ELPT_BASENAME "elpt"
-#define ELPT_RHO "rho"
-#define ELPT_RESID "resid"
-#define ELPT_DPHI "dphi"
-#define ELPT_PHI_RESID "phi_resid"
+#define MA_BASENAME "ma"
+#define MA_RHO "rho"
+#define MA_RESID "resid"
+#define MA_DPHI "dphi"
+#define MA_PHI_RESID "phi_resid"
 
-int elptChunked(double *f, int N, double boxlen, int cycles, char *basename, char *fname);
+int solveMongeAmpere(double *f, int N, double boxlen, int cycles, char *basename, char *fname);
 
 #endif
