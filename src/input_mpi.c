@@ -111,5 +111,8 @@ int readField_dg(struct distributed_grid *dg, const char *fname) {
     /* Close the file */
     H5Fclose(h_file);
 
+    /* We read a real box, so the distributed grid is configuration space */
+    dg->momentum_space = 0;
+
     return 0;
 }

@@ -78,6 +78,9 @@ int fft_normalize_r2c_dg(struct distributed_grid *dg) {
         }
     }
 
+    /* Flip the trigger for bookkeeping */
+    dg->momentum_space = 1;
+
     return 0;
 }
 
@@ -95,6 +98,9 @@ int fft_normalize_c2r_dg(struct distributed_grid *dg) {
             }
         }
     }
+
+    /* Flip the trigger for bookkeeping */
+    dg->momentum_space = 0;
 
     return 0;
 }
@@ -229,6 +235,11 @@ int fft_apply_kernel_dg(struct distributed_grid *dg_write,
         return 1;
     }
 
+    if (dg_read->momentum_space != 1) {
+        printf("Error: input field is not in momentum space.\n");
+        return 2;
+    }
+
     #pragma omp parallel for
     for (int x=X0; x<X0 + NX; x++) {
         for (int y=0; y<N; y++) {
@@ -247,6 +258,9 @@ int fft_apply_kernel_dg(struct distributed_grid *dg_write,
             }
         }
     }
+
+    /* The output field is now in momentum space */
+    dg_write->momentum_space = 1;
 
     return 0;
 }

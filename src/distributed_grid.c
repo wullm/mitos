@@ -35,14 +35,24 @@ int alloc_local_grid(struct distributed_grid *dg, int N, double boxlen, MPI_Comm
     dg->fbox = fftw_alloc_complex(dg->local_size);
     dg->box = fftw_alloc_real(2*dg->local_size);
 
+    /* This flag will be flipped each time we do a Fourier transform */
+    dg->momentum_space = 0;
+
     return 0;
 }
 
 int free_local_grid(struct distributed_grid *dg) {
+    free_local_real_grid(dg);
+    free_local_complex_grid(dg);
+    return 0;
+}
 
-    /* Free memory */
-    fftw_free(dg->fbox);
+int free_local_real_grid(struct distributed_grid *dg) {
     fftw_free(dg->box);
+    return 0;
+}
 
+int free_local_complex_grid(struct distributed_grid *dg) {
+    fftw_free(dg->fbox);
     return 0;
 }

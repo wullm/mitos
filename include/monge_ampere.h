@@ -22,13 +22,10 @@
 
 #include <fftw3.h>
 #include "input.h"
+#include "distributed_grid.h"
 
-#define MA_BASENAME "ma"
-#define MA_RHO "rho"
-#define MA_RESID "resid"
-#define MA_DPHI "dphi"
-#define MA_PHI_RESID "phi_resid"
-
-int solveMongeAmpere(double *f, int N, double boxlen, int cycles, char *basename, char *fname);
+int solveMongeAmpere(struct distributed_grid *potential,
+                     struct distributed_grid *density,
+                     struct distributed_grid *workspace, int cycles);
 
 #endif

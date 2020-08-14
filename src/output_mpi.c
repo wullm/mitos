@@ -76,6 +76,11 @@ int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
 
 int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
 
+        if (dg->momentum_space == 1) {
+            printf("Error: attempting to export while in momentum space.\n");
+            return 1;
+        }
+
         /* Create the file */
         hid_t h_file = createFile_MPI(dg->comm, fname);
 

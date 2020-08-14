@@ -215,11 +215,15 @@ int main(int argc, char *argv[]) {
     double u_tau; //spacing between subsequent bins
     perturbSplineFindTau(&spline, cosmo.log_tau_ini, &tau_index, &u_tau);
 
-    /* Allocate a second grid to compute densities and potentials */
+    /* Allocate a second grid to compute densities */
     struct distributed_grid grid;
     alloc_local_grid(&grid, N, boxlen, MPI_COMM_WORLD);
 
-    /* Allocate a third grid to compute derivatives */
+    /* Allocate a third grid to compute the potential */
+    struct distributed_grid potential;
+    alloc_local_grid(&potential, N, boxlen, MPI_COMM_WORLD);
+
+    /* Allocate a fourth grid to compute derivatives */
     struct distributed_grid derivative;
     alloc_local_grid(&derivative, N, boxlen, MPI_COMM_WORLD);
 
@@ -267,13 +271,22 @@ int main(int argc, char *argv[]) {
             /* Fourier transform the density grid */
             fft_r2c_dg(&grid);
 
-            /* Compute potential grid by applying the inverse Poisson kernel */
-            fft_apply_kernel_dg(&grid, &grid, kernel_inv_poisson, NULL);
+            /* Should we solve the Monge-Ampere equation or approximate with Zel'dovich? */
+            if (ptype->CyclesOfMongeAmpere > 0) {
+                /* Solve the Monge Ampere equation */
+                err = solveMongeAmpere(&potential, &grid, &derivative, ptype->CyclesOfMongeAmpere);
+            } else {
+                /* Approximate the potential with the Zel'dovich approximation */
+                fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
+            }
+
+            /* We now have the potential grid in momentum space */
+            assert(potential.momentum_space == 1);
 
             /* Compute three derivatives of the potential grid */
             for (int i=0; i<3; i++) {
                 /* Apply the derivative kernel */
-                fft_apply_kernel_dg(&derivative, &grid, derivative_kernels[i], NULL);
+                fft_apply_kernel_dg(&derivative, &potential, derivative_kernels[i], NULL);
 
                 /* Fourier transform to get the real derivative grid */
                 fft_c2r_dg(&derivative);
@@ -286,10 +299,10 @@ int main(int argc, char *argv[]) {
             }
 
             /* Finally, Fourier transform the potential grid to configuration space */
-            fft_c2r_dg(&grid);
+            fft_c2r_dg(&potential);
 
             /* Export the potential grid */
-            writeFieldFile_dg(&grid, potential_filename);
+            writeFieldFile_dg(&potential, potential_filename);
         }
 
         /* Generate flux density field, flux potential, and its derivatives */
@@ -305,12 +318,12 @@ int main(int argc, char *argv[]) {
             fft_r2c_dg(&grid);
 
             /* Compute flux potential grid by applying the inverse Poisson kernel */
-            fft_apply_kernel_dg(&grid, &grid, kernel_inv_poisson, NULL);
+            fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
 
             /* Compute three derivatives of the flux potential grid */
             for (int i=0; i<3; i++) {
                 /* Apply the derivative kernel */
-                fft_apply_kernel_dg(&derivative, &grid, derivative_kernels[i], NULL);
+                fft_apply_kernel_dg(&derivative, &potential, derivative_kernels[i], NULL);
 
                 /* Fourier transform to get the real derivative grid */
                 fft_c2r_dg(&derivative);
@@ -323,15 +336,16 @@ int main(int argc, char *argv[]) {
             }
 
             /* Finally, Fourier transform the flux potential grid to configuration space */
-            fft_c2r_dg(&grid);
+            fft_c2r_dg(&potential);
 
             /* Export the flux potential grid */
-            writeFieldFile_dg(&grid, velopot_filename);
+            writeFieldFile_dg(&potential, velopot_filename);
         }
     }
 
     /* We are done with the GRF, density, and derivative grids */
     free_local_grid(&grid);
+    free_local_grid(&potential);
     free_local_grid(&grf);
     free_local_grid(&derivative);
 

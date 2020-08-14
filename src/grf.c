@@ -59,6 +59,9 @@ int generate_complex_grf(struct distributed_grid *dg, rng_state *state) {
         }
     }
 
+    /* Right now, the grid is in momentum space */
+    dg->momentum_space = 1;
+
     return 0;
 }
 

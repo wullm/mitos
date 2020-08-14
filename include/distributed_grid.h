@@ -32,6 +32,7 @@ struct distributed_grid {
     int N;
     double boxlen;
     MPI_Comm comm;
+    char momentum_space; //track whether we are in momentum space
 
     /* Local attributes */
     long int NX;
@@ -72,6 +73,8 @@ struct left_right_slice {
 
 int alloc_local_grid(struct distributed_grid *dg, int N, double boxlen, MPI_Comm comm);
 int free_local_grid(struct distributed_grid *dg);
+int free_local_real_grid(struct distributed_grid *dg);
+int free_local_complex_grid(struct distributed_grid *dg);
 
 static inline int row_major_dg(int i, int j, int k, struct distributed_grid *dg) {
     /* Wrap global coordinates */
