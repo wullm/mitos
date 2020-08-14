@@ -46,7 +46,7 @@ int shrinkGrid_dg(double *out, struct distributed_grid *in, int M, int N) {
                 int x = floor(i / K);
                 int y = floor(j / K);
                 int z = floor(k / K);
-                out[row_major(x, y, z, M)] += factor * in->box[row_major(i - in->X0, j, k, N)];
+                out[row_major(x, y, z, M)] += factor * in->box[row_major_dg(i, j, k, in)];
             }
         }
     }
