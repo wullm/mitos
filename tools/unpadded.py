@@ -23,7 +23,7 @@ print("Reading the box from disk.");
 arr = np.array(d);
 
 #Get rid of padding
-arr = arr[:,:,:-2];
+#arr = arr[:,:,:-2];
 
 #Plot a slice of the array
 plt.imshow(arr[16]);plt.colorbar();plt.xlabel("z");plt.ylabel("y");plt.show();
