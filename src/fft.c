@@ -35,9 +35,9 @@ void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
 }
 
 /* Normalize the complex array after transforming to momentum space */
-int fft_normalize_r2c(fftw_complex *arr, int N, int NX, int X0, double boxlen) {
+int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen) {
     const double boxvol = boxlen*boxlen*boxlen;
-    for (int x=0; x<NX; x++) {
+    for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
@@ -49,12 +49,12 @@ int fft_normalize_r2c(fftw_complex *arr, int N, int NX, int X0, double boxlen) {
 }
 
 /* Normalize the real array after transforming to configuration space */
-int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen) {
+int fft_normalize_c2r(double *arr, int N, double boxlen) {
     const double boxvol = boxlen*boxlen*boxlen;
-    for (int x=0; x<NX; x++) {
+    for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
-            for (int z=0; z<N+2; z++) {
-                arr[row_major_padded(x, y, z, N)] /= boxvol;
+            for (int z=0; z<N; z++) {
+                arr[row_major(x, y, z, N)] /= boxvol;
             }
         }
     }
@@ -150,7 +150,7 @@ int fft_c2r_export_and_free(fftw_complex *farr, int N, double boxlen, const char
 
     /* Execute and normalize */
     fft_execute(c2r);
-    fft_normalize_c2r(box,N,N,0,boxlen);
+    fft_normalize_c2r(box,N,boxlen);
 
     /* Free the destroyed input */
     fftw_free(farr);

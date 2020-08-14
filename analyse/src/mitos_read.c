@@ -375,46 +375,49 @@ int main(int argc, char *argv[]) {
         message(rank, "Density grid exported to %s.\n", box_fname);
     }
 
+    if (rank == 0) {
+        int bins = 50;
+        double *k_in_bins = malloc(bins * sizeof(double));
+        double *power_in_bins = malloc(bins * sizeof(double));
+        int *obs_in_bins = calloc(bins, sizeof(int));
 
-    // int bins = 50;
-    // double *k_in_bins = malloc(bins * sizeof(double));
-    // double *power_in_bins = malloc(bins * sizeof(double));
-    // int *obs_in_bins = calloc(bins, sizeof(int));
-    //
-    // /* Transform to momentum space */
-    // fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    // fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
-    // fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
-    // fft_execute(r2c);
-	// fft_normalize_r2c(fbox,N,boxlen[0]);
-    //
-    // /* Undo the TSC window function */
-    // undoTSCWindow(fbox, N, boxlen[0]);
-    //
+        /* Transform to momentum space */
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+        fft_execute(r2c);
+    	fft_normalize_r2c(fbox,N,boxlen[0]);
+
+        /* Undo the TSC window function */
+        undoTSCWindow(fbox, N, boxlen[0]);
+
     // if (strcmp(tp.Identifier, "cdm") == 0) {
     //     fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
     //     memcpy(fbox_c, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
     // }
 
-    // calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
-    //
-    // /* Check that it is right */
-    // printf("\n");
-    // printf("Example power spectrum:\n");
-    // printf("k P_measured(k) observations\n");
-    // for (int i=0; i<bins; i++) {
-    //     if (obs_in_bins[i] == 0) continue; //skip empty bins
-    //
-    //     /* The power we observe */
-    //     double k = k_in_bins[i];
-    //     double Pk = power_in_bins[i];
-    //     int obs = obs_in_bins[i];
-    //
-    //     printf("%f %e %d\n", k, Pk, obs);
-    // }
-    //
-    //
-    // printf("\n");
+        calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+        /* Check that it is right */
+        printf("\n");
+        printf("Example power spectrum:\n");
+        printf("k P_measured(k) observations\n");
+        for (int i=0; i<bins; i++) {
+            if (obs_in_bins[i] == 0) continue; //skip empty bins
+
+            /* The power we observe */
+            double k = k_in_bins[i];
+            double Pk = power_in_bins[i];
+            int obs = obs_in_bins[i];
+
+            printf("%f %e %d\n", k, Pk, obs);
+        }
+
+        fftw_destroy_plan(r2c);
+        fftw_destroy_plan(c2r);
+
+        printf("\n");
+    }
     //
     //
     // if (strcmp(tp.Identifier, "ncdm") == 0) {

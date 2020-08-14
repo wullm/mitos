@@ -78,8 +78,8 @@ static inline double hypot3(double x, double y, double z) {
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
                     double *ky, double *kz, double *k);
 
-int fft_normalize_r2c(fftw_complex *arr, int N, int NX, int X0, double boxlen);
-int fft_normalize_c2r(double *arr, int N, int NX, int X0, double boxlen);
+int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
+int fft_normalize_c2r(double *arr, int N, double boxlen);
 
 void fft_execute(fftw_plan plan);
 

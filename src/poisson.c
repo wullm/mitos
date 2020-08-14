@@ -37,14 +37,14 @@ int solvePoisson(double *phi, double *f, int N, double boxlen) {
 
     /* Execute and normalize */
     fft_execute(r2c);
-    fft_normalize_r2c(fbox, N, N, 0, boxlen);
+    fft_normalize_r2c(fbox, N, boxlen);
 
     /* Apply the inverse Poisson kernel 1/k^2 */
     fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, kernel_inv_poisson, NULL);
 
     /* FFT back */
     fft_execute(c2r);
-    fft_normalize_c2r(phi, N, N, 0, boxlen);
+    fft_normalize_c2r(phi, N, boxlen);
 
     /* Free all the FFT objects */
     fftw_free(fbox);
