@@ -34,9 +34,18 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    /* Initialize MPI for distributed memory parallelization */
+    MPI_Init(&argc, &argv);
+    fftw_mpi_init();
+
+    /* Get the dimensions of the cluster */
+    int rank, MPI_Rank_Count;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &MPI_Rank_Count);
+
     /* Read options */
     const char *fname = argv[1];
-    printf("The parameter file is %s\n", fname);
+    message(rank, "The parameter file is %s\n", fname);
 
     struct params pars;
     struct units us;
@@ -48,10 +57,10 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
-    printf("Reading simulation snapshot for: \"%s\".\n", pars.Name);
+    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
     /* Open the file */
-    hid_t h_file = H5Fopen(pars.InputFilename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
@@ -96,39 +105,85 @@ int main(int argc, char *argv[]) {
         H5Gclose(h_grp);
     }
 
-    /* We will copy the Fourier transform CDM density into here later */
-    fftw_complex *fbox_c = NULL;
+    /* Try to open the desired import group */
 
-    /* Try to open each particle group */
-    for (int i=0; i<pars.NumParticleTypes; i++) {
-        struct particle_type tp = types[i];
-        printf("Found particle type\t %s\n", tp.ExportName);
+    /* The size of the density grid that we will create */
+    const int N = pars.GridSize;
 
-        /* The size of the density grid that we will create */
-        const int N = pars.GridSize;
+    /* Allocate grids */
+    double *box = fftw_alloc_real(N * N * N);
+    fftw_complex *fbox = fftw_alloc_complex(N * N * (N/2 + 1));
 
-        /* We will store the density grid in here */
-        double *rho_box = calloc(N*N*N, sizeof(double));
-        double *rho_interlaced_box = calloc(N*N*N, sizeof(double));
+    /* Open the corresponding group */
+    h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
 
-        /* Open the corresponding group */
-        hid_t h_grp = H5Gopen(h_file, tp.ExportName, H5P_DEFAULT);
+    /* Open the coordinates dataset */
+    hid_t h_dat = H5Dopen(h_grp, "Coordinates", H5P_DEFAULT);
+
+    /* Find the dataspace (in the file) */
+    hid_t h_space = H5Dget_space (h_dat);
+
+    /* Get the dimensions of this dataspace */
+    hsize_t dims[2];
+    H5Sget_simple_extent_dims(h_space, dims, NULL);
+
+    /* How many particles do we want per slab? */
+    hid_t Npart = dims[0];
+    hid_t max_slab_size = pars.SlabSize;
+    int slabs = Npart/max_slab_size;
+    hid_t counter = 0;
+
+    /* Close the data and memory spaces */
+    H5Sclose(h_space);
+
+    /* Close the dataset */
+    H5Dclose(h_dat);
+
+    double total_mass = 0; //for this particle type
+
+    int slab_counter = 0;
+
+    for (int k=rank; k<slabs+1; k+=MPI_Rank_Count) {
+        /* All slabs have the same number of particles, except possibly the last */
+        hid_t slab_size = fmin(Npart - k * max_slab_size, max_slab_size);
+        counter += slab_size; //the number of particles read
+
+        /* Define the hyperslab */
+        hsize_t slab_dims[2], start[2]; //for 3-vectors
+        hsize_t slab_dims_one[1], start_one[1]; //for scalars
+
+        /* Slab dimensions for 3-vectors */
+        slab_dims[0] = slab_size;
+        slab_dims[1] = 3; //(x,y,z)
+        start[0] = k * max_slab_size;
+        start[1] = 0; //start with x
+
+        /* Slab dimensions for scalars */
+        slab_dims_one[0] = slab_size;
+        start_one[0] = k * max_slab_size;
 
         /* Open the coordinates dataset */
-        hid_t h_dat = H5Dopen(h_grp, "Coordinates", H5P_DEFAULT);
+        h_dat = H5Dopen(h_grp, "Coordinates", H5P_DEFAULT);
 
         /* Find the dataspace (in the file) */
-        hid_t h_space = H5Dget_space (h_dat);
+        h_space = H5Dget_space (h_dat);
 
-        /* Get the dimensions of this dataspace */
-        hsize_t dims[2];
-        H5Sget_simple_extent_dims(h_space, dims, NULL);
+        /* Select the hyperslab */
+        hid_t status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
+                                           NULL, slab_dims, NULL);
+        assert(status >= 0);
 
-        /* How many particles do we want per slab? */
-        hid_t Npart = dims[0];
-        hid_t max_slab_size = pars.SlabSize;
-        int slabs = Npart/max_slab_size;
-        hid_t counter = 0;
+        /* Create a memory space */
+        hid_t h_mems = H5Screate_simple(2, slab_dims, NULL);
+
+        /* Create the data array */
+        double data[slab_size][3];
+
+        status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+                         data);
+
+        /* Close the memory space */
+        H5Sclose(h_mems);
 
         /* Close the data and memory spaces */
         H5Sclose(h_space);
@@ -136,305 +191,291 @@ int main(int argc, char *argv[]) {
         /* Close the dataset */
         H5Dclose(h_dat);
 
-        double total_mass = 0; //for this particle type
 
-        int slab_counter = 0;
+        /* Open the masses dataset */
+        h_dat = H5Dopen(h_grp, "Masses", H5P_DEFAULT);
 
-        for (int k=0; k<slabs+1; k++) {
-            /* All slabs have the same number of particles, except possibly the last */
-            hid_t slab_size = fmin(Npart - counter, max_slab_size);
-            counter += slab_size; //the number of particles read
+        /* Find the dataspace (in the file) */
+        h_space = H5Dget_space (h_dat);
 
-            /* Define the hyperslab */
-            hsize_t slab_dims[2], start[2]; //for 3-vectors
-            hsize_t slab_dims_one[1], start_one[1]; //for scalars
+        /* Select the hyperslab */
+        status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start_one, NULL,
+                                            slab_dims_one, NULL);
 
-            /* Slab dimensions for 3-vectors */
-            slab_dims[0] = slab_size;
-            slab_dims[1] = 3; //(x,y,z)
-            start[0] = counter - slab_size;
-            start[1] = 0; //start with x
+        /* Create a memory space */
+        h_mems = H5Screate_simple(1, slab_dims_one, NULL);
 
-            /* Slab dimensions for scalars */
-            slab_dims_one[0] = slab_size;
-            start_one[0] = counter - slab_size;
+        /* Create the data array */
+        double mass_data[slab_size];
 
-            /* Open the coordinates dataset */
-            h_dat = H5Dopen(h_grp, "Coordinates", H5P_DEFAULT);
+        status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+                         mass_data);
 
-            /* Find the dataspace (in the file) */
-            h_space = H5Dget_space (h_dat);
+        /* Close the memory space */
+        H5Sclose(h_mems);
 
-            /* Select the hyperslab */
-            hid_t status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
-                                               NULL, slab_dims, NULL);
-            assert(status >= 0);
+        /* Close the data and memory spaces */
+        H5Sclose(h_space);
 
-            /* Create a memory space */
-            hid_t h_mems = H5Screate_simple(2, slab_dims, NULL);
-
-            /* Create the data array */
-            double data[slab_size][3];
-
-            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
-                             data);
-
-            /* Close the memory space */
-            H5Sclose(h_mems);
-
-            /* Close the data and memory spaces */
-            H5Sclose(h_space);
-
-            /* Close the dataset */
-            H5Dclose(h_dat);
+        /* Close the dataset */
+        H5Dclose(h_dat);
 
 
-            /* Open the masses dataset */
-            h_dat = H5Dopen(h_grp, "Masses", H5P_DEFAULT);
+        // /* Open the velocities dataset */
+        // h_dat = H5Dopen(h_grp, "Velocities", H5P_DEFAULT);
+        //
+        // /* Find the dataspace (in the file) */
+        // h_space = H5Dget_space (h_dat);
+        //
+        // /* Select the hyperslab */
+        // status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
+        //                              NULL, slab_dims, NULL);
+        // assert(status >= 0);
+        //
+        // /* Create a memory space */
+        // h_mems = H5Screate_simple(2, slab_dims, NULL);
+        //
+        // /* Create the data array */
+        // double velocities_data[slab_size][3];
+        //
+        // status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+        //                  velocities_data);
+        //
+        // /* Close the memory space */
+        // H5Sclose(h_mems);
+        //
+        // /* Close the data and memory spaces */
+        // H5Sclose(h_space);
+        //
+        // /* Close the dataset */
+        // H5Dclose(h_dat);
 
-            /* Find the dataspace (in the file) */
-            h_space = H5Dget_space (h_dat);
+        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
 
-            /* Select the hyperslab */
-            status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start_one, NULL,
-                                                slab_dims_one, NULL);
+        /* Assign the particles to the grid with CIC */
+        for (int l=0; l<slab_size; l++) {
+            double X = data[l][0] / (boxlen[0]/N);
+            double Y = data[l][1] / (boxlen[1]/N);
+            double Z = data[l][2] / (boxlen[2]/N);
 
-            /* Create a memory space */
-            h_mems = H5Screate_simple(1, slab_dims_one, NULL);
+            // double V_X = velocities_data[l][0];
+            // double V_Y = velocities_data[l][1];
+            // double V_Z = velocities_data[l][2];
+            //
+            // /* Unused variables */
+            // (void) V_X;
+            // (void) V_Y;
+            // (void) V_Z;
 
-            /* Create the data array */
-            double mass_data[slab_size];
+            double M = mass_data[l];
+            total_mass += M;
 
-            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
-                             mass_data);
+            int iX = (int) floor(X);
+            int iY = (int) floor(Y);
+            int iZ = (int) floor(Z);
 
-            /* Close the memory space */
-            H5Sclose(h_mems);
+            double shift = 0;
 
-            /* Close the data and memory spaces */
-            H5Sclose(h_space);
+            //The search window with respect to the top-left-upper corner
+    		int lookLftX = (int) floor((X-iX) - 1.5 + shift);
+    		int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
+    		int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
+    		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
+    		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
+    		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
 
-            /* Close the dataset */
-            H5Dclose(h_dat);
+            //Do the mass assignment
+    		for (int x=lookLftX; x<=lookRgtX; x++) {
+    			for (int y=lookLftY; y<=lookRgtY; y++) {
+    				for (int z=lookLftZ; z<=lookRgtZ; z++) {
+                        double xx = fabs(X - (iX+x+shift));
+                        double yy = fabs(Y - (iY+y+shift));
+                        double zz = fabs(Z - (iZ+z+shift));
 
+                        double part_x = xx < 0.5 ? (0.75-xx*xx)
+                                                : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
+        				double part_y = yy < 0.5 ? (0.75-yy*yy)
+                                                : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
+        				double part_z = zz < 0.5 ? (0.75-zz*zz)
+                                                : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
 
-            /* Open the velocities dataset */
-            h_dat = H5Dopen(h_grp, "Velocities", H5P_DEFAULT);
-
-            /* Find the dataspace (in the file) */
-            h_space = H5Dget_space (h_dat);
-
-            /* Select the hyperslab */
-            status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
-                                         NULL, slab_dims, NULL);
-            assert(status >= 0);
-
-            /* Create a memory space */
-            h_mems = H5Screate_simple(2, slab_dims, NULL);
-
-            /* Create the data array */
-            double velocities_data[slab_size][3];
-
-            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
-                             velocities_data);
-
-            /* Close the memory space */
-            H5Sclose(h_mems);
-
-            /* Close the data and memory spaces */
-            H5Sclose(h_space);
-
-            /* Close the dataset */
-            H5Dclose(h_dat);
-
-
-
-            double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
-
-            /* Assign the particles to the grid with CIC */
-            for (int l=0; l<slab_size; l++) {
-                double X = data[l][0] / (boxlen[0]/N);
-                double Y = data[l][1] / (boxlen[1]/N);
-                double Z = data[l][2] / (boxlen[2]/N);
-
-                double V_X = velocities_data[l][0];
-                double V_Y = velocities_data[l][1];
-                double V_Z = velocities_data[l][2];
-
-                /* Unused variables */
-                (void) V_X;
-                (void) V_Y;
-                (void) V_Z;
-
-                double M = mass_data[l];
-                total_mass += M;
-
-                int iX = (int) floor(X);
-                int iY = (int) floor(Y);
-                int iZ = (int) floor(Z);
-
-                double shift = 0;
-
-                //The search window with respect to the top-left-upper corner
-        		int lookLftX = (int) floor((X-iX) - 1.5 + shift);
-        		int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
-        		int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
-        		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
-        		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
-        		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
-
-                //Do the mass assignment
-        		for (int x=lookLftX; x<=lookRgtX; x++) {
-        			for (int y=lookLftY; y<=lookRgtY; y++) {
-        				for (int z=lookLftZ; z<=lookRgtZ; z++) {
-                            double xx = fabs(X - (iX+x+shift));
-                            double yy = fabs(Y - (iY+y+shift));
-                            double zz = fabs(Z - (iZ+z+shift));
-
-                            double part_x = xx < 0.5 ? (0.75-xx*xx)
-                                                    : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
-            				double part_y = yy < 0.5 ? (0.75-yy*yy)
-                                                    : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
-            				double part_z = zz < 0.5 ? (0.75-zz*zz)
-                                                    : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
-
-                            rho_box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
-        				}
-        			}
-        		}
-            }
-
-            printf("%d) Read %ld particles\n", slab_counter, slab_size);
-            slab_counter++;
+                        box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
+    				}
+    			}
+    		}
         }
 
-        /* Close the group again */
-        H5Gclose(h_grp);
+        printf("(%03d,%03d) Read %ld particles\n", rank, k, slab_size);
+        slab_counter++;
+    }
 
-        printf("Total mass: %f\n", total_mass);
+    /* Close the group again */
+    H5Gclose(h_grp);
+
+
+    /* Reduce the grid */
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+
+    /* Reduce the total mass */
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, &total_mass, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(&total_mass, &total_mass, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+
+
+    if (rank == 0) {
+
+        message(rank, "Total mass: %f\n", total_mass);
 
         /* The average density */
         double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2]);
 
-        printf("Average density %f\n", avg_density);
+        message(rank, "Average density %f\n", avg_density);
 
-        if (strcmp(tp.Identifier, "ncdm") == 0) {
-            avg_density = 0.179075;
-            printf("Reset avg_density to %f\n", avg_density);
-        }
+        // if (strcmp(tp.Identifier, "ncdm") == 0) {
+        //     avg_density = 0.179075;
+        //     printf("Reset avg_density to %f\n", avg_density);
+        // }
 
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
-                    if (strcmp(tp.Identifier, "ncdm") == 0) {
-                        rho_box[id] = rho_box[id]/avg_density;
-                    } else {
-                        rho_box[id] = (rho_box[id] - avg_density)/avg_density;
-                    }
+                    box[id] = (box[id] - avg_density)/avg_density;
                 }
             }
         }
 
-        // readGRF_inPlace_H5(rho_box, "output/density_cdm.hdf5");
+        /* Find a particle type with a matching ExportName */
+        struct particle_type *tp;
+        char found = 0;
+        for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+            struct particle_type *ptype = types + pti;
+            const char *ExportName = ptype->ExportName;
 
-        int bins = 50;
-        double *k_in_bins = malloc(bins * sizeof(double));
-        double *power_in_bins = malloc(bins * sizeof(double));
-        int *obs_in_bins = calloc(bins, sizeof(int));
-
-        /* Transform to momentum space */
-        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, rho_box, fbox, FFTW_ESTIMATE);
-        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, rho_box, FFTW_ESTIMATE);
-        fft_execute(r2c);
-    	fft_normalize_r2c(fbox,N,boxlen[0]);
-
-        /* Undo the TSC window function */
-        undoTSCWindow(fbox, N, boxlen[0]);
-
-        if (strcmp(tp.Identifier, "cdm") == 0) {
-            fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-            memcpy(fbox_c, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
-        }
-
-        calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
-
-        /* Check that it is right */
-        printf("\n");
-        printf("Example power spectrum:\n");
-        printf("k P_measured(k) observations\n");
-        for (int i=0; i<bins; i++) {
-            if (obs_in_bins[i] == 0) continue; //skip empty bins
-
-            /* The power we observe */
-            double k = k_in_bins[i];
-            double Pk = power_in_bins[i];
-            int obs = obs_in_bins[i];
-
-            printf("%f %e %d\n", k, Pk, obs);
-        }
-
-
-        printf("\n");
-
-
-        if (strcmp(tp.Identifier, "ncdm") == 0) {
-            /* Calculate the cross spectrum */
-            printf("Doing the (c,nu) cross spectrum.\n");
-
-            /* Reset the bins */
-            for (int i=0; i<bins; i++) {
-                k_in_bins[i] = 0;
-                power_in_bins[i] = 0;
-                obs_in_bins[i] = 0;
+            if (strcmp(ExportName, pars.ImportName) == 0) {
+                tp = ptype;
+                found = 1;
             }
-
-            /* Cross spectrum of cdm and ncdm */
-            calc_cross_powerspec(N, boxlen[0], fbox_c, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
-
-            /* Print the results */
-            printf("k P_measured(k) observations\n");
-            for (int i=0; i<bins; i++) {
-                if (obs_in_bins[i] == 0) continue; //skip empty bins
-
-                /* The power we observe */
-                double k = k_in_bins[i];
-                double Pk = power_in_bins[i];
-                int obs = obs_in_bins[i];
-
-                printf("%f %e %d\n", k, Pk, obs);
-            }
-
-            printf("\n");
-
-            free(k_in_bins);
-            free(power_in_bins);
-            free(obs_in_bins);
         }
 
-
-        /* Transform back */
-        fft_execute(c2r);
-    	fft_normalize_c2r(rho_box,N,boxlen[0]);
-
-        /* Export the density box for testing purposes */
         char box_fname[40];
-        sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
-        writeGRF_H5(rho_box, N, boxlen[0], box_fname);
-        printf("Density grid exported to %s.\n", box_fname);
-
-        free(rho_box);
-        free(rho_interlaced_box);
-        fftw_free(fbox);
+        if (!found) {
+            sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
+        } else {
+            sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+        }
+        writeGRF_H5(box, N, boxlen[0], box_fname);
+        message(rank, "Density grid exported to %s.\n", box_fname);
     }
+
+
+    // int bins = 50;
+    // double *k_in_bins = malloc(bins * sizeof(double));
+    // double *power_in_bins = malloc(bins * sizeof(double));
+    // int *obs_in_bins = calloc(bins, sizeof(int));
+    //
+    // /* Transform to momentum space */
+    // fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    // fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+    // fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+    // fft_execute(r2c);
+	// fft_normalize_r2c(fbox,N,boxlen[0]);
+    //
+    // /* Undo the TSC window function */
+    // undoTSCWindow(fbox, N, boxlen[0]);
+    //
+    // if (strcmp(tp.Identifier, "cdm") == 0) {
+    //     fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    //     memcpy(fbox_c, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
+    // }
+
+    // calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+    //
+    // /* Check that it is right */
+    // printf("\n");
+    // printf("Example power spectrum:\n");
+    // printf("k P_measured(k) observations\n");
+    // for (int i=0; i<bins; i++) {
+    //     if (obs_in_bins[i] == 0) continue; //skip empty bins
+    //
+    //     /* The power we observe */
+    //     double k = k_in_bins[i];
+    //     double Pk = power_in_bins[i];
+    //     int obs = obs_in_bins[i];
+    //
+    //     printf("%f %e %d\n", k, Pk, obs);
+    // }
+    //
+    //
+    // printf("\n");
+    //
+    //
+    // if (strcmp(tp.Identifier, "ncdm") == 0) {
+    //     /* Calculate the cross spectrum */
+    //     printf("Doing the (c,nu) cross spectrum.\n");
+    //
+    //     /* Reset the bins */
+    //     for (int i=0; i<bins; i++) {
+    //         k_in_bins[i] = 0;
+    //         power_in_bins[i] = 0;
+    //         obs_in_bins[i] = 0;
+    //     }
+    //
+    //     /* Cross spectrum of cdm and ncdm */
+    //     calc_cross_powerspec(N, boxlen[0], fbox_c, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+    //
+    //     /* Print the results */
+    //     printf("k P_measured(k) observations\n");
+    //     for (int i=0; i<bins; i++) {
+    //         if (obs_in_bins[i] == 0) continue; //skip empty bins
+    //
+    //         /* The power we observe */
+    //         double k = k_in_bins[i];
+    //         double Pk = power_in_bins[i];
+    //         int obs = obs_in_bins[i];
+    //
+    //         printf("%f %e %d\n", k, Pk, obs);
+    //     }
+    //
+    //     printf("\n");
+    //
+    //     free(k_in_bins);
+    //     free(power_in_bins);
+    //     free(obs_in_bins);
+    // }
+
+
+    // /* Transform back */
+    // fft_execute(c2r);
+	// fft_normalize_c2r(box,N,boxlen[0]);
+    //
+    // /* Export the density box for testing purposes */
+    // char box_fname[40];
+    // sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
+    // writeGRF_H5(box, N, boxlen[0], box_fname);
+    // printf("Density grid exported to %s.\n", box_fname);
+    //
+    fftw_free(box);
+    fftw_free(fbox);
+    // free(rho_interlaced_box);
+    // fftw_free(fbox);
+    // }
 
     /* Close the HDF5 file */
     H5Fclose(h_file);
 
+    /* Done with MPI parallelization */
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+
     /* Clean up */
     cleanTypes(&pars, &types);
     cleanParams(&pars);
-    fftw_free(fbox_c);
 }

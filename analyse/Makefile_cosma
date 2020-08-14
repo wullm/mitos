@@ -1,29 +1,29 @@
 #Compiler options
-GCC = gcc
+GCC = mpicc
 
 #Libraries
 INI_PARSER = ../parser/minIni.o
 STD_LIBRARIES = -lm
-FFTW_LIBRARIES = -lfftw3
+FFTW_LIBRARIES = -lfftw3 -lfftw3_threads -lfftw3_mpi
 HDF5_LIBRARIES = -lhdf5
 GSL_LIBRARIES = -lgsl -lgslcblas
 
 GSL_INCLUDES =
 
 
-HDF5_INCLUDES += -I/usr/lib64 -I/cosma/local/openmpi/intel_2018/3.0.1/include -L/usr/lib64 -I/cosma/local/gcc/7.3.0/lib64/ -L/cosma/local/gcc/7.3.0/lib64/ -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -L/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/include
+HDF5_INCLUDES += -I/usr/lib64 -L/usr/lib64 -I/cosma/local/gcc/7.3.0/lib64/ -L/cosma/local/gcc/7.3.0/lib64/ -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -L/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/include
 HDF5_LIBRARIES +=
 
 HDF5_INCLUDES += -I/cosma/local/gcc/7.3.0/include -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/include
-HDF5_LIBRARIES += -L/cosma/local/parmetis/intel_2018_intel_mpi_2018/4.0.3/lib -Wl,-rpath=/cosma/local/parmetis/intel_2018_intel_mpi_2018/4.0.3/lib -L/cosma/local/gsl/2.5/lib -Wl,-rpath=/cosma/local/gsl/2.5/lib -L/cosma/local/fftw/intel_2018_intel_mpi_2018/3.3.7/lib -Wl,-rpath=/cosma/local/fftw/intel_2018_intel_mpi_2018/3.3.7/lib -L/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -Wl,-rpath=/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/lib -Wl,-rpath=/cosma/local/openmpi/intel_2018/3.0.1/lib -L/cosma/local/gcc/7.3.0/lib64/ -Wl,-rpath=/cosma/local/gcc/7.3.0/lib64/   -lm
+HDF5_LIBRARIES += -L/cosma/local/parmetis/intel_2018_intel_mpi_2018/4.0.3/lib -L/cosma/local/gcc/7.3.0/lib64/ -Wl,-rpath=/cosma/local/gcc/7.3.0/lib64/   -lm
 
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
-CFLAGS = -Wall -fopenmp -march=native -O4
+CFLAGS = -Wall -fopenmp -march=native -Ofast
 
 OBJECTS = ../lib/*.o
 
 all:
 	$(GCC) src/mitos_read.c -o mitos_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/mitos_render.c -o mitos_render $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	#$(GCC) src/mitos_render.c -o mitos_render $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)

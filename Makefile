@@ -55,7 +55,7 @@ all:
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 
-	# make analyse_tools
+	make analyse_tools
 
 analyse_tools:
 	cd analyse && make

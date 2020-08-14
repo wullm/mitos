@@ -62,6 +62,7 @@ struct params {
 
     /* Input parameters */
     char *InputFilename;
+    char *ImportName; //name of the particle group to be read
     size_t SlabSize;
 
     /* MPI rank (generated automatically) */
