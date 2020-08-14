@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         H5Aclose(h_attr);
         assert(h_err >= 0);
 
-        printf("The redshift was %f\n\n", redshift);
+        message(rank, "The redshift was %f\n\n", redshift);
 
         /* Close the Cosmology group */
         H5Gclose(h_grp);
