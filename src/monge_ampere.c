@@ -30,6 +30,7 @@
 #include "../include/fft_kernels.h"
 #include "../include/output.h"
 #include "../include/poisson.h"
+#include "../include/message.h"
 
 typedef double* dp;
 
@@ -56,6 +57,10 @@ int solveMongeAmpere(struct distributed_grid *potential,
     const long int chunk_size = NX * N * (N + 2); //with padding
     const double boxlen = density->boxlen;
     const MPI_Comm comm = density->comm;
+
+    /* Get the MPI rank */
+    int rank;
+    MPI_Comm_rank(comm, &rank);
 
     /* The grids should have the same size and MPI rank distribution */
     assert(potential->NX == density->NX && density->NX == workspace->NX);
@@ -159,10 +164,19 @@ int solveMongeAmpere(struct distributed_grid *potential,
         /* Transform the potential grid to momentum space */
         fft_r2c_dg(potential);
 
-        /* Compute the root mean square residual, normalized by the source grid */
-        double rms_eps = sqrt((eps / norm) / (N*N*N));
-        printf("%03d] Finished MA cycle: eps = %e\n", ITER, rms_eps);
+        /* Add the squared residuals and densities from all MPI ranks */
+        double eps_norm[2] = {eps, norm};
+        if (rank == 0) {
+            MPI_Reduce(MPI_IN_PLACE, eps_norm, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        } else {
+            MPI_Reduce(eps_norm, eps_norm, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        }
 
+        /* Compute the root mean square residual, normalized by the source grid */
+        if (rank == 0) {
+            double rms_eps = sqrt((eps_norm[0] / eps_norm[1]) / (N*N*N));
+            message(rank, "%03d] Finished MA cycle: eps = %e\n", ITER, rms_eps);
+        }
     }
 
     return 0;
