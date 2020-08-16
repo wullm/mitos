@@ -23,17 +23,20 @@
 #include "fft.h"
 #include "distributed_grid.h"
 
-double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N);
-double gridNGP_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
-double gridCIC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
-double gridTSC_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
-double gridPCS_local(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
-
+/* Interpolation methods for contiguous arrays */
 double gridNGP(const double *box, int N, double boxlen, double x, double y, double z);
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z);
 double gridTSC(const double *box, int N, double boxlen, double x, double y, double z);
 double gridPCS(const double *box, int N, double boxlen, double x, double y, double z);
 
+/* Interpolation methods for distributed grids */
+double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N);
+double gridNGP_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridCIC_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridTSC_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+double gridPCS_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N);
+
+/* Apply Fourier kernels to undo the window functions */
 int undoNGPWindow(fftw_complex *farr, int N, double boxlen);
 int undoCICWindow(fftw_complex *farr, int N, double boxlen);
 int undoTSCWindow(fftw_complex *farr, int N, double boxlen);
