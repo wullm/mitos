@@ -137,7 +137,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         fft_normalize_r2c(fbox, N, N, 0, boxlen);
     //
     //         /* Compute the derivative d / dx_i */
-    //         fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[j], NULL);
+    //         fft_apply_kernel(fbox, fbox, N, N, 0, boxlen, derivatives[j], NULL);
     //
     //         /* Fourier transform back */
     //         fft_execute(c2r);
@@ -160,7 +160,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         fft_normalize_r2c(fbox, N, N, 0, boxlen);
     //
     //         /* Compute the derivative d / dx_i */
-    //         fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[j], NULL);
+    //         fft_apply_kernel(fbox, fbox, N, N, 0, boxlen, derivatives[j], NULL);
     //
     //         /* Fourier transform back */
     //         fft_execute(c2r);
@@ -195,7 +195,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         fft_normalize_r2c(fbox, N, N, 0, boxlen);
     //
     //         /* Compute the derivative d / dx_i */
-    //         fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[j], NULL);
+    //         fft_apply_kernel(fbox, fbox, N, N, 0, boxlen, derivatives[j], NULL);
     //
     //         /* Fourier transform back */
     //         fft_execute(c2r);
@@ -218,8 +218,8 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         fft_normalize_r2c(fbox, N, N, 0, boxlen);
     //
     //         /* Compute the derivative d^2 / (dx_i dx_j) */
-    //         fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[index_a[j]], NULL);
-    //         fft_apply_kernel(fbox, fbox, N, 0, 0, boxlen, derivatives[index_b[j]], NULL);
+    //         fft_apply_kernel(fbox, fbox, N, N, 0, boxlen, derivatives[index_a[j]], NULL);
+    //         fft_apply_kernel(fbox, fbox, N, N, 0, boxlen, derivatives[index_b[j]], NULL);
     //
     //         /* Fourier transform back */
     //         fft_execute(c2r);
