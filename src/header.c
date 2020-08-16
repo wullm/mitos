@@ -250,6 +250,7 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "Boltzmann:\n");
     fprintf(f, "  field_file_name: %s\n", field_file_name);
     fprintf(f, "  in_perturb_file_name: %s\n", pars->PerturbFile);
+    fprintf(f, "\n");
 
     /* Some reasonable SWIFT parameters that can be easily changed */
     int max_top_level_cells = 16;
