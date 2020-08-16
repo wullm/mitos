@@ -22,6 +22,7 @@
 #include "../include/fft.h"
 #include "../include/fft_kernels.h"
 
+/* Nearest grid point interpolation */
 double gridNGP(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -36,6 +37,7 @@ double gridNGP(const double *box, int N, double boxlen, double x, double y, doub
     return box[row_major(iX, iY, iZ, N)];
 }
 
+/* Cloud in cell interpolation */
 double gridCIC(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -77,6 +79,7 @@ double gridCIC(const double *box, int N, double boxlen, double x, double y, doub
     return sum;
 }
 
+/* Triangular shaped cloud interpolation */
 double gridTSC(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -121,6 +124,7 @@ double gridTSC(const double *box, int N, double boxlen, double x, double y, doub
     return sum;
 }
 
+/* Piecewise cubic spline interpolation */
 double gridPCS(const double *box, int N, double boxlen, double x, double y, double z) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -202,7 +206,7 @@ double access_grid(struct left_right_slice *lrs, int iX, int iY, int iZ, int N) 
     return 0;
 }
 
-/* (Distributed grid version) */
+/* (Distributed grid version) Nearest grid point interpolation */
 double gridNGP_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -217,7 +221,7 @@ double gridNGP_dg(struct left_right_slice *lrs, double x, double y, double z, do
     return access_grid(lrs, iX, iY, iZ, N);
 }
 
-/* (Distributed grid version) */
+/* (Distributed grid version) Cloud in cell interpolation */
 double gridCIC_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -259,7 +263,7 @@ double gridCIC_dg(struct left_right_slice *lrs, double x, double y, double z, do
     return sum;
 }
 
-/* (Distributed grid version) */
+/* (Distributed grid version) Triangular shaped cloud interpolation */
 double gridTSC_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -304,7 +308,7 @@ double gridTSC_dg(struct left_right_slice *lrs, double x, double y, double z, do
     return sum;
 }
 
-/* (Distributed grid version) */
+/* (Distributed grid version) Piecewise cubic spline interpolation */
 double gridPCS_dg(struct left_right_slice *lrs, double x, double y, double z, double boxlen, int N) {
     /* Convert to float grid dimensions */
     double X = x*N/boxlen;
@@ -352,6 +356,7 @@ double gridPCS_dg(struct left_right_slice *lrs, double x, double y, double z, do
     return sum;
 }
 
+/* Undo the Nearest grid point interpolation window function */
 int undoNGPWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
     struct Hermite_kern_params Hkp;
@@ -365,7 +370,7 @@ int undoNGPWindow(fftw_complex *farr, int N, double boxlen) {
     return 0;
 }
 
-
+/* Undo the Cloud in cell interpolation window function */
 int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
     struct Hermite_kern_params Hkp;
@@ -379,6 +384,7 @@ int undoCICWindow(fftw_complex *farr, int N, double boxlen) {
     return 0;
 }
 
+/* Undo the triangular shaped cloud interpolation window function */
 int undoTSCWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
     struct Hermite_kern_params Hkp;
@@ -392,6 +398,7 @@ int undoTSCWindow(fftw_complex *farr, int N, double boxlen) {
     return 0;
 }
 
+/* Undo the piecewise cubic spline interpolation window function */
 int undoPCSWindow(fftw_complex *farr, int N, double boxlen) {
     /* Package the kernel parameter */
     struct Hermite_kern_params Hkp;
