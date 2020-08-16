@@ -32,6 +32,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->SmallGridSize = ini_getl("Box", "SmallGridSize", 0, fname);
      pars->BoxLen = ini_getd("Box", "BoxLen", 1.0, fname);
      pars->Splits = ini_getl("Box", "Splits", 1, fname);
+     pars->NeighbourSliverSize = ini_getl("Box", "NeighbourSliverSize", 6, fname);
 
 
      pars->MaxParticleTypes = ini_getl("Simulation", "MaxParticleTypes", 1, fname);
@@ -39,7 +40,6 @@ int readParams(struct params *pars, const char *fname) {
      pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
      pars->MergeDarkMatterBaryons = ini_getbool("PerturbData", "MergeDarkMatterBaryons", 0, fname);
      pars->SlabSize = ini_getl("Read", "SlabSize", 8000000, fname);
-     pars->Threads = ini_getl("Simulation", "Threads", 1, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;

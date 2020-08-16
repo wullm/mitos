@@ -44,6 +44,8 @@ struct params {
     int SmallGridSize;
     double BoxLen;
     int Splits; //for folding & position dependent power spectra
+    /* Number of neighbour rows held by each MPI rank for CIC, TSC, ... */
+    int NeighbourSliverSize;
 
     /* Simulation parameters */
     char *Name;
@@ -53,7 +55,6 @@ struct params {
     char *PerturbFile;
     char MergeDarkMatterBaryons;
     char Homogeneous;
-    int Threads;
 
     /* Output parameters */
     char *OutputDirectory;

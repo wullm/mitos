@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
                                    X_min, offset, id_first_particle);
 
         /* We will also read slivers of the grids on both the left and the right */
-        int extra_width = 3; //safe: piecewise cubic spline needs 2 on each side
+        int extra_width = pars.NeighbourSliverSize;
         int left_sliver_X0 = wrap(local_X0 - extra_width, N);
         int right_sliver_X0 = wrap(local_X0 + local_NX, N);
         int left_sliver_NX = extra_width;
