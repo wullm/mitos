@@ -88,8 +88,8 @@ int enforce_hermiticity(struct distributed_grid *dg) {
     MPI_Comm_size(MPI_COMM_WORLD, &MPI_Rank_Count);
 
     /* Get the X-dimension locations (X0's) of the slices on each rank */
-    int *portion_sizes = malloc(MPI_Rank_Count * sizeof(int));
-    int *portion_offsets = malloc(MPI_Rank_Count * sizeof(int));
+    int *slice_sizes = malloc(MPI_Rank_Count * sizeof(int));
+    int *slice_offsets = malloc(MPI_Rank_Count * sizeof(int));
     MPI_Allgather(&slice_size, 1, MPI_INT, slice_sizes, 1, MPI_INT, dg->comm);
     MPI_Allgather(&slice_offset, 1, MPI_INT, slice_offsets, 1, MPI_INT, dg->comm);
 
