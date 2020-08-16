@@ -16,10 +16,11 @@ HDF5_LIBRARIES += -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -I/usr/include/hdf5/o
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
-CFLAGS = -Wall -fopenmp -march=native -O4
+CFLAGS = -Wall -Wshadow=global -fopenmp -march=native -O4
+LDFLAGS =
 
 OBJECTS = ../lib/*.o
 
 all:
-	$(GCC) src/mitos_read.c -o mitos_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/mitos_read.c -o mitos_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
 	#$(GCC) src/mitos_render.c -o mitos_render $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)

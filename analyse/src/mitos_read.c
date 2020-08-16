@@ -26,8 +26,6 @@
 
 #include "../../include/mitos.h"
 
-const char *fname;
-
 int main(int argc, char *argv[]) {
     if (argc == 1) {
         printf("No parameter file specified.\n");
@@ -112,7 +110,6 @@ int main(int argc, char *argv[]) {
 
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
-    fftw_complex *fbox = fftw_alloc_complex(N * N * (N/2 + 1));
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -415,6 +412,7 @@ int main(int argc, char *argv[]) {
 
         fftw_destroy_plan(r2c);
         fftw_destroy_plan(c2r);
+        fftw_free(fbox);
 
         printf("\n");
     }
@@ -466,7 +464,6 @@ int main(int argc, char *argv[]) {
     // printf("Density grid exported to %s.\n", box_fname);
     //
     fftw_free(box);
-    fftw_free(fbox);
     // free(rho_interlaced_box);
     // fftw_free(fbox);
     // }

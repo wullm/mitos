@@ -29,11 +29,11 @@ double sampleNorm(rng_state *state) {
     /* Generate random integers */
     const uint64_t A = rand_uint64(state);
     const uint64_t B = rand_uint64(state);
-    const double RM = (double) UINT64_MAX + 1;
+    const double RMax = (double) UINT64_MAX + 1;
 
     /* Map the random integers to the open (!) unit interval */
-    const double u = ((double) A + 0.5) / RM;
-    const double v = ((double) B + 0.5) / RM;
+    const double u = ((double) A + 0.5) / RMax;
+    const double v = ((double) B + 0.5) / RMax;
 
     /* Map to two Gaussians (the second is not used - inefficient) */
     const double z0 = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
@@ -190,10 +190,10 @@ int initSampler(struct sampler *s, pdf f, double xl, double xr, void *params) {
         /* Find the largest interval such that u > F(p) */
         double maxJ = 0;
         int int_i = 0;
-        for(int i=0; i<s->intervalNum; i++) {
-            if (s->intervals[i].Fr < u && s->intervals[i].r > maxJ) {
-                maxJ = s->intervals[i].r;
-                int_i = i;
+        for(int j=0; j<s->intervalNum; j++) {
+            if (s->intervals[j].Fr < u && s->intervals[j].r > maxJ) {
+                maxJ = s->intervals[j].r;
+                int_i = j;
             }
         }
         s->index[i] = int_i;

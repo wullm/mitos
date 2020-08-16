@@ -16,7 +16,8 @@ HDF5_LIBRARIES += -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -I/usr/include/hdf5/o
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES)
-CFLAGS = -Wall -fopenmp -march=native -O4
+CFLAGS = -Wall -Wshadow=global -fopenmp -march=native -O4
+LDFLAGS =
 
 OBJECTS = lib/*.o
 
@@ -53,7 +54,7 @@ all:
 	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
-	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
 
 	make analyse_tools
 

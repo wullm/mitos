@@ -49,8 +49,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* Timer */
-    struct timeval stop, start;
-    gettimeofday(&start, NULL);
+    struct timeval time_stop, time_start;
+    gettimeofday(&time_start, NULL);
 
     /* Mitos structuress */
     struct params pars;
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
             /* Initialize the sampler */
             double thermal_params[2] = {T_eV, mu_eV};
 
-            int err = initSampler(&thermal_sampler, function, xl, xr, thermal_params);
+            err = initSampler(&thermal_sampler, function, xl, xr, thermal_params);
             if (err > 0) {
                 printf("Error initializing the thermal motion sampler.\n");
                 exit(1);
@@ -589,7 +589,7 @@ int main(int argc, char *argv[]) {
             sprintf(dbox_fname, "%s/%s_%c_%s%s", pars.OutputDirectory, GRID_NAME_DISPLACEMENT, letters[dir], ptype->Identifier, ".hdf5");
 
             /* Read our slice of the displacement grid */
-            int err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
+            err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
             catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Read a sliver on the left of the displacement grid */
@@ -630,7 +630,7 @@ int main(int argc, char *argv[]) {
             // printf("Velocity field read from '%s'.\n", dbox_fname);
 
             /* Read our slice of the velocity grid */
-            int err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
+            err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
             catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Read a sliver on the left of the velocity grid */
@@ -828,8 +828,9 @@ int main(int argc, char *argv[]) {
 
 
     /* Timer */
-    gettimeofday(&stop, NULL);
-    long unsigned microsec = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
+    gettimeofday(&time_stop, NULL);
+    long unsigned microsec = (time_stop.tv_sec - time_start.tv_sec) * 1000000
+                           + time_stop.tv_usec - time_start.tv_usec;
     message(rank, "\nTime elapsed: %.5f s\n", microsec/1e6);
 
 }
