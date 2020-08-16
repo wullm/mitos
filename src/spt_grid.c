@@ -87,7 +87,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     // sprintf(cur_flux_density_fname, "%s_%03d.hdf5", flux_fname, 0);
     //
     // /* Read the input density field */
-    // readGRF_inPlace_H5(box, input_density_fname);
+    // readFieldFileInPlace(box, input_density_fname);
     //
     // /* Record the mean square fluctuation */
     // double ss_density = 0;
@@ -97,10 +97,10 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //
     // /* Store it at a convenient location */
     // writeFieldHeader_H5(N, boxlen, chunks, cur_density_fname);
-    // writeField_H5(box, cur_density_fname);
+    // writeFieldData(box, cur_density_fname);
     //
     // /* Read the input flux density field */
-    // readGRF_inPlace_H5(box, input_flux_density_fname);
+    // readFieldFileInPlace(box, input_flux_density_fname);
     //
     // /* Record the mean square fluctuation */
     // double ss_flux = 0;
@@ -118,7 +118,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //
     // /* Store it at a convenient location */
     // writeFieldHeader_H5(N, boxlen, chunks, cur_flux_density_fname);
-    // writeField_H5(box, cur_flux_density_fname);
+    // writeFieldData(box, cur_flux_density_fname);
     //
     // /* For each GridSPT cycle */
     // for (int ITER = 0; ITER < cycles; ITER++) {
@@ -130,7 +130,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //     /* Compute the 3 derivatives of the density field */
     //     for (int j=0; j<3; j++) {
     //         /* Read the current density field */
-    //         readGRF_inPlace_H5(box, cur_density_fname);
+    //         readFieldFileInPlace(box, cur_density_fname);
     //
     //         /* Fourier transform it */
     //         fft_execute(r2c);
@@ -147,13 +147,13 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         char outname[DEFAULT_STRING_LENGTH];
     //         sprintf(outname, "%s_d%c_%03d.hdf5", gradient_fname, letters[j], ITER);
     //         writeFieldHeader_H5(N, boxlen, chunks, outname);
-    //         writeField_H5(box, outname);
+    //         writeFieldData(box, outname);
     //     }
     //
     //     /* Compute the 3 derivatives of the flux field */
     //     for (int j=0; j<3; j++) {
     //         /* Read the current flux field */
-    //         readGRF_inPlace_H5(box, cur_flux_density_fname);
+    //         readFieldFileInPlace(box, cur_flux_density_fname);
     //
     //         /* Fourier transform it */
     //         fft_execute(r2c);
@@ -170,11 +170,11 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         char outname[DEFAULT_STRING_LENGTH];
     //         sprintf(outname, "%s_d%c_%03d.hdf5", flux_gradient_fname, letters[j], ITER);
     //         writeFieldHeader_H5(N, boxlen, chunks, outname);
-    //         writeField_H5(box, outname);
+    //         writeFieldData(box, outname);
     //     }
     //
     //     /* Solve Poisson's equation, sourced by the current flux field */
-    //     readGRF_inPlace_H5(box, cur_flux_density_fname);
+    //     readFieldFileInPlace(box, cur_flux_density_fname);
     //
     //     /* Solve Poisson's equation */
     //     solvePoisson(box, box, N, boxlen);
@@ -183,12 +183,12 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //     char cur_potential_fname[DEFAULT_STRING_LENGTH];
     //     sprintf(cur_potential_fname, "%s_%03d.hdf5", potential_fname, ITER);
     //     writeFieldHeader_H5(N, boxlen, chunks, cur_potential_fname);
-    //     writeField_H5(box, cur_potential_fname);
+    //     writeFieldData(box, cur_potential_fname);
     //
     //     /* Compute the 3 derivatives of the flux potential field */
     //     for (int j=0; j<3; j++) {
     //         /* Read the current flux potential field */
-    //         readGRF_inPlace_H5(box, cur_potential_fname);
+    //         readFieldFileInPlace(box, cur_potential_fname);
     //
     //         /* Fourier transform it */
     //         fft_execute(r2c);
@@ -205,13 +205,13 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         char outname[DEFAULT_STRING_LENGTH];
     //         sprintf(outname, "%s_%c_%03d.hdf5", velocity_fname, letters[j], ITER);
     //         writeFieldHeader_H5(N, boxlen, chunks, outname);
-    //         writeField_H5(box, outname);
+    //         writeFieldData(box, outname);
     //     }
     //
     //     /* Compute the 6 seond order derivatives of the flux potential field */
     //     for (int j=0; j<6; j++) {
     //         /* Read the current flux potential field */
-    //         readGRF_inPlace_H5(box, cur_potential_fname);
+    //         readFieldFileInPlace(box, cur_potential_fname);
     //
     //         /* Fourier transform it */
     //         fft_execute(r2c);
@@ -229,7 +229,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         char outname[DEFAULT_STRING_LENGTH];
     //         sprintf(outname, "%s_d%c%c_%03d.hdf5", tidal_fname, letters[index_a[j]], letters[index_b[j]], ITER);
     //         writeFieldHeader_H5(N, boxlen, chunks, outname);
-    //         writeField_H5(box, outname);
+    //         writeFieldData(box, outname);
     //     }
     //
     //     /* Allocate memory for one chunk of the output grid and two input grids */
@@ -343,7 +343,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //     double R_smooth = 1;
     //     for (int i=0; i<2; i++) {
     //         /* Load the respective source field */
-    //         readGRF_inPlace_H5(box, source_fnames[i]);
+    //         readFieldFileInPlace(box, source_fnames[i]);
     //
     //         /* Fourier transform it */
     //         fft_execute(r2c);
@@ -357,7 +357,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
     //         fft_normalize_c2r(box, N, N, 0, boxlen);
     //
     //         /* Store the resulting grid at the same location */
-    //         writeField_H5(box, source_fnames[i]);
+    //         writeFieldData(box, source_fnames[i]);
     //     }
     //
     //

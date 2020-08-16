@@ -22,15 +22,13 @@
 
 #include <hdf5.h>
 
+/* General methods */
 hid_t openFile(const char *fname);
 hid_t createFile(const char *fname);
 int writeFieldHeader(double boxlen, hid_t h_file);
 
-int writeGRF_H5(const double *box, int N, double box_len, const char *fname);
-
-int writeFieldHeader_H5(int N, double boxlen, int chunks, const char *fname);
-int writeField_H5(const double *box, const char *fname);
-int writeFieldChunk_H5(const double *chunk_data, int N, int num_chunks,
-                       int chunk_id, const char *fname);
+/* Methods for contiguous arrays (analogous to MPI versions in output_mpi.h) */
+int writeFieldFile(const double *box, int N, double box_len, const char *fname);
+int writeFieldData(const double *box, hid_t h_file);
 
 #endif

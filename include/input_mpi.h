@@ -24,6 +24,6 @@
 
 int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
                   const char *fname);
-int readField_dg(struct distributed_grid *dg, const char *fname);
+int readFieldFile_dg(struct distributed_grid *dg, const char *fname);
 
 #endif

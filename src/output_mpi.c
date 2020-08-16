@@ -49,7 +49,7 @@ hid_t createFile_MPI(MPI_Comm comm, const char *fname) {
     return h_file;
 }
 
-int createFieldGroup_MPI(int N, int NX, hid_t h_file) {
+int createFieldGroup_dg(int N, int NX, hid_t h_file) {
     if (NX * N * (N+2) * sizeof(double) > HDF5_PARALLEL_IO_MAX_BYTES) {
         printf("Error: parallel HDF5 cannot handle more than 2GB per chunk.\n");
         return 1;
@@ -89,11 +89,11 @@ int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
         if (err > 0) return err;
 
         /* Create the Field group */
-        err = createFieldGroup_MPI(dg->N, dg->NX, h_file);
+        err = createFieldGroup_dg(dg->N, dg->NX, h_file);
         if (err > 0) return err;
 
         /* Write the data */
-        err = writeData_dg(dg, h_file);
+        err = writeFieldData_dg(dg, h_file);
         if (err > 0) return 0;
 
         /* Close the file */
@@ -102,7 +102,7 @@ int writeFieldFile_dg(struct distributed_grid *dg, const char *fname) {
         return 0;
 }
 
-int writeData_dg(struct distributed_grid *dg, hid_t h_file) {
+int writeFieldData_dg(struct distributed_grid *dg, hid_t h_file) {
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);

@@ -63,7 +63,8 @@ int fft_normalize_c2r(double *arr, int N, double boxlen) {
 }
 
 
-/* Normalize the complex array after transforming to momentum space */
+/* (Distributed grid version) Normalize the complex array after transforming
+ * to momentum space */
 int fft_normalize_r2c_dg(struct distributed_grid *dg) {
     const int N = dg->N;
     const int NX = dg->NX;
@@ -78,13 +79,11 @@ int fft_normalize_r2c_dg(struct distributed_grid *dg) {
         }
     }
 
-    /* Flip the trigger for bookkeeping */
-    dg->momentum_space = 1;
-
     return 0;
 }
 
-/* Normalize the real array after transforming to configuration space */
+/* (Distributed grid version) Normalize the real array after transforming
+ * to configuration space */
 int fft_normalize_c2r_dg(struct distributed_grid *dg) {
     const int N = dg->N;
     const int NX = dg->NX;
@@ -98,9 +97,6 @@ int fft_normalize_c2r_dg(struct distributed_grid *dg) {
             }
         }
     }
-
-    /* Flip the trigger for bookkeeping */
-    dg->momentum_space = 0;
 
     return 0;
 }
@@ -140,52 +136,7 @@ int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
     return 0;
 }
 
-/* Perform real-to-complex FFT and export, then frees the memory of the input */
-int fft_c2r_export_and_free(fftw_complex *farr, int N, double boxlen, const char *fname) {
-    /* Create configuration space array */
-    double *box = (double*) fftw_malloc(N*N*N*sizeof(double));
-
-    /* Create FFT plans (destroys input) */
-    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, farr, box, FFTW_ESTIMATE);
-
-    /* Execute and normalize */
-    fft_execute(c2r);
-    fft_normalize_c2r(box,N,boxlen);
-
-    /* Free the destroyed input */
-    fftw_free(farr);
-
-    /* Export as HDF5 */
-    writeGRF_H5(box, N, boxlen, fname);
-
-    /* Free */
-    fftw_destroy_plan(c2r);
-    fftw_free(box);
-
-    return 0;
-}
-
-/* Quick and dirty write binary boxes */
-void write_floats(const char *fname, const float *floats, int n) {
-  FILE *f = fopen(fname, "wb");
-  fwrite(floats, sizeof(float), n, f);
-  fclose(f);
-}
-
-/* Quick and dirty write binary boxes */
-void write_doubles_as_floats(const char *fname, const double *doubles, int n) {
-  /* Convert to floats */
-  float *floats = (float *)malloc(sizeof(float) * n);
-  for (int i = 0; i < n; i++) {
-    floats[i] = (float)doubles[i];
-  }
-
-  FILE *f = fopen(fname, "wb");
-  fwrite(floats, sizeof(float), n, f);
-  fclose(f);
-  free(floats);
-}
-
+/* (Distributed grid version) Perform an r2c Fourier transform and normalize */
 int fft_r2c_dg(struct distributed_grid *dg) {
     /* Create MPI FFTW plan */
     fftw_plan r2c_mpi = fftw_mpi_plan_dft_r2c_3d(dg->N, dg->N, dg->N, dg->box,
@@ -198,10 +149,13 @@ int fft_r2c_dg(struct distributed_grid *dg) {
     /* Destroy the plan */
     fftw_destroy_plan(r2c_mpi);
 
+    /* Flip the flag for bookkeeping */
+    dg->momentum_space = 1;
+
     return 0;
 }
 
-
+/* (Distributed grid version) Perform a c2r Fourier transform and normalize */
 int fft_c2r_dg(struct distributed_grid *dg) {
     /* Create MPI FFTW plan */
     fftw_plan c2r_mpi = fftw_mpi_plan_dft_c2r_3d(dg->N, dg->N, dg->N, dg->fbox,
@@ -214,10 +168,13 @@ int fft_c2r_dg(struct distributed_grid *dg) {
     /* Destroy the plan */
     fftw_destroy_plan(c2r_mpi);
 
+    /* Flip the trigger for bookkeeping */
+    dg->momentum_space = 0;
+
     return 0;
 }
 
-/* Apply a kernel to a 3D array after transforming to momentum space */
+/* (Distrbuted grid version) Apply a kernel to a complex 3D array */
 int fft_apply_kernel_dg(struct distributed_grid *dg_write,
                         struct distributed_grid *dg_read,
                         void (*compute)(struct kernel* the_kernel),

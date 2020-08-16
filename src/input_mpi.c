@@ -70,7 +70,7 @@ int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
     return 0;
 }
 
-int readField_dg(struct distributed_grid *dg, const char *fname) {
+int readFieldFile_dg(struct distributed_grid *dg, const char *fname) {
 
     /* Open the hdf5 file */
     hid_t h_file = openFile_MPI(dg->comm, fname);

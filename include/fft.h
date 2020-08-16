@@ -38,7 +38,6 @@ struct kernel {
     void *params;
 };
 
-/* DEPRECATED */
 static inline int row_major(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
@@ -53,6 +52,8 @@ static inline int row_major_half(int i, int j, int k, int N) {
     return i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
+/* Distributed grids are padded, which is bug prone, so we should find an
+ * good solution. */
 static inline int row_major_padded(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
@@ -74,15 +75,14 @@ static inline double hypot3(double x, double y, double z) {
     return hypot(x, hypot(y, z));
 }
 
-
+/* General functions */
 void fft_wavevector(int x, int y, int z, int N, double delta_k, double *kx,
                     double *ky, double *kz, double *k);
-
-int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
-int fft_normalize_c2r(double *arr, int N, double boxlen);
-
 void fft_execute(fftw_plan plan);
 
+/* Functions for ordinary contiguous arrays */
+int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
+int fft_normalize_c2r(double *arr, int N, double boxlen);
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                       int NX, int X0, double boxlen,
                       void (*compute)(struct kernel* the_kernel),
@@ -96,9 +96,5 @@ int fft_apply_kernel_dg(struct distributed_grid *dg_write,
                         void (*compute)(struct kernel* the_kernel),
                         void *params);
 
-/* Some useful I/O functions for debugging */
-void write_floats(const char *fname, const float *floats, int n);
-void write_doubles_as_floats(const char *fname, const double *doubles, int n);
-int fft_c2r_export_and_free(fftw_complex *farr, int N, double boxlen, const char *fname);
 
 #endif

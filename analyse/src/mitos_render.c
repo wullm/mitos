@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     /* Read the density field from file */
     int N;
     double boxlen;
-    readGRF_H5(&rho, &N, &boxlen, pars.InputFilename);
+    readFieldFile(&rho, &N, &boxlen, pars.InputFilename);
 
     /* Allocate 3D complex array */
     fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
@@ -119,8 +119,8 @@ int main(int argc, char *argv[]) {
     //fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
 
     /* Export the real box */
-    fft_c2r_export_and_free(fbox, N, boxlen, pars.OutputFilename);
-    printf("Resulting field exported to '%s'.\n", pars.OutputFilename);
+    // fft_c2r_export_and_free(fbox, N, boxlen, pars.OutputFilename);
+    // printf("Resulting field exported to '%s'.\n", pars.OutputFilename);
 
 
     /* Free up memory */

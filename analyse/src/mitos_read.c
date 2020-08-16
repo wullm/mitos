@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
         } else {
             sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
         }
-        writeGRF_H5(box, N, boxlen[0], box_fname);
+        writeFieldFile(box, N, boxlen[0], box_fname);
         message(rank, "Density grid exported to %s.\n", box_fname);
     }
 
@@ -462,7 +462,7 @@ int main(int argc, char *argv[]) {
     // /* Export the density box for testing purposes */
     // char box_fname[40];
     // sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
-    // writeGRF_H5(box, N, boxlen[0], box_fname);
+    // writeFieldFile(box, N, boxlen[0], box_fname);
     // printf("Density grid exported to %s.\n", box_fname);
     //
     fftw_free(box);

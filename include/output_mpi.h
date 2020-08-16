@@ -27,11 +27,13 @@
 
 #include "distributed_grid.h"
 
+/* General methods */
 hid_t openFile_MPI(MPI_Comm comm, const char *fname);
 hid_t createFile_MPI(MPI_Comm comm, const char *fname);
-int createFieldGroup_MPI(int N, int NX, hid_t h_file);
 
-int writeData_dg(struct distributed_grid *dg, hid_t h_file);
+/* Methods for distributed grids (analogous to non-MPI versions in output.h) */
+int createFieldGroup_dg(int N, int NX, hid_t h_file);
+int writeFieldData_dg(struct distributed_grid *dg, hid_t h_file);
 int writeFieldFile_dg(struct distributed_grid *dg, const char *fname);
 
 #endif

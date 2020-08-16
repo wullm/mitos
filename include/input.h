@@ -107,13 +107,8 @@ int readCosmology(struct cosmology *cosmo, struct units *us, const char *fname);
 
 int cleanParams(struct params *parser);
 
-int readField_MPI(double *data, int N, int NX, int X0, MPI_Comm comm,
-                  const char *fname);
-
-int readGRF_H5(double **box, int *N, double *box_len, const char *fname);
-int readGRF_inPlace_H5(double *box, const char *fname);
-int readFieldChunk_H5(double *chunk_data, int N, int num_chunks, int chunk_id,
-                      const char *fname);
+int readFieldFile(double **box, int *N, double *box_len, const char *fname);
+int readFieldFileInPlace(double *box, const char *fname);
 
 
 static inline void generateFieldFilename(const struct params *pars, char *fname,

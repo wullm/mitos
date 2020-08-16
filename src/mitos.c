@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
             sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
 
             /* Export the small grid */
-            writeGRF_H5(grf_small, M, boxlen, small_fname);
+            writeFieldFile(grf_small, M, boxlen, small_fname);
             message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
         }
 
