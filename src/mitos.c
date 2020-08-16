@@ -498,7 +498,7 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
-            printf("Thermal motion: %s with [M, T] = [%e eV, %e eV].\n",
+            message(rank, "Thermal motion: %s with [M, T] = [%e eV, %e eV].\n",
                     ptype->ThermalMotionType, M_eV, T_eV);
         }
 
