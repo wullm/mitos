@@ -26,8 +26,8 @@
 int generate_complex_grf(struct distributed_grid *dg, rng_state *state) {
     /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
     const int N = dg->N;
-    const int NX = dg->NX;
-    const int X0 = dg->X0; //the local portion starts at X = X0
+    const int NX = dg->NX; //the local slice is NX rows wide
+    const int X0 = dg->X0; //the local slice starts at X = X0
     const double boxlen = dg->boxlen;
     const double boxvol = boxlen*boxlen*boxlen;
     const double factor = sqrt(boxvol/2);
@@ -37,7 +37,10 @@ int generate_complex_grf(struct distributed_grid *dg, rng_state *state) {
 
     /* Because the Gaussian field is real, the Fourier transform fbox
      * is Hermitian. This can be stored with just N*N*(N/2+1) complex
-     * numbers. We loop over x,y in {0, ..., N-1} and z in {0, ..., N/2}.
+     * numbers. The grid is divided over the nodes along the X-axis.
+     * On this node, we have the slice X0 <= X < X0 + NX. Hence,
+     * we loop over x in {X0, ..., X0 + NX - 1}, y in {0, ..., N-1},
+     * and z in {0, ..., N/2}.
      */
 
     double kx,ky,kz,k;
@@ -65,11 +68,18 @@ int generate_complex_grf(struct distributed_grid *dg, rng_state *state) {
     return 0;
 }
 
+/* Perform corrections to the generated Gaussian random field such that the
+ * complex array is truly Hermitian. This only affects the planes k_z = 0
+ * and k_z = N/2.
+ *
+ * Because the grid is divided over several MPI ranks along the X-axis, we
+ * first collect the k_z = 0 and k_z = N/2 planes in full on each node. Then,
+ * we make the necessary corrections. */
 int enforce_hermiticity(struct distributed_grid *dg) {
     /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
     const int N = dg->N;
-    const int NX = dg->NX;
-    const int X0 = dg->X0; //the local portion starts at X = X0
+    const int NX = dg->NX; //the local slice is NX rows wide
+    const int X0 = dg->X0; //the local slice starts at X = X0
     const int slice_size = NX * N;
     const int slice_offset = X0 * N;
 
@@ -77,9 +87,9 @@ int enforce_hermiticity(struct distributed_grid *dg) {
     int MPI_Rank_Count;
     MPI_Comm_size(MPI_COMM_WORLD, &MPI_Rank_Count);
 
-    /* Get the X-dimension locations of the slices on each rank */
-    int *slice_sizes = malloc(MPI_Rank_Count * sizeof(int));
-    int *slice_offsets = malloc(MPI_Rank_Count * sizeof(int));
+    /* Get the X-dimension locations (X0's) of the slices on each rank */
+    int *portion_sizes = malloc(MPI_Rank_Count * sizeof(int));
+    int *portion_offsets = malloc(MPI_Rank_Count * sizeof(int));
     MPI_Allgather(&slice_size, 1, MPI_INT, slice_sizes, 1, MPI_INT, dg->comm);
     MPI_Allgather(&slice_offset, 1, MPI_INT, slice_offsets, 1, MPI_INT, dg->comm);
 
@@ -87,7 +97,7 @@ int enforce_hermiticity(struct distributed_grid *dg) {
 
     /* Collect the plane on all nodes */
     fftw_complex *our_slice = fftw_alloc_complex(NX * N);
-    fftw_complex *plane = fftw_alloc_complex(N * N);
+    fftw_complex *full_plane = fftw_alloc_complex(N * N);
 
     /* For both planes */
     for (int z=0; z<=N/2; z+=N/2) { //runs over z=0 and z=N/2
@@ -95,14 +105,14 @@ int enforce_hermiticity(struct distributed_grid *dg) {
         /* Fill our local slice of the plane */
         for (int x=X0; x<X0 + NX; x++) {
             for (int y=0; y<N; y++) {
-                int id = row_major_half_dg(x,y,z,dg);
+                int id = row_major_half_dg(x, y, z, dg);
                 our_slice[(x-X0)*N + y] = dg->fbox[id];
             }
         }
 
         /* Gather all the slices on all the nodes */
-        MPI_Allgatherv(our_slice, NX * N, MPI_DOUBLE_COMPLEX, plane, slice_sizes,
-                       slice_offsets, MPI_DOUBLE_COMPLEX, dg->comm);
+        MPI_Allgatherv(our_slice, NX * N, MPI_DOUBLE_COMPLEX, full_plane,
+                       slice_sizes, slice_offsets, MPI_DOUBLE_COMPLEX, dg->comm);
 
         /* Enforce hermiticity: f(k) = f*(-k) */
         for (int x=X0; x<X0 + NX; x++) {
@@ -121,7 +131,7 @@ int enforce_hermiticity(struct distributed_grid *dg) {
                     dg->fbox[id] = creal(dg->fbox[id]);
                 } else {
                     /* Otherwise, set it to the conjugate of its mirror point */
-                    dg->fbox[id] = conj(plane[invx*N + invy]);
+                    dg->fbox[id] = conj(full_plane[invx*N + invy]);
                 }
             }
         }
@@ -132,7 +142,7 @@ int enforce_hermiticity(struct distributed_grid *dg) {
 
     /* Free the memory */
     fftw_free(our_slice);
-    fftw_free(plane);
+    fftw_free(full_plane);
     free(slice_sizes);
     free(slice_offsets);
 
