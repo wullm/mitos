@@ -21,6 +21,7 @@
 #include <string.h>
 #include <math.h>
 #include "../include/header.h"
+#include "../include/mitos.h"
 
 int writeHeaderAttributes(struct params *pars, struct cosmology *cosmo,
                           struct units *us, struct particle_type **types,
@@ -238,6 +239,18 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     fprintf(f, "  neutrino_dt_switch_threshold:\t %.5e\n", dt_switch_neutrino);
     fprintf(f, "\n");
 
+    /* Are we using a smaller Gaussian random field? */
+    char field_file_name[50];
+    if (pars->SmallGridSize > 0) {
+        sprintf(field_file_name, "%s%s", GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+    } else {
+        sprintf(field_file_name, "%s%s", GRID_NAME_GAUSSIAN, ".hdf5");
+    }
+
+    fprintf(f, "Boltzmann:\n");
+    fprintf(f, "  field_file_name: %s\n", field_file_name);
+    fprintf(f, "  in_perturb_file_name: %s\n", pars->PerturbFile);
+
     /* Some reasonable SWIFT parameters that can be easily changed */
     int max_top_level_cells = 16;
     int cell_split_size = 100;
@@ -274,13 +287,16 @@ int writeSwiftParameterFile(struct params *pars, struct cosmology *cosmo,
     double theta = 0.5;
     char MAC[10] = "geometric";
     double rebuild_freq = 0; //always
+    /* Are we using a smaller Gaussian random field? */
+    int grid_size = (pars->SmallGridSize > 0) ? pars->SmallGridSize
+                                              : pars->GridSize;
 
     fprintf(f, "InitialConditions:\n");
     fprintf(f, "  file_name:\t%s\n", pars->OutputFilename);
     fprintf(f, "  periodic:\t%d\n", periodic);
     fprintf(f, "\n");
     fprintf(f, "Gravity:\n");
-    fprintf(f, "  mesh_side_length:\t%d\n", pars->GridSize);
+    fprintf(f, "  mesh_side_length:\t%d\n", grid_size);
     fprintf(f, "  dithering:\t\t%d\n", dithering);
     fprintf(f, "  MAC:\t\t\t%s\n", MAC);
     fprintf(f, "  eta:\t\t\t%.5f\n", eta);
