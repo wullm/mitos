@@ -19,7 +19,7 @@ LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $
 CFLAGS = -Wall -Wshadow=global -fopenmp -march=native -O4
 LDFLAGS =
 
-OBJECTS = ../lib/*.o
+OBJECTS = ../lib/input.o ../lib/output.o ../lib/input_mpi.o ../lib/output_mpi.o ../lib/fft.o ../lib/calc_powerspec.o ../lib/grids_interp.o ../lib/particle_types.o ../lib/titles.o
 
 all:
 	$(GCC) src/mitos_read.c -o mitos_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
