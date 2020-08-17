@@ -58,6 +58,16 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
      ini_gets("Read", "ImportName", "", pars->ImportName, len, fname);
 
+     /* Read optional settings for the Firebolt Boltzmann solver */
+     pars->MaxMultipole = ini_getl("Firebolt", "MaxMultipole", 2000, fname);
+     pars->MaxMultipoleConvert = ini_getl("Firebolt", "MaxMultipoleConvert", 2, fname);
+     pars->NumberMomentumBins = ini_getl("Firebolt", "NumberMomentumBins", 10, fname);
+     pars->NumberWavenumbers = ini_getl("Firebolt", "NumberWavenumbers", 10, fname);
+     pars->MinMomentum = ini_getd("Firebolt", "MinMomentum", 0.01, fname);
+     pars->MaxMomentum = ini_getd("Firebolt", "MaxMomentum", 15, fname);
+     pars->FireboltTolerance = ini_getd("Firebolt", "Tolerance", 1e-10, fname);
+     pars->FireboltVerbose = ini_getbool("Firebolt", "Verbose", 0, fname);
+
      return 0;
 }
 

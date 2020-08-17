@@ -22,9 +22,16 @@
 #include <string.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <complex.h>
 
 #include "../include/mitos.h"
 #include "../include/grf_ngeniclike.h"
+
+#define COMPILED_WITH_FIREBOLT 1
+
+#if(COMPILED_WITH_FIREBOLT)
+#include "../include/firebolt_interface.h"
+#endif
 
 int main(int argc, char *argv[]) {
     if (argc == 1) {
@@ -61,6 +68,10 @@ int main(int argc, char *argv[]) {
     struct perturb_data ptdat;
     struct perturb_spline spline;
     struct perturb_params ptpars;
+
+    #if(COMPILED_WITH_FIREBOLT)
+    struct firebolt_interface firebolt;
+    #endif
 
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
@@ -458,6 +469,21 @@ int main(int argc, char *argv[]) {
         /* Random sampler used for thermal species */
         struct sampler thermal_sampler;
 
+        /* Count how many draws are needed from the thermal distribution */
+        long long thermal_draws = 0;
+
+        /* Microscopic mass in electronVolts */
+        double M_eV;
+        /* Convert the temperature to electronVolts */
+        double T_eV;
+        /* Chemical potential */
+        double mu_eV;
+
+        /* Small grid, potentially used for the Firebolt Boltzmann code */
+        #if(COMPILED_WITH_FIREBOLT)
+        fftw_complex *small_grf = NULL;
+        #endif
+
         /* Initialize a random sampler if this particle type is thermal */
         if (strcmp(ptype->ThermalMotionType, "") != 0) {
             /* Check if the type of thermal motion is supported */
@@ -479,11 +505,11 @@ int main(int argc, char *argv[]) {
             }
 
             /* Microscopic mass in electronVolts */
-            double M_eV = ptype->MicroscopicMass_eV;
+            M_eV = ptype->MicroscopicMass_eV;
             /* Convert the temperature to electronVolts */
-            double T_eV = ptype->MicroscopyTemperature * us.kBoltzmann / us.ElectronVolt;
+            T_eV = ptype->MicroscopyTemperature * us.kBoltzmann / us.ElectronVolt;
             /* Chemical potential */
-            double mu_eV = 0;
+            mu_eV = 0;
 
             /* Rescale the domain */
             xl *= T_eV;
@@ -500,6 +526,43 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Thermal motion: %s with [M, T] = [%e eV, %e eV].\n",
                     ptype->ThermalMotionType, M_eV, T_eV);
+
+            /* Beyond the zeroth order Fermi-Dirac distribution, we can use the
+             * linear theory perturbation from a Boltzmann code. */
+
+            /* Use the Firebolt sampler */
+            #if(COMPILED_WITH_FIREBOLT)
+            if (ptype->UseFirebolt) {
+
+                /* Smaller grid size used for the Firebolt Boltzmann code */
+                const int K = pars.SmallGridSize;
+
+                /* Allocate small 3D array */
+                small_grf = (fftw_complex*) malloc(K*K*(K/2+1)*sizeof(fftw_complex));
+
+                /* Load the small Gaussian random field */
+                char read_small_fname[DEFAULT_STRING_LENGTH];
+                sprintf(read_small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+
+                /* Read the field from file */
+                int read_N;
+                double read_boxlen;
+                double *small_grid;
+                readFieldFile(&small_grid, &read_N, &read_boxlen, read_small_fname);
+
+                /* Compute the Fourier transform */
+                fftw_plan small_r2c = fftw_plan_dft_r2c_3d(K, K, K, small_grid, small_grf, FFTW_ESTIMATE);
+                fft_execute(small_r2c);
+                fft_normalize_r2c(small_grf, K, boxlen);
+
+                /* Free the real box */
+                free(small_grid);
+                fftw_destroy_plan(small_r2c);
+
+                /* Initialize the Firebolt Boltzmann code */
+                initFirebolt(&pars, &cosmo, &us, &ptdat, &spline, &firebolt, small_grf, M_eV, T_eV);
+            }
+            #endif
         }
 
         /* The particle group in the output file */
@@ -669,41 +732,87 @@ int main(int argc, char *argv[]) {
 
             /* Add thermal velocities to the particles in this chunk */
             for (int i=0; i<chunk_size; i++) {
-                /* Draw a momentum in eV from the thermal distribution */
-                double p0_eV = samplerCustom(&thermal_sampler, &seed); //present-day momentum
-                double p_eV = p0_eV / a_ini; //redshifted momentum
 
-                if (isnan(p_eV) || p_eV <= 0) {
-                    printf("ERROR: invalid thermal momentum drawn: %e.\n", p_eV);
+                /* Resample as long necessary */
+                char accept = 0;
+                while (!accept) {
+                    /* Draw a momentum in eV from the thermal distribution */
+                    double p0_eV = samplerCustom(&thermal_sampler, &seed); //present-day momentum
+                    double p_eV = p0_eV / a_ini; //redshifted momentum
+                    thermal_draws++;
+
+                    if (isnan(p_eV) || p_eV <= 0) {
+                        printf("ERROR: invalid thermal momentum drawn: %e.\n", p_eV);
+                        exit(1);
+                    }
+
+                    /* Convert to speed in internal units. Note that this is
+                     * the spatial part of the relativistic 4-velocity. */
+                    double V = p_eV / ptype->MicroscopicMass_eV * us.SpeedOfLight;
+
+                    /* Generate a random point on the unit sphere using Gaussians */
+                    double nx = sampleNorm(&seed);
+                    double ny = sampleNorm(&seed);
+                    double nz = sampleNorm(&seed);
+
+                    /* And normalize */
+                    double length = hypot(nx, hypot(ny, nz));
+                    if (length > 0) {
+                        nx /= length;
+                        ny /= length;
+                        nz /= length;
+                    }
+
+                    if (isnan(nx) || isnan(ny) || isnan(nz)) {
+                        printf("ERROR: invalid random velocity v = [%e, %e, %e]\n", nx, ny, nz);
+                        exit(1);
+                    }
+
+                    /* If desired, compute the linear theory perturbation */
+                    if (ptype->UseFirebolt) {
+                    #if(COMPILED_WITH_FIREBOLT)
+                        int mode = 2;
+                        double q = p0_eV / T_eV;
+                        double Psi = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
+                                                 parts[i].X, parts[i].Y, parts[i].Z, nx, ny, nz, q, mode);
+
+                        if (isnan(Psi) || Psi <= -1) {
+                            printf("ERROR: invalid perturbation to the probability.\n");
+                            exit(1);
+                        }
+
+                        /* Rejection sampling! */
+                        double base_accept = 1.0 - ptype->FireboltMaxPerturbation;
+                        double p_accept = base_accept * (1 + Psi);
+
+                        if (p_accept > 1) {
+                            printf("ERROR: rejection sampler encountered P(accept) > 1\t [q, Psi, P] = [%f, %e, %e].\n", q, Psi, p_accept);
+                            exit(1);
+                        }
+
+                        /* Draw a uniform random number */
+                        double u = sampleUniform(&seed);
+
+                        /* Do we accept? */
+                        if (u < p_accept) {
+                            accept = 1;
+                        }
+                    #else
+                    printf("ERROR: not compiled with Firebolt.\n");
                     exit(1);
+                    #endif
+                    } else {
+                        /* Otherwise, always accept */
+                        accept = 1;
+                    }
+
+                    /* If we are done with sampling, add the thermal velocities */
+                    if (accept) {
+                        parts[i].v_X += nx * V;
+                        parts[i].v_Y += ny * V;
+                        parts[i].v_Z += nz * V;
+                    }
                 }
-
-                /* Convert to speed in internal units. Note that this is
-                 * the spatial part of the relativistic 4-velocity. */
-                double V = p_eV / ptype->MicroscopicMass_eV * us.SpeedOfLight;
-
-                /* Generate a random point on the unit sphere using Gaussians */
-                double x = sampleNorm(&seed);
-                double y = sampleNorm(&seed);
-                double z = sampleNorm(&seed);
-
-                /* And normalize */
-                double length = hypot(x, hypot(y, z));
-                if (length > 0) {
-                    x /= length;
-                    y /= length;
-                    z /= length;
-                }
-
-                if (isnan(x) || isnan(y) || isnan(z)) {
-                    printf("ERROR: invalid random velocity v = [%e, %e, %e]\n", x, y, z);
-                    exit(1);
-                }
-
-                /* Add the thermal velocities */
-                parts[i].v_X += x * V;
-                parts[i].v_Y += y * V;
-                parts[i].v_Z += z * V;
             }
         }
 
@@ -793,9 +902,33 @@ int main(int argc, char *argv[]) {
         fftw_free(lrs.left_slice);
         fftw_free(lrs.right_slice);
 
-        /* Clean up the random sampler if this particle type is thermal */
+        /* Clean up some data structures if this particle type is thermal */
         if (strcmp(ptype->ThermalMotionType, "") != 0) {
+            /* Clean the random sampler */
             cleanSampler(&thermal_sampler);
+
+            #if(COMPILED_WITH_FIREBOLT)
+            if (ptype->UseFirebolt) {
+                /* Sum the numer of thermal draws across all MPI ranks */
+                if (rank == 0) {
+                    MPI_Reduce(MPI_IN_PLACE, &thermal_draws, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+                } else {
+                    MPI_Reduce(&thermal_draws, &thermal_draws, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+                }
+
+                /* Calculate the acceptance rate */
+                if (rank == 0) {
+                    double p_accept = (double) ptype->TotalNumber / thermal_draws;
+                    message(rank, "Sampler acceptance rate: %.6f\n", p_accept);
+                }
+
+                /* Clean the Firebolt Boltzmann code */
+                cleanFirebolt();
+
+                /* Free the small complex Gaussian random field */
+                free(small_grf);
+            }
+            #endif
         }
 
         /* Close the scalar and vector dataspaces */

@@ -66,6 +66,16 @@ struct params {
     char *ImportName; //name of the particle group to be read
     size_t SlabSize;
 
+    /* Parameters for the Firebolt Boltzmann solver */
+    int MaxMultipole;
+    int MaxMultipoleConvert;
+    int NumberMomentumBins;
+    int NumberWavenumbers;
+    double MinMomentum;
+    double MaxMomentum;
+    double FireboltTolerance;
+    short FireboltVerbose;
+
     /* MPI rank (generated automatically) */
     int rank;
 };

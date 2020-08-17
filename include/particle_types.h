@@ -35,12 +35,18 @@ struct particle_type {
     int CyclesOfMongeAmpere;
     int CyclesOfSPT;
 
+    /* The transfer function titles from CLASS */
     char *TransferFunctionDensity;
     char *TransferFunctionVelocity;
 
+    /* Thermal species properties */
     double MicroscopicMass_eV;
     double MicroscopyTemperature;
     char *ThermalMotionType;
+
+    /* Firebolt settings */
+    char UseFirebolt;
+    double FireboltMaxPerturbation;
 
     /* Position in the output file and group, assigned automatically */
     long long int FirstID;
