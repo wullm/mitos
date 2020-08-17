@@ -87,6 +87,9 @@ static inline int compareByLeft(const void *a, const void *b) {
     return ia->Fl >= ib->Fl;
 }
 
+/* Sample a uniform variable on the open unit interval */
+double sampleUniform(rng_state *state);
+
 /* Sample a standard Gaussian random number */
 double sampleNorm(rng_state *state);
 
