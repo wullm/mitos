@@ -84,8 +84,7 @@ void fft_execute(fftw_plan plan);
 int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
 int fft_normalize_c2r(double *arr, int N, double boxlen);
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      int NX, int X0, double boxlen,
-                      void (*compute)(struct kernel* the_kernel),
+                      double boxlen, void (*compute)(struct kernel* the_kernel),
                       void *params);
 
 /* Functions for distributed grids */

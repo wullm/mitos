@@ -109,18 +109,17 @@ void fft_execute(fftw_plan plan) {
 
 /* Apply a kernel to a 3D array after transforming to momentum space */
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      int NX, int X0, double boxlen,
-                      void (*compute)(struct kernel* the_kernel),
-                      void *params) {
+                     double boxlen, void (*compute)(struct kernel* the_kernel),
+                     void *params) {
     const double dk = 2 * M_PI / boxlen;
 
     #pragma omp parallel for
-    for (int x=0; x<NX; x++) {
+    for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
                 /* Calculate the wavevector */
                 double kx,ky,kz,k;
-                fft_wavevector(x+X0, y, z, N, dk, &kx, &ky, &kz, &k);
+                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* Compute the kernel */
                 struct kernel the_kernel = {kx, ky, kz, k, 0.f, params};
