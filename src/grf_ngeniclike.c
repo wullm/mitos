@@ -59,6 +59,8 @@ int generate_ngeniclike_grf(fftw_complex * fbox, int N, int NX, int X0,
     // fac = pow (2 * PI / Box, 1.5);
     fac = pow(Box,1.5) / sqrt(2);
 
+	fac *= sqrt(2); //to account for the different method of generating Gaussians
+	
     /* GSL random number generator */
     random_generator = gsl_rng_alloc (gsl_rng_ranlxd1);
     gsl_rng_set (random_generator, Seed);
