@@ -142,7 +142,8 @@ int main(int argc, char *argv[]) {
 
     /* Generate a complex Hermitian Gaussian random field */
     printheader("Generating Primordial Fluctuations");
-    generate_complex_grf(grf, N, boxlen, &seed);
+    // generate_complex_grf(grf, N, boxlen, &seed);
+    generate_ngeniclike_grf(grf, N, N, 0, 0, boxlen, pars.Seed);
 
     /* Apply the bare power spectrum, without any transfer functions */
     fft_apply_kernel(grf, grf, N, boxlen, kernel_power_no_transfer, &cosmo);
@@ -451,7 +452,7 @@ int main(int argc, char *argv[]) {
                     double z = parts[i].Z;
 
                     /* Find the velocity in the given direction */
-                    double vel = gridPSC(grid, N, boxlen, x, y, z);
+                    double vel = gridPCS(grid, N, boxlen, x, y, z);
 
                     /* Add the velocity component */
                     if (dir == 0) {

@@ -26,6 +26,7 @@
 #include "random.h"
 #include "fft.h"
 #include "grf.h"
+#include "grf_ngeniclike.h"
 #include "fft_kernels.h"
 #include "particle_types.h"
 #include "titles.h"
