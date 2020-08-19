@@ -240,7 +240,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         // double *box_input2 = malloc(N*N*N * sizeof(double));
 
         /* Reset the output chunk */
-        memset(grid_output.box, 0, local_size * sizeof(double));
+        memset(grid_output.box, 0, 2 * local_size * sizeof(double));
 
         /* For each order m < n */
         for (int m = 0; m < ITER + 1; m++) {
@@ -286,7 +286,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         writeFieldFile_dg(&grid_output, source1_fname);
 
         /* Reset the output chunk */
-        memset(grid_output.box, 0, local_size * sizeof(double));
+        memset(grid_output.box, 0, 2 * local_size * sizeof(double));
 
         /* For each order m < n */
         for (int m = 0; m < ITER + 1; m++) {
@@ -375,7 +375,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         double factor1, factor2;
 
         /* Reset the output chunk */
-        memset(grid_output.box, 0, local_size * sizeof(double));
+        memset(grid_output.box, 0, 2 * local_size * sizeof(double));
 
         /* Read the source grids into the inout grids */
         readFieldFile_dg(&grid_input1, source1_fname);
@@ -398,7 +398,7 @@ int sptChunked(int N, double boxlen, int cycles, char *basename,
         writeFieldFile_dg(&grid_output, next_density_fname);
 
         /* Reset the output chunk */
-        memset(grid_output.box, 0, local_size * sizeof(double));
+        memset(grid_output.box, 0, 2 * local_size * sizeof(double));
 
         /* Read the source grids into the inout grids */
         readFieldFile_dg(&grid_input1, source1_fname);
