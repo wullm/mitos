@@ -163,8 +163,6 @@ int main(int argc, char *argv[]) {
     /* Generate a complex Hermitian Gaussian random field */
     header(rank, "Generating Primordial Fluctuations");
     generate_complex_grf(&grf, &seed);
-    // generate_ngeniclike_grf(grf.fbox, N, N, 0, N*N*(N/2+1), boxlen, pars.Seed);
-    grf.momentum_space = 1;
     enforce_hermiticity(&grf);
 
     /* Apply the bare power spectrum, without any transfer functions */
@@ -232,91 +230,6 @@ int main(int argc, char *argv[]) {
     struct distributed_grid grid;
     alloc_local_grid(&grid, N, boxlen, MPI_COMM_WORLD);
 
-    // /* Allocate a third grid to compute the potential */
-    // struct distributed_grid potential;
-    // alloc_local_grid(&potential, N, boxlen, MPI_COMM_WORLD);
-    //
-    // /* Allocate a fourth grid to compute derivatives */
-    // struct distributed_grid derivative;
-    // alloc_local_grid(&derivative, N, boxlen, MPI_COMM_WORLD);
-
-    /* Sanity check */
-    assert(grf.local_size == grid.local_size);
-    // assert(grf.local_size == derivative.local_size);
-    assert(grf.X0 == grid.X0);
-    // assert(grf.X0 == derivative.X0);
-
-
-    /* We calculate derivatives using FFT kernels */
-    const kernel_func derivative_kernels[] = {kernel_dx, kernel_dy, kernel_dz};
-    const char *letter[] = {"x_", "y_", "z_"};
-
-    header(rank, "Computing Perturbation Grids");
-
-    /* For each particle type, compute displacement & velocity grids */
-    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
-        struct particle_type *ptype = types + pti;
-        const char *Identifier = ptype->Identifier;
-        const char *density_title = ptype->TransferFunctionDensity;
-        const char *velocity_title = ptype->TransferFunctionVelocity;
-
-        /* Generate filenames for the grid exports */
-        char density_filename[DEFAULT_STRING_LENGTH];
-        char velocity_filename[DEFAULT_STRING_LENGTH];
-
-        generateFieldFilename(&pars, density_filename, Identifier, GRID_NAME_DENSITY, "");
-        generateFieldFilename(&pars, velocity_filename, Identifier, GRID_NAME_THETA, "");
-
-        /* Generate density field, compute the potential and its derivatives */
-        if (strcmp("", density_title) != 0) {
-            message(rank, "Computing density & displacement grids for '%s'.\n", Identifier);
-
-            /* Generate density grid by applying the transfer function to the GRF */
-            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
-            catch_error(err, "Error while generating '%s'.", density_filename);
-        }
-
-        /* Generate flux density field, flux potential, and its derivatives */
-        if (strcmp("", velocity_title) != 0) {
-            message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
-
-            /* Generate flux grid by applying the transfer function to the GRF */
-            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
-            catch_error(err, "Error while generating '%s'.", velocity_filename);
-        }
-    }
-
-    /* We are done with the GRF, density, and derivative grids */
-    free_local_grid(&grid);
-    // free_local_grid(&potential);
-    free_local_grid(&grf);
-    // free_local_grid(&derivative);
-
-
-    header(rank, "Computing SPT Grids");
-
-    /* For each particle type, compute displacement & velocity grids */
-    for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
-        struct particle_type *ptype = types + pti;
-        const char *Identifier = ptype->Identifier;
-
-        /* Generate filenames for the grid exports */
-        char density_filename[DEFAULT_STRING_LENGTH];
-        char velocity_filename[DEFAULT_STRING_LENGTH];
-
-        generateFieldFilename(&pars, density_filename, Identifier, GRID_NAME_DENSITY, "");
-        generateFieldFilename(&pars, velocity_filename, Identifier, GRID_NAME_THETA, "");
-
-        if (ptype->CyclesOfSPT > 0)
-            sptChunked(N, boxlen, ptype->CyclesOfSPT, SPT_BASENAME,
-                       density_filename, velocity_filename,
-                       density_filename, velocity_filename);
-
-    }
-
-    /* Re-allocate the grid */
-    alloc_local_grid(&grid, N, boxlen, MPI_COMM_WORLD);
-
     /* Allocate a third grid to compute the potential */
     struct distributed_grid potential;
     alloc_local_grid(&potential, N, boxlen, MPI_COMM_WORLD);
@@ -325,7 +238,18 @@ int main(int argc, char *argv[]) {
     struct distributed_grid derivative;
     alloc_local_grid(&derivative, N, boxlen, MPI_COMM_WORLD);
 
-    header(rank, "Computing Derivative Grids");
+    /* Sanity check */
+    assert(grf.local_size == grid.local_size);
+    assert(grf.local_size == derivative.local_size);
+    assert(grf.X0 == grid.X0);
+    assert(grf.X0 == derivative.X0);
+
+
+    /* We calculate derivatives using FFT kernels */
+    const kernel_func derivative_kernels[] = {kernel_dx, kernel_dy, kernel_dz};
+    const char *letter[] = {"x_", "y_", "z_"};
+
+    header(rank, "Computing Perturbation Grids");
 
     /* For each particle type, compute displacement & velocity grids */
     for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
@@ -351,8 +275,9 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing density & displacement grids for '%s'.\n", Identifier);
 
-            /* Read the density grid */
-            readFieldFile_dg(&grid, density_filename);
+            /* Generate density grid by applying the transfer function to the GRF */
+            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
+            catch_error(err, "Error while generating '%s'.", density_filename);
 
             /* Fourier transform the density grid */
             fft_r2c_dg(&grid);
@@ -396,8 +321,9 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
 
-            /* Read the flux density grid */
-            readFieldFile_dg(&grid, velocity_filename);
+            /* Generate flux grid by applying the transfer function to the GRF */
+            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
+            catch_error(err, "Error while generating '%s'.", velocity_filename);
 
             /* Fourier transform the flux density grid */
             fft_r2c_dg(&grid);
@@ -431,113 +357,8 @@ int main(int argc, char *argv[]) {
     /* We are done with the GRF, density, and derivative grids */
     free_local_grid(&grid);
     free_local_grid(&potential);
+    free_local_grid(&grf);
     free_local_grid(&derivative);
-
-
-    // /* For each particle type, compute displacement & velocity grids */
-    // for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
-    //     struct particle_type *ptype = types + pti;
-    //     const char *Identifier = ptype->Identifier;
-    //     const char *density_title = ptype->TransferFunctionDensity;
-    //     const char *velocity_title = ptype->TransferFunctionVelocity;
-    //
-    //     /* Generate filenames for the grid exports */
-    //     char density_filename[DEFAULT_STRING_LENGTH];
-    //     char potential_filename[DEFAULT_STRING_LENGTH];
-    //     char velocity_filename[DEFAULT_STRING_LENGTH];
-    //     char velopot_filename[DEFAULT_STRING_LENGTH];
-    //     char derivative_filename[DEFAULT_STRING_LENGTH];
-    //
-    //     generateFieldFilename(&pars, density_filename, Identifier, GRID_NAME_DENSITY, "");
-    //     generateFieldFilename(&pars, potential_filename, Identifier, GRID_NAME_POTENTIAL, "");
-    //     generateFieldFilename(&pars, velocity_filename, Identifier, GRID_NAME_THETA, "");
-    //     generateFieldFilename(&pars, velopot_filename, Identifier, GRID_NAME_THETA_POTENTIAL, "");
-    //
-    //     /* Generate density field, compute the potential and its derivatives */
-    //     if (strcmp("", density_title) != 0) {
-    //
-    //         message(rank, "Computing density & displacement grids for '%s'.\n", Identifier);
-    //
-    //         /* Generate density grid by applying the transfer function to the GRF */
-    //         err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
-    //         catch_error(err, "Error while generating '%s'.", density_filename);
-    //
-    //         /* Fourier transform the density grid */
-    //         fft_r2c_dg(&grid);
-    //
-    //         /* Should we solve the Monge-Ampere equation or approximate with Zel'dovich? */
-    //         if (ptype->CyclesOfMongeAmpere > 0) {
-    //             /* Solve the Monge Ampere equation */
-    //             err = solveMongeAmpere(&potential, &grid, &derivative, ptype->CyclesOfMongeAmpere);
-    //         } else {
-    //             /* Approximate the potential with the Zel'dovich approximation */
-    //             fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
-    //         }
-    //
-    //         /* We now have the potential grid in momentum space */
-    //         assert(potential.momentum_space == 1);
-    //
-    //         /* Compute three derivatives of the potential grid */
-    //         for (int i=0; i<3; i++) {
-    //             /* Apply the derivative kernel */
-    //             fft_apply_kernel_dg(&derivative, &potential, derivative_kernels[i], NULL);
-    //
-    //             /* Fourier transform to get the real derivative grid */
-    //             fft_c2r_dg(&derivative);
-    //
-    //             /* Generate the appropriate filename */
-    //             generateFieldFilename(&pars, derivative_filename, Identifier, GRID_NAME_DISPLACEMENT, letter[i]);
-    //
-    //             /* Export the derivative grid */
-    //             writeFieldFile_dg(&derivative, derivative_filename);
-    //         }
-    //
-    //         /* Finally, Fourier transform the potential grid to configuration space */
-    //         fft_c2r_dg(&potential);
-    //
-    //         /* Export the potential grid */
-    //         writeFieldFile_dg(&potential, potential_filename);
-    //     }
-    //
-    //     /* Generate flux density field, flux potential, and its derivatives */
-    //     if (strcmp("", velocity_title) != 0) {
-    //
-    //         message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
-    //
-    //         /* Generate flux grid by applying the transfer function to the GRF */
-    //         err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
-    //         catch_error(err, "Error while generating '%s'.", velocity_filename);
-    //
-    //         /* Fourier transform the flux density grid */
-    //         fft_r2c_dg(&grid);
-    //
-    //         /* Compute flux potential grid by applying the inverse Poisson kernel */
-    //         fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
-    //
-    //         /* Compute three derivatives of the flux potential grid */
-    //         for (int i=0; i<3; i++) {
-    //             /* Apply the derivative kernel */
-    //             fft_apply_kernel_dg(&derivative, &potential, derivative_kernels[i], NULL);
-    //
-    //             /* Fourier transform to get the real derivative grid */
-    //             fft_c2r_dg(&derivative);
-    //
-    //             /* Generate the appropriate filename */
-    //             generateFieldFilename(&pars, derivative_filename, Identifier, GRID_NAME_VELOCITY, letter[i]);
-    //
-    //             /* Export the derivative grid */
-    //             writeFieldFile_dg(&derivative, derivative_filename);
-    //         }
-    //
-    //         /* Finally, Fourier transform the flux potential grid to configuration space */
-    //         fft_c2r_dg(&potential);
-    //
-    //         /* Export the flux potential grid */
-    //         writeFieldFile_dg(&potential, velopot_filename);
-    //     }
-    // }
-
-
 
     // /* Compute SPT grids */
     // header(rank, "Computing SPT Corrections");
