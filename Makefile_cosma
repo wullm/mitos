@@ -23,7 +23,7 @@ FIREBOLT_LIBRARIES += -L$(FIREBOLT_PATH) -lfirebolt -Wl,-rpath=$(FIREBOLT_PATH)
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES) $(FIREBOLT_INCLUDES)
 LIBRARIES = $(INI_PARSER) $(STD_LIBRARIES) $(FFTW_LIBRARIES) $(HDF5_LIBRARIES) $(GSL_LIBRARIES) $(FIREBOLT_LIBRARIES)
-CFLAGS = -Wall -Wshadow=global -fopenmp -march=native -Ofast
+CFLAGS = -Wall -Wshadow -fopenmp -march=native -Ofast
 
 OBJECTS = lib/*.o
 
