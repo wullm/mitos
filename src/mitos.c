@@ -28,6 +28,7 @@
 #include "../include/grf_ngeniclike.h"
 
 #define COMPILED_WITH_FIREBOLT 1
+#define FIREBOLT_EXPLICIT_CHECKS 1000
 
 #if(COMPILED_WITH_FIREBOLT)
 #include "../include/firebolt_interface.h"
@@ -469,8 +470,24 @@ int main(int argc, char *argv[]) {
         /* Random sampler used for thermal species */
         struct sampler thermal_sampler;
 
-        /* Count how many draws are needed from the thermal distribution */
+        /* For diagnostics, count how many draws are needed from the
+         * thermal distribution */
         long long thermal_draws = 0;
+
+        /* For diagnostics, estimate the correlation between the 0th order
+         * phase space density perturbation Psi_0 & the configuration space
+         * density perturbation. (Should be order 1.)  */
+        double Psi_sum = 0.;
+        double Psi2_sum = 0.;
+        double d_sum = 0.;
+        double d2_sum = 0.;
+        double Psi_d_sum = 0.;
+
+        /* For diagnostics, estimate the ratio of particles whose 1st order
+         * phase space density perturbation Psi_1 is positive along the
+         * graviational flow speed direction. (Should be order 1.) */
+        long long int correctly_oriented = 0;
+        long long int explicit_Psi_checks = 0;
 
         /* Microscopic mass in electronVolts */
         double M_eV;
@@ -707,6 +724,10 @@ int main(int argc, char *argv[]) {
             /* Assign velocities to the particles in this chunk */
             #pragma omp parallel for
             for (int i=0; i<chunk_size; i++) {
+                /* Skip thermal particles if we only need the Firebolt sampler */
+                if (ptype->UseFirebolt && (FIREBOLT_EXPLICIT_CHECKS == 0 ||
+                    i % FIREBOLT_EXPLICIT_CHECKS != 0)) continue;
+
                 /* Find the displaceed particle location */
                 double x = parts[i].X;
                 double y = parts[i].Y;
@@ -729,6 +750,22 @@ int main(int argc, char *argv[]) {
         /* Add thermal motion */
         if (strcmp(ptype->ThermalMotionType, "") != 0) {
             const double a_ini = 1.0 / (cosmo.z_ini + 1.0);
+
+            /* Read the high-resolution configuration space density field */
+            char dbox_fname[DEFAULT_STRING_LENGTH];
+            sprintf(dbox_fname, "%s/%s_%s%s", pars.OutputDirectory, GRID_NAME_DENSITY, ptype->Identifier, ".hdf5");
+
+            /* Read our slice of the density grid */
+            err = readField_MPI(lrs.local_slice, N, lrs.local_NX, lrs.local_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
+
+            /* Read a sliver on the left of the density grid */
+            err = readField_MPI(lrs.left_slice, N, lrs.left_NX, lrs.left_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
+
+            /* Read a sliver on the right of the density grid */
+            err = readField_MPI(lrs.right_slice, N, lrs.right_NX, lrs.right_X0, MPI_COMM_WORLD, dbox_fname);
+            catch_error(err, "Error reading '%s'.\n", dbox_fname);
 
             /* Add thermal velocities to the particles in this chunk */
             for (int i=0; i<chunk_size; i++) {
@@ -771,19 +808,33 @@ int main(int argc, char *argv[]) {
                     /* If desired, compute the linear theory perturbation */
                     if (ptype->UseFirebolt) {
                     #if(COMPILED_WITH_FIREBOLT)
-                        int mode = 2;
+                        /* Find the displaceed particle location */
+                        double x = parts[i].X;
+                        double y = parts[i].Y;
+                        double z = parts[i].Z;
+
+                        /* Compute the phase space density perturbation */
+                        int mode = 2; //use all available orders of perturbations
                         double q = p0_eV / T_eV;
                         double Psi = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
-                                                 parts[i].X, parts[i].Y, parts[i].Z, nx, ny, nz, q, mode);
+                                                 x, y, z, nx, ny, nz, q, mode);
+
+                        /* The configuration space density perturbation as determined from the hi-res grid */
+                        double density = gridTSC_dg(&lrs, x, y, z, boxlen, N);
 
                         if (isnan(Psi) || Psi <= -1) {
                             printf("ERROR: invalid perturbation to the probability.\n");
                             exit(1);
                         }
 
-                        /* Rejection sampling! */
+                        if (isnan(density) || density <= -1) {
+                            printf("ERROR: invalid perturbation to the config space density.\n");
+                            exit(1);
+                        }
+
+                        /* Rejection sampling, conditional on the configuration space density */
                         double base_accept = 1.0 - ptype->FireboltMaxPerturbation;
-                        double p_accept = base_accept * (1 + Psi);
+                        double p_accept = base_accept * (1 + Psi) / (1.0 + density);
 
                         if (p_accept > 1) {
                             printf("ERROR: rejection sampler encountered P(accept) > 1\t [q, Psi, P] = [%f, %e, %e].\n", q, Psi, p_accept);
@@ -797,6 +848,48 @@ int main(int argc, char *argv[]) {
                         if (u < p_accept) {
                             accept = 1;
                         }
+
+                        /* If we accept, finish the calculation */
+                        if (accept) {
+                            /* For diagonstics, compare with hi-res grids occasionally */
+                            if (FIREBOLT_EXPLICIT_CHECKS > 0 && i % FIREBOLT_EXPLICIT_CHECKS == 0) {
+                                /* The gravitational component of the velocity (hasn't been updated yet)*/
+                                double vx_g = parts[i].v_X;
+                                double vy_g = parts[i].v_Y;
+                                double vz_g = parts[i].v_Z;
+                                double v_g = hypot(vx_g, hypot(vy_g, vz_g));
+
+                                /* Compute the 0th order phase space density perturbation */
+                                int mode_0 = 0; //use just the 0th order
+                                double Psi_0 = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
+                                                           x, y, z, nx, ny, nz, q, mode_0);
+
+                                /* Compute up to the 1st order phase space density perturbation in the gravitational flow direction */
+                                int mode_1 = 1; //use 0th and 1st order perturbations
+                                double Psi_1_g = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
+                                                             x, y, z, vx_g / v_g, vy_g / v_g, vz_g / v_g, q, mode_1);
+
+                                /* Collect statistics to estimate corr(Psi, d) */
+                                Psi_sum += Psi_0;
+                                Psi2_sum += Psi_0 * Psi_0;
+                                d_sum += density;
+                                d2_sum += density * density;
+                                Psi_d_sum += Psi_0 * density;
+
+                                /* Determine whether the 1st order density perturbation makes sense */
+                                if (Psi_1_g > 0)
+                                correctly_oriented++;
+
+                                /* Total number of checks */
+                                explicit_Psi_checks++;
+                            }
+
+                            /* Set the velocity to be purely thermal. The gravitational flow
+                             * speeds are already included in the acceptance probability. */
+                             parts[i].v_X = nx * V;
+                             parts[i].v_Y = ny * V;
+                             parts[i].v_Z = nz * V;
+                        }
                     #else
                     printf("ERROR: not compiled with Firebolt.\n");
                     exit(1);
@@ -804,10 +897,8 @@ int main(int argc, char *argv[]) {
                     } else {
                         /* Otherwise, always accept */
                         accept = 1;
-                    }
 
-                    /* If we are done with sampling, add the thermal velocities */
-                    if (accept) {
+                        /* And add the thermal velocities on top of the gravitational flow */
                         parts[i].v_X += nx * V;
                         parts[i].v_Y += ny * V;
                         parts[i].v_Z += nz * V;
@@ -907,6 +998,7 @@ int main(int argc, char *argv[]) {
             /* Clean the random sampler */
             cleanSampler(&thermal_sampler);
 
+            /* Just for Firebolt diagnostics, compute some summary statistics */
             #if(COMPILED_WITH_FIREBOLT)
             if (ptype->UseFirebolt) {
                 /* Sum the numer of thermal draws across all MPI ranks */
@@ -919,7 +1011,45 @@ int main(int argc, char *argv[]) {
                 /* Calculate the acceptance rate */
                 if (rank == 0) {
                     double p_accept = (double) ptype->TotalNumber / thermal_draws;
-                    message(rank, "Sampler acceptance rate: %.6f\n", p_accept);
+                    message(rank, "\n");
+                    message(rank, "Firebolt sampler acceptance rate: %.6f\n", p_accept);
+                }
+
+                /* Display other diagnostic summary statistics, computed for a
+                 * small subsample of particles */
+                if (FIREBOLT_EXPLICIT_CHECKS > 0) {
+                    long long int num_stats[2] = {explicit_Psi_checks, correctly_oriented};
+                    double Psi_d_stats[5] = {Psi_sum, Psi2_sum, d_sum, d2_sum, Psi_d_sum};
+
+                    if (rank == 0) {
+                        MPI_Reduce(MPI_IN_PLACE, num_stats, 2, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+                        MPI_Reduce(MPI_IN_PLACE, Psi_d_stats, 5, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+                    } else {
+                        MPI_Reduce(num_stats, num_stats, 2, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+                        MPI_Reduce(Psi_d_stats, Psi_d_stats, 5, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+                    }
+
+                    /* Calculate the desired summary statistics */
+                    if (rank == 0) {
+                        double N_psi = (double) num_stats[0];
+                        correctly_oriented = num_stats[1];
+
+                        Psi_sum = Psi_d_stats[0];
+                        Psi2_sum = Psi_d_stats[1];
+                        d_sum = Psi_d_stats[2];
+                        d2_sum = Psi_d_stats[3];
+                        Psi_d_sum = Psi_d_stats[4];
+
+                        double Psi_ss = N_psi * Psi2_sum - Psi_sum * Psi_sum;
+                        double d_ss = N_psi * d2_sum - d_sum * d_sum;
+                        double correlation = (N_psi * Psi_d_sum - Psi_sum * d_sum)
+                                           / sqrt(Psi_ss * d_ss);
+                        double p_oriented = correctly_oriented / N_psi;
+                        message(rank, "\n");
+                        message(rank, "Firebolt checks (number): N_checks = %e\n", N_psi);
+                        message(rank, "Firebolt checks (density): corr(Psi_0, delta_hires) = %.6f\n", correlation);
+                        message(rank, "Firebolt checks (velocity): P(Psi_1 > 0 along v_grav | theta_hires) = %.6f\n", p_oriented);
+                    }
                 }
 
                 /* Clean the Firebolt Boltzmann code */
