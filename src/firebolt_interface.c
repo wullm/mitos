@@ -60,7 +60,7 @@ double theta_shift_func(double k, double log_tau) {
     return perturbSplineInterp0(helper.spline, k, log_tau, helper.theta_shift_index);
 }
 
-int initFirebolt(const struct params *pars, struct cosmology *cosmo,
+int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
                  const struct units *us, const struct perturb_data *ptdat,
                  const struct perturb_spline *spline,
                  struct firebolt_interface *firebolt, const fftw_complex *grf,

@@ -32,7 +32,7 @@ struct firebolt_interface {
     double log_q_max;
 };
 
-int initFirebolt(const struct params *pars, struct cosmology *cosmo,
+int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
                  const struct units *us, const struct perturb_data *ptdat,
                  const struct perturb_spline *spline,
                  struct firebolt_interface *firebolt, const fftw_complex *grf,
