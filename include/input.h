@@ -72,6 +72,7 @@ struct params {
     int NumberMomentumBins;
     int NumberWavenumbers;
     int FireboltGridSize;
+    double FireboltCutoffWavenumber;
     double MinMomentum;
     double MaxMomentum;
     double FireboltTolerance;

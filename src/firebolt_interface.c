@@ -90,8 +90,17 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
     }
 
     /* Dimensions of the gaussian random field */
-    int N = pars->SmallGridSize;
+    int N;
     double boxlen = pars->BoxLen;
+
+    /* The grid size depends on user choice */
+    if (pars.FireboltGridSize > 0) {
+        N = pars.FireboltGridSize;
+    } else if (pars.SmallGridSize > 0) {
+        N = pars.SmallGridSize;
+    } else {
+        K = pars.GridSize;
+    }
 
     /* Determine the maximum and minimum wavenumbers */
     double dk = 2*M_PI/boxlen;
@@ -118,6 +127,7 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
     int k_size = pars->NumberWavenumbers;
     double q_min = pars->MinMomentum;
     double q_max = pars->MaxMomentum;
+    double k_cutoff = pars->FireboltCutoffWavenumber;
     int q_steps = pars->NumberMomentumBins;
     double tol = pars->FireboltTolerance;
     short verbose = pars->FireboltVerbose;
@@ -129,7 +139,7 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
 
     if (verbose) {
         printf("\n");
-        printf("[k_min, k_max, k_size] = [%f, %f, %d]\n", k_min, k_max, k_size);
+        printf("[k_min, k_max, k_size, k_cutoff] = [%f, %f, %d, %f]\n", k_min, k_max, k_size, k_cutoff);
         printf("[l_max, q_steps, q_max, tol] = [%d, %d, %.1f, %.3e]\n", l_max, q_steps, q_max, tol);
         printf("[l_max_convert] = %d\n", l_max_convert);
         printf("\n");
@@ -170,7 +180,7 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
     initMultipoleInterp(&firebolt_mmono);
 
     /* Generate grids with the monomial multipoles */
-    initGrids(N, boxlen, &firebolt_mmono, &firebolt_grs);
+    initGrids(N, boxlen, &firebolt_mmono, &firebolt_grs, k_cutoff);
 
     /* Store reference to the grids */
     firebolt->grids_ref = &firebolt_grs;

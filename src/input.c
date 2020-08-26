@@ -63,6 +63,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->MaxMultipoleConvert = ini_getl("Firebolt", "MaxMultipoleConvert", 2, fname);
      pars->NumberMomentumBins = ini_getl("Firebolt", "NumberMomentumBins", 10, fname);
      pars->NumberWavenumbers = ini_getl("Firebolt", "NumberWavenumbers", 10, fname);
+     pars->FireboltCutoffWavenumber = ini_getd("Firebolt", "FireboltCutoffWavenumber", 1, fname);
      pars->MinMomentum = ini_getd("Firebolt", "MinMomentum", 0.01, fname);
      pars->MaxMomentum = ini_getd("Firebolt", "MaxMomentum", 15, fname);
      pars->FireboltTolerance = ini_getd("Firebolt", "Tolerance", 1e-10, fname);
