@@ -73,12 +73,6 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->FireboltMaxPerturbation = ini_getd(seek_str, "FireboltMaxPerturbation", 0.01, fname);
             tp->UseFirebolt = ini_getbool(seek_str, "UseFirebolt", 0, fname);
 
-            /* Throw an error if Firebolt is requested, but no small grid */
-            if (tp->UseFirebolt && pars->SmallGridSize <= 0) {
-                printf("Error: using Firebolt without specifying small grid.\n");
-                return 1;
-            }
-
             /* Infer total number from cube root number or vice versa */
             if (tp->TotalNumber == 0 && tp->CubeRootNumber > 0) {
                 int crn = tp->CubeRootNumber;
