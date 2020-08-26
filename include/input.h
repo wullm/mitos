@@ -71,6 +71,7 @@ struct params {
     int MaxMultipoleConvert;
     int NumberMomentumBins;
     int NumberWavenumbers;
+    int FireboltGridSize;
     double MinMomentum;
     double MaxMomentum;
     double FireboltTolerance;

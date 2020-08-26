@@ -67,6 +67,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->MaxMomentum = ini_getd("Firebolt", "MaxMomentum", 15, fname);
      pars->FireboltTolerance = ini_getd("Firebolt", "Tolerance", 1e-10, fname);
      pars->FireboltVerbose = ini_getbool("Firebolt", "Verbose", 0, fname);
+     pars->FireboltGridSize = ini_getl("Firebolt", "FireboltGridSize", 0, fname);
 
      return 0;
 }
@@ -143,6 +144,7 @@ int cleanParams(struct params *pars) {
     return 0;
 }
 
+/* Read 3D box from disk, allocating memory and storing the grid dimensions */
 int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     /* Create the hdf5 file */
     hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -157,7 +159,10 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     /* Open and read out the attribute */
     h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
     h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &boxsize);
-    assert(h_err >= 0);
+    if (h_err < 0) {
+        printf("Error reading hdf5 attribute '%s'.\n", "BoxSize");
+        return 1;
+    }
 
     /* It should be a cube */
     assert(boxsize[0] == boxsize[1]);
@@ -181,10 +186,16 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     H5Sget_simple_extent_dims(h_space, dims, NULL);
 
     /* We should be in 3D */
-    assert(ndims == 3);
+    if (ndims != 3) {
+        printf("Number of dimensions %d != 3.\n", ndims);
+        return 2;
+    }
     /* It should be a cube */
-    assert(dims[0] == dims[1]);
-    assert(dims[1] == dims[2]);
+    if (dims[0] != dims[1] || dims[1] != dims[2]) {
+        printf("Non-cubic grid size (%lld, %lld, %lld).\n", dims[0], dims[1], dims[2]);
+        return 2;
+    }
+    /* Store the grid size */
     *N = dims[0];
 
     /* Allocate the array */
@@ -192,6 +203,10 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
 
     /* Read out the data */
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, *box);
+    if (h_err < 0) {
+        printf("Error reading hdf5 file '%s'.\n", fname);
+        return 1;
+    }
 
     /* Close the dataspace and dataset */
     H5Sclose(h_space);
