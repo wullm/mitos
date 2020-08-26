@@ -187,6 +187,22 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
 
     generateGrids(&firebolt_mmono, grf, &firebolt_grs);
 
+    /* For each multipole/momentum bin pair, create the corresponding grid */
+    if (verbose >= 10) {
+        for (int index_q=0; index_q<firebolt_mmono.q_size; index_q++) {
+            for (int index_l=0; index_l<firebolt_mmono.l_size; index_l++) {
+                double *box = firebolt_grs.grids + index_l * (N*N*N) * firebolt_mmono.q_size + index_q * (N*N*N);
+
+                /* Export the real box */
+                char dbox_fname[DEFAULT_STRING_LENGTH];
+                sprintf(dbox_fname, "grid_l%d_q%d.hdf5", index_l, index_q);
+                // fft_c2r_export(fbox, N, boxlen, dbox_fname);
+                writeFieldFile(box, N, boxlen, dbox_fname);
+                printf("Density field exported to '%s'.\n", dbox_fname);
+            }
+        }
+    }
+
     return 0;
 }
 
