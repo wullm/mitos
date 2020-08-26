@@ -50,6 +50,7 @@
 
 #define GRID_NAME_GAUSSIAN "gaussian_pure"      // the Gaussian random field
 #define GRID_NAME_GAUSSIAN_SMALL "gaussian_small" // a smaller copy of the GRF
+#define GRID_NAME_GAUSSIAN_FIREBOLT "gaussian_firebolt" // another smaller copy of the GRF
 #define GRID_NAME_DENSITY "density"             // energy density
 #define GRID_NAME_THETA "theta"                 // energy flux theta
 #define GRID_NAME_POTENTIAL "potential"         // Newtonian potential

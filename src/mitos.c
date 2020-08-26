@@ -181,38 +181,50 @@ int main(int argc, char *argv[]) {
     catch_error(err, "Error while writing '%s'.\n", fname);
     message(rank, "Pure Gaussian Random Field exported to '%s'.\n", grf_fname);
 
-    /* Create a smaller (zoomed out) copy of the Gaussian random field */
-    if (pars.SmallGridSize > 0) {
+    /* Create smaller (zoomed out) copies of the Gaussian random field */
+    for (int i=0; i<2; i++) {
         /* Size of the smaller grid */
-        int M = pars.SmallGridSize;
+        int M;
 
-        /* Allocate memory for the smaller grid on each node */
-        double *grf_small = fftw_alloc_real(M * M * M);
+        /* Generate a filename */
+        char small_fname[DEFAULT_STRING_LENGTH];
 
-        /* Shrink (our local slice of) the larger grf grid */
-        shrinkGrid_dg(grf_small, &grf, M, N);
-
-        /* Add the contributions from all nodes and send it to the root node */
-        if (rank == 0) {
-            MPI_Reduce(MPI_IN_PLACE, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        /* We do this twice, once if the user requests a SmallGridSize and
+         * another time if the user requests a FireboltGridSize. */
+        if (i == 0) {
+            M = pars.SmallGridSize;
+            sprintf(small_fname, "%s/%s%s", pars.OutputDirectory,  GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
         } else {
-            MPI_Reduce(grf_small, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            M = pars.FireboltGridSize;
+            sprintf(small_fname, "%s/%s%s", pars.OutputDirectory,  GRID_NAME_GAUSSIAN_FIREBOLT, ".hdf5");
         }
 
-        /* Export the assembled smaller copy on the root node */
-        if (rank == 0) {
-            /* Generate a filename */
-            char small_fname[DEFAULT_STRING_LENGTH];
-            sprintf(small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+        if (M > 0) {
+            /* Allocate memory for the smaller grid on each node */
+            double *grf_small = fftw_alloc_real(M * M * M);
 
-            /* Export the small grid */
-            writeFieldFile(grf_small, M, boxlen, small_fname);
-            message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+            /* Shrink (our local slice of) the larger grf grid */
+            shrinkGrid_dg(grf_small, &grf, M, N);
+
+            /* Add the contributions from all nodes and send it to the root node */
+            if (rank == 0) {
+                MPI_Reduce(MPI_IN_PLACE, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            } else {
+                MPI_Reduce(grf_small, grf_small, M * M * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            }
+
+            /* Export the assembled smaller copy on the root node */
+            if (rank == 0) {
+                writeFieldFile(grf_small, M, boxlen, small_fname);
+                message(rank, "Smaller copy of the Gaussian Random Field exported to '%s'.\n", small_fname);
+            }
+
+            /* Free the small grid */
+            fftw_free(grf_small);
         }
-
-        /* Free the small grid */
-        fftw_free(grf_small);
     }
+
+
 
     /* Go back to momentum space */
     fft_r2c_dg(&grf);
@@ -547,32 +559,57 @@ int main(int argc, char *argv[]) {
             /* Beyond the zeroth order Fermi-Dirac distribution, we can use the
              * linear theory perturbation from a Boltzmann code. */
 
-            /* Use the Firebolt sampler */
+            /* Use the Firebolt Boltzmann code */
             #if(COMPILED_WITH_FIREBOLT)
             if (ptype->UseFirebolt) {
 
-                /* Smaller grid size used for the Firebolt Boltzmann code */
-                const int K = pars.SmallGridSize;
+                /* Grid size used for the Firebolt Boltzmann code */
+                int K;
 
-                /* Allocate small 3D array */
+                /* Load the correct Gaussian random field */
+                char read_small_fname[DEFAULT_STRING_LENGTH];
+
+                /* If the user specified a FireboltGridSize, use that grid */
+                if (pars.FireboltGridSize > 0) {
+                    K = pars.FireboltGridSize;
+                    sprintf(read_small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_FIREBOLT, ".hdf5");
+                }
+                /* Otherwise, if the SmallGridSize was specified, use that */
+                else if (pars.SmallGridSize > 0) {
+                    K = pars.SmallGridSize;
+                    sprintf(read_small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
+                }
+                /* Otherwise, use the full Gaussian random field */
+                else {
+                    K = N;
+                    sprintf(read_small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN, ".hdf5");
+                }
+
+                /* Allocate small complex 3D array */
                 small_grf = (fftw_complex*) malloc(K*K*(K/2+1)*sizeof(fftw_complex));
 
-                /* Load the small Gaussian random field */
-                char read_small_fname[DEFAULT_STRING_LENGTH];
-                sprintf(read_small_fname, "%s/%s%s", pars.OutputDirectory, GRID_NAME_GAUSSIAN_SMALL, ".hdf5");
-
-                /* Read the field from file */
+                /* Read the real Gaussian field from disk */
                 int read_N;
                 double read_boxlen;
                 double *small_grid;
-                readFieldFile(&small_grid, &read_N, &read_boxlen, read_small_fname);
+                err = readFieldFile(&small_grid, &read_N, &read_boxlen, read_small_fname);
+                if (err > 0) {
+                    printf("Error while loading the Gaussian random field for Firebolt.\n");
+                    exit(1);
+                }
+
+                /* Check that the sizes match what we expect */
+                if (read_N != K || read_boxlen != boxlen) {
+                    printf("Incorrect field dimensions in file (%d, %f) != (%d, %f)\n", read_N, read_boxlen, N, boxlen);
+                    exit(1);
+                }
 
                 /* Compute the Fourier transform */
                 fftw_plan small_r2c = fftw_plan_dft_r2c_3d(K, K, K, small_grid, small_grf, FFTW_ESTIMATE);
                 fft_execute(small_r2c);
                 fft_normalize_r2c(small_grf, K, boxlen);
 
-                /* Free the real box */
+                /* Free the real box, because we only need the complex grid */
                 free(small_grid);
                 fftw_destroy_plan(small_r2c);
 
