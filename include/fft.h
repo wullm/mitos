@@ -35,7 +35,7 @@ struct kernel {
     /* Value of the kernel at this k */
     double complex kern;
     /* Optional extra parameters */
-    void *params;
+    const void *params;
 };
 
 static inline int row_major(int i, int j, int k, int N) {
@@ -84,16 +84,16 @@ void fft_execute(fftw_plan plan);
 int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
 int fft_normalize_c2r(double *arr, int N, double boxlen);
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                      double boxlen, void (*compute)(struct kernel* the_kernel),
-                      void *params);
+                     double boxlen, const void (*compute)(struct kernel* the_kernel),
+                     const void *params);
 
 /* Functions for distributed grids */
 int fft_r2c_dg(struct distributed_grid *dg);
 int fft_c2r_dg(struct distributed_grid *dg);
 int fft_apply_kernel_dg(struct distributed_grid *dg_write,
-                        struct distributed_grid *dg_read,
-                        void (*compute)(struct kernel* the_kernel),
-                        void *params);
+                        const struct distributed_grid *dg_read,
+                        const void (*compute)(struct kernel* the_kernel),
+                        const void *params);
 
 
 #endif

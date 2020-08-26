@@ -109,8 +109,8 @@ void fft_execute(fftw_plan plan) {
 
 /* Apply a kernel to a 3D array after transforming to momentum space */
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
-                     double boxlen, void (*compute)(struct kernel* the_kernel),
-                     void *params) {
+                     double boxlen, const void (*compute)(struct kernel* the_kernel),
+                     const void *params) {
     const double dk = 2 * M_PI / boxlen;
 
     #pragma omp parallel for
@@ -175,9 +175,9 @@ int fft_c2r_dg(struct distributed_grid *dg) {
 
 /* (Distrbuted grid version) Apply a kernel to a complex 3D array */
 int fft_apply_kernel_dg(struct distributed_grid *dg_write,
-                        struct distributed_grid *dg_read,
-                        void (*compute)(struct kernel* the_kernel),
-                        void *params) {
+                        const struct distributed_grid *dg_read,
+                        const void (*compute)(struct kernel* the_kernel),
+                        const void *params) {
 
     /* The complex array is N * N * (N/2 + 1), locally we have NX * N * (N/2 + 1) */
     const int N = dg_read->N;

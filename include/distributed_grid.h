@@ -76,7 +76,7 @@ int free_local_grid(struct distributed_grid *dg);
 int free_local_real_grid(struct distributed_grid *dg);
 int free_local_complex_grid(struct distributed_grid *dg);
 
-static inline int row_major_dg(int i, int j, int k, struct distributed_grid *dg) {
+static inline int row_major_dg(int i, int j, int k, const struct distributed_grid *dg) {
     /* Wrap global coordinates */
     i = wrap(i,dg->N);
     j = wrap(j,dg->N);
@@ -87,7 +87,7 @@ static inline int row_major_dg(int i, int j, int k, struct distributed_grid *dg)
     return i*dg->N*(dg->N+2) + j*(dg->N+2) + k;
 }
 
-static inline int row_major_half_dg(int i, int j, int k, struct distributed_grid *dg) {
+static inline int row_major_half_dg(int i, int j, int k, const struct distributed_grid *dg) {
     /* Wrap global coordinates */
     i = wrap(i,dg->N);
     j = wrap(j,dg->N);
