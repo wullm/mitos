@@ -94,12 +94,12 @@ int initFirebolt(const struct params *pars, const struct cosmology *cosmo,
     double boxlen = pars->BoxLen;
 
     /* The grid size depends on user choice */
-    if (pars.FireboltGridSize > 0) {
-        N = pars.FireboltGridSize;
-    } else if (pars.SmallGridSize > 0) {
-        N = pars.SmallGridSize;
+    if (pars->FireboltGridSize > 0) {
+        N = pars->FireboltGridSize;
+    } else if (pars->SmallGridSize > 0) {
+        N = pars->SmallGridSize;
     } else {
-        K = pars.GridSize;
+        N = pars->GridSize;
     }
 
     /* Determine the maximum and minimum wavenumbers */
