@@ -902,7 +902,7 @@ int main(int argc, char *argv[]) {
                                                            x, y, z, nx, ny, nz, q, mode_0);
 
                                 /* Compute up to the 1st order phase space density perturbation in the gravitational flow direction */
-                                int mode_1 = 1; //use 0th and 1st order perturbations
+                                int mode_1 = 1; //use just the 1st order
                                 double Psi_1_g = evalDensity(firebolt.grids_ref, firebolt.q_size, firebolt.log_q_min, firebolt.log_q_max,
                                                              x, y, z, vx_g / v_g, vy_g / v_g, vz_g / v_g, q, mode_1);
 
