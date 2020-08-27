@@ -37,6 +37,14 @@ static inline void kernel_hipass(struct kernel *the_kernel) {
     the_kernel->kern = (k > k_min) ? 1.0 : 0.0;
 }
 
+static inline void kernel_tophat(struct kernel *the_kernel) {
+    double k = the_kernel->k;
+    double *param = (double *) the_kernel->params;
+    double k_min = param[0];
+    double k_max = param[1];
+    the_kernel->kern = (k >= k_min && k <= k_max) ? 1.0 : 0.0;
+}
+
 static inline void kernel_gaussian(struct kernel *the_kernel) {
     double k = the_kernel->k;
     double R = *((double*) the_kernel->params);
