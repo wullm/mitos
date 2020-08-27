@@ -307,6 +307,15 @@ int main(int argc, char *argv[]) {
             /* We now have the potential grid in momentum space */
             assert(potential.momentum_space == 1);
 
+            /* Undo the TSC window function for later */
+            struct Hermite_kern_params Hkp;
+            Hkp.order = 3; //TSC
+            Hkp.N = N;
+            Hkp.boxlen = boxlen;
+
+            /* Apply the kernel */
+            fft_apply_kernel_dg(&potential, &potential, kernel_undo_Hermite_window, &Hkp);
+
             /* Compute three derivatives of the potential grid */
             for (int i=0; i<3; i++) {
                 /* Apply the derivative kernel */
@@ -343,6 +352,15 @@ int main(int argc, char *argv[]) {
 
             /* Compute flux potential grid by applying the inverse Poisson kernel */
             fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
+
+            /* Undo the TSC window function for later */
+            struct Hermite_kern_params Hkp;
+            Hkp.order = 3; //TSC
+            Hkp.N = N;
+            Hkp.boxlen = boxlen;
+
+            /* Apply the kernel */
+            fft_apply_kernel_dg(&potential, &potential, kernel_undo_Hermite_window, &Hkp);
 
             /* Compute three derivatives of the flux potential grid */
             for (int i=0; i<3; i++) {

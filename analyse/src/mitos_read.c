@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
         printf("Example power spectrum:\n");
         printf("k P_measured(k) observations\n");
         for (int i=0; i<bins; i++) {
-            if (obs_in_bins[i] == 0) continue; //skip empty bins
+            if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
 
             /* The power we observe */
             double k = k_in_bins[i];
