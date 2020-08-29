@@ -60,7 +60,7 @@ int generate_ngeniclike_grf(fftw_complex * fbox, int N, int NX, int X0,
     fac = pow(Box,1.5) / sqrt(2);
 
 	fac *= sqrt(2); //to account for the different method of generating Gaussians
-	
+
     /* GSL random number generator */
     random_generator = gsl_rng_alloc (gsl_rng_ranlxd1);
     gsl_rng_set (random_generator, Seed);
@@ -143,8 +143,8 @@ int generate_ngeniclike_grf(fftw_complex * fbox, int N, int NX, int X0,
     			    }
 
     		        // p_of_k = PowerSpec (kmag);
-    		        // p_of_k *= -log (ampl);
                     p_of_k = 1.0; //power spectrum is applied later
+					p_of_k *= -log (ampl);
     		        delta = fac * sqrt (p_of_k) / Dplus;	/* we do not scale back */
 
     		        if (k > 0) {
