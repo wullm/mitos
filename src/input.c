@@ -67,7 +67,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->MinMomentum = ini_getd("Firebolt", "MinMomentum", 0.01, fname);
      pars->MaxMomentum = ini_getd("Firebolt", "MaxMomentum", 15, fname);
      pars->FireboltTolerance = ini_getd("Firebolt", "Tolerance", 1e-10, fname);
-     pars->FireboltVerbose = ini_getbool("Firebolt", "Verbose", 0, fname);
+     pars->FireboltVerbose = ini_getl("Firebolt", "Verbose", 0, fname);
      pars->FireboltGridSize = ini_getl("Firebolt", "FireboltGridSize", 0, fname);
 
      return 0;
