@@ -46,6 +46,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->OutputDirectory = malloc(len);
      pars->Name = malloc(len);
      pars->InputFilename = malloc(len);
+     pars->HaloInputFilename = malloc(len);
      pars->ImportName = malloc(len);
      pars->OutputFilename = malloc(len);
      pars->PerturbFile = malloc(len);
@@ -57,6 +58,7 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
      ini_gets("Read", "ImportName", "", pars->ImportName, len, fname);
+     ini_gets("Read", "HaloFilename", "", pars->HaloInputFilename, len, fname);
 
      /* Read optional settings for the Firebolt Boltzmann solver */
      pars->MaxMultipole = ini_getl("Firebolt", "MaxMultipole", 2000, fname);
