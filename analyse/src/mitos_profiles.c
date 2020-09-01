@@ -324,8 +324,8 @@ int main(int argc, char *argv[]) {
         for (int l=0; l<slab_size; l++) {
             /* Physical particle coordinates */
             double x = data[l][0];
-            double y = data[l][0];
-            double z = data[l][0];
+            double y = data[l][1];
+            double z = data[l][2];
 
             /* Map to reference grid coordinates */
             double X = x / (boxlen[0]/N);
