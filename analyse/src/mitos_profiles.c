@@ -195,7 +195,8 @@ int main(int argc, char *argv[]) {
 
 
     /* The size of the linked list grid */
-    const int N = 256; //pars.GridSize;
+    const int N = ceil(boxlen[0]/max_radius); //pars.GridSize;
+    printf("Reference grid is %d^3.\n", N);
 
     /* Allocate grids */
     struct id_link *halo_links = malloc(halo_num * sizeof(struct id_link));
@@ -234,7 +235,7 @@ int main(int argc, char *argv[]) {
         halos_in_cell[id]++;
     }
 
-    printf("Linked list grid created\n");
+    printf("Reference grid created.\n");
 
     double total_mass = 0; //for this particle type
 
