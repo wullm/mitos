@@ -131,6 +131,8 @@ int main(int argc, char *argv[]) {
     H5Aclose(h_attr);
     assert(h_err >= 0);
 
+    double half_boxlen = boxlen[0]/2;
+
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;
     h_attr = H5Aopen(h_grp, "NumPart_Total", H5P_DEFAULT);
@@ -320,10 +322,17 @@ int main(int argc, char *argv[]) {
 
         /* Assign the particles to the halo profiles */
         for (int l=0; l<slab_size; l++) {
-            double X = data[l][0] / (boxlen[0]/N);
-            double Y = data[l][1] / (boxlen[1]/N);
-            double Z = data[l][2] / (boxlen[2]/N);
+            /* Physical particle coordinates */
+            double x = data[l][0];
+            double y = data[l][0];
+            double z = data[l][0];
 
+            /* Map to reference grid coordinates */
+            double X = x / (boxlen[0]/N);
+            double Y = y / (boxlen[1]/N);
+            double Z = z / (boxlen[2]/N);
+
+            /* Integer coordinates */
             int iX = (int) floor(X);
             int iY = (int) floor(Y);
             int iZ = (int) floor(Z);
@@ -353,10 +362,17 @@ int main(int argc, char *argv[]) {
                             double h_x = halo_x[h_id];
                             double h_y = halo_y[h_id];
                             double h_z = halo_z[h_id];
+                            double delta_x = fabs(h_x - x);
+                            double delta_y = fabs(h_y - y);
+                            double delta_z = fabs(h_z - z);
+                            delta_x = (delta_x > half_boxlen) ? boxlen[0] - delta_x : delta_x;
+                            delta_y = (delta_y > half_boxlen) ? boxlen[1] - delta_y : delta_y;
+                            delta_z = (delta_z > half_boxlen) ? boxlen[2] - delta_z : delta_z;
 
-                            double r2 = (h_x - X)*(h_x - X) + (h_y - Y)*(h_y - Y) + (h_z - Z)*(h_z - Z);
+                            double r2 = delta_x*delta_x + delta_y*delta_y + delta_z*delta_z;
 
                             if (r2 < r2_max) {
+
                                 /* Put the particle in a bin */
                                 int bin = floor(sqrt(r2 / r2_max) * num_bins);
                                 profiles[h_id * num_bins + bin] += M;
