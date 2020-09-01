@@ -324,8 +324,8 @@ int main(int argc, char *argv[]) {
         for (int l=0; l<slab_size; l++) {
             /* Physical particle coordinates */
             double x = data[l][0];
-            double y = data[l][0];
-            double z = data[l][0];
+            double y = data[l][1];
+            double z = data[l][2];
 
             /* Map to reference grid coordinates */
             double X = x / (boxlen[0]/N);
@@ -382,7 +382,29 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+
+
+                    /* Determine distance to halo centre */
+                    int h_id = 0;
+                    double h_x = halo_x[h_id];
+                    double h_y = halo_y[h_id];
+                    double h_z = halo_z[h_id];
+                    double delta_x = fabs(h_x - x);
+                    double delta_y = fabs(h_y - y);
+                    double delta_z = fabs(h_z - z);
+                    delta_x = (delta_x > half_boxlen) ? boxlen[0] - delta_x : delta_x;
+                    delta_y = (delta_y > half_boxlen) ? boxlen[1] - delta_y : delta_y;
+                    delta_z = (delta_z > half_boxlen) ? boxlen[2] - delta_z : delta_z;
+
+                    double r2 = delta_x*delta_x + delta_y*delta_y + delta_z*delta_z;
+
+                    if (r2 < r2_max) {
+                        /* Put the particle in a bin */
+                        int bin = floor(sqrt(r2 / r2_max) * num_bins);
+                        profiles[h_id * num_bins + bin] += M;
+                    }
         }
+
 
         printf("(%03d,%03d) Read %ld particles\n", rank, k, slab_size);
         slab_counter++;
