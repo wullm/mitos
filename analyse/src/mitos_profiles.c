@@ -90,17 +90,17 @@ int main(int argc, char *argv[]) {
     H5Dclose(h_halo_dat);
 
     /* Read out the X-coordinates */
-    h_halo_dat = H5Dopen2(h_halo_file, "Xc", H5P_DEFAULT);
+    h_halo_dat = H5Dopen2(h_halo_file, "Xcminpot", H5P_DEFAULT);
     H5Dread(h_halo_dat, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, halo_x);
     H5Dclose(h_halo_dat);
 
     /* Open and read the Y-coordinates */
-    h_halo_dat = H5Dopen2(h_halo_file, "Yc", H5P_DEFAULT);
+    h_halo_dat = H5Dopen2(h_halo_file, "Ycminpot", H5P_DEFAULT);
     H5Dread(h_halo_dat, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, halo_y);
     H5Dclose(h_halo_dat);
 
     /* Open and read the Z-coordinates */
-    h_halo_dat = H5Dopen2(h_halo_file, "Zc", H5P_DEFAULT);
+    h_halo_dat = H5Dopen2(h_halo_file, "Zcminpot", H5P_DEFAULT);
     H5Dread(h_halo_dat, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, halo_z);
     H5Dclose(h_halo_dat);
 
@@ -483,17 +483,17 @@ int main(int argc, char *argv[]) {
         H5Dclose(h_data);
 
         /* Export X-coordinates */
-        h_data = H5Dcreate(h_exgrp, "Xc", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        h_data = H5Dcreate(h_exgrp, "Xcminpot", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_sspace, h_sspace, H5P_DEFAULT, halo_x);
         H5Dclose(h_data);
 
         /* Export X-coordinates */
-        h_data = H5Dcreate(h_exgrp, "Yc", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        h_data = H5Dcreate(h_exgrp, "Ycminpot", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_sspace, h_sspace, H5P_DEFAULT, halo_y);
         H5Dclose(h_data);
 
         /* Export Z-coordinates */
-        h_data = H5Dcreate(h_exgrp, "Zc", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        h_data = H5Dcreate(h_exgrp, "Zcminpot", H5T_NATIVE_DOUBLE, h_sspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         H5Dwrite(h_data, H5T_NATIVE_DOUBLE, h_sspace, h_sspace, H5P_DEFAULT, halo_z);
         H5Dclose(h_data);
 
