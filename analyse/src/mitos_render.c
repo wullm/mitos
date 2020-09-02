@@ -30,8 +30,6 @@
 #define outname(s,x) sprintf(s, "%s/%s", pars.OutputDirectory, x);
 #define printheader(s) printf("\n%s%s%s\n", TXT_BLUE, s, TXT_RESET);
 
-const char *fname;
-
 int main(int argc, char *argv[]) {
     if (argc == 1) {
         printf("No parameter file specified.\n");
@@ -101,6 +99,7 @@ int main(int argc, char *argv[]) {
 
     /* Create FFT plans */
     fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, rho, fbox, FFTW_ESTIMATE);
+    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, rho, FFTW_ESTIMATE);
 
     /* Execute and normalize */
     fft_execute(r2c);
@@ -116,11 +115,15 @@ int main(int argc, char *argv[]) {
     fft_apply_kernel(fbox, fbox, N, boxlen, kernel_transfer_function, &sp);
 
     sp.index_src = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
-    //fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
+    fft_apply_kernel(fbox, fbox, N, boxlen, kernel_inv_transfer_function, &sp);
+
+    /* Execute and normalize */
+    fft_execute(c2r);
+    fft_normalize_c2r(rho, N, boxlen);
 
     /* Export the real box */
-    // fft_c2r_export_and_free(fbox, N, boxlen, pars.OutputFilename);
-    // printf("Resulting field exported to '%s'.\n", pars.OutputFilename);
+    writeFieldFile(rho, N, boxlen, pars.OutputFilename);
+    printf("Resulting field exported to '%s'.\n", pars.OutputFilename);
 
 
     /* Free up memory */
