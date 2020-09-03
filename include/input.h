@@ -67,6 +67,8 @@ struct params {
     char *HaloInputFilename;
     char *ImportName; //name of the particle group to be read
     size_t SlabSize;
+    char *CrossSpectrumDensity1;
+    char *CrossSpectrumDensity2;
 
     /* Parameters for the Firebolt Boltzmann solver */
     int MaxMultipole;

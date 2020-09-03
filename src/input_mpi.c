@@ -84,9 +84,19 @@ int readFieldFile_dg(struct distributed_grid *dg, const char *fname) {
     /* Get the file dataspace */
     hid_t h_space = H5Dget_space(h_data);
 
+    /* Fetch the file dimensions */
+    int file_rank = H5Sget_simple_extent_ndims(h_space);
+    hsize_t *file_dims = malloc(file_rank * sizeof(hsize_t));
+    H5Sget_simple_extent_dims(h_space, file_dims, NULL);
+
     /* The chunk in question */
-    const hsize_t chunk_rank = 3;
-    const hsize_t chunk_dims[3] = {dg->NX, dg->N, dg->N+2}; //3D space
+    hsize_t chunk_rank = 3;
+    hsize_t chunk_dims[3] = {dg->NX, dg->N, dg->N}; //3D space
+
+    /* Add the padded rows if they are present in the file */
+    if (file_dims[2] == dg->N + 2) {
+        chunk_dims[2] = dg->N + 2;
+    }
 
     /* Offset of the chunk inside the grid */
     const hsize_t chunk_offset[3] = {dg->X0, 0, 0};

@@ -52,6 +52,8 @@ int readParams(struct params *pars, const char *fname) {
      pars->OutputFilename = malloc(len);
      pars->PerturbFile = malloc(len);
      pars->SwiftParamFilename = malloc(len);
+     pars->CrossSpectrumDensity1 = malloc(len);
+     pars->CrossSpectrumDensity2 = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
@@ -61,6 +63,8 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("Read", "Filename2", "", pars->InputFilename2, len, fname);
      ini_gets("Read", "ImportName", "", pars->ImportName, len, fname);
      ini_gets("Read", "HaloFilename", "", pars->HaloInputFilename, len, fname);
+     ini_gets("Read", "CrossSpectrumDensity1", "", pars->CrossSpectrumDensity1, len, fname);
+     ini_gets("Read", "CrossSpectrumDensity2", "", pars->CrossSpectrumDensity2, len, fname);
 
      /* Read optional settings for the Firebolt Boltzmann solver */
      pars->MaxMultipole = ini_getl("Firebolt", "MaxMultipole", 2000, fname);
@@ -147,6 +151,8 @@ int cleanParams(struct params *pars) {
     free(pars->OutputFilename);
     free(pars->PerturbFile);
     free(pars->SwiftParamFilename);
+    free(pars->CrossSpectrumDensity1);
+    free(pars->CrossSpectrumDensity2);
 
     return 0;
 }
