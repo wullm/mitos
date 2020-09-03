@@ -94,33 +94,67 @@ int main(int argc, char *argv[]) {
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
     message(rank, "Make sure that GridSize and BoxLen are correclty specified.\n");
 
-    /* The size of the density grid that we will create */
-    const int N = pars.GridSize;
-    const double boxlen = pars.BoxLen;
 
-    /* Allocate distributed memory arrays for both boxes */
-    struct distributed_grid box1;
-    struct distributed_grid box2;
-    alloc_local_grid(&box1, N, boxlen, MPI_COMM_WORLD);
-    alloc_local_grid(&box2, N, boxlen, MPI_COMM_WORLD);
+    /* Open the first mesh file */
+    int N;
+    double boxlen;
+    double *box1;
+    readFieldFile(&box1, &N, &boxlen, pars.InputFilename);
 
-    /* Read the first box */
-    int err = readFieldFile_dg(&box1, pars.InputFilename);
-    if (err > 0) {
-        printf("Error reading file '%s'\n.", pars.InputFilename);
-        exit(1);
-    }
+    /* Open the second mesh file */
+    int N2;
+    double boxlen2;
+    double *box2;
+    readFieldFile(&box2, &N2, &boxlen2, pars.InputFilename2);
 
-    /* Read the second box */
-    err = readFieldFile_dg(&box2, pars.InputFilename2);
-    if (err > 0) {
-        printf("Error reading file '%s'\n.", pars.InputFilename2);
-        exit(1);
-    }
+    assert(N == N2);
+    assert(boxlen == boxlen2);
 
-    /* Fourier transform both boxes */
-    fft_r2c_dg(&box1);
-    fft_r2c_dg(&box2);
+    /* Allocate 3D complex arrays */
+    fftw_complex *fbox1 = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox2 = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+
+    /* Create FFT plans */
+    fftw_plan r2c1 = fftw_plan_dft_r2c_3d(N, N, N, box1, fbox1, FFTW_ESTIMATE);
+    fftw_plan r2c2 = fftw_plan_dft_r2c_3d(N, N, N, box2, fbox2, FFTW_ESTIMATE);
+
+    /* Execute and normalize */
+    fft_execute(r2c1);
+    fft_execute(r2c2);
+    fft_normalize_r2c(fbox1, N, boxlen);
+    fft_normalize_r2c(fbox2, N, boxlen);
+
+    /* Destroy the plans */
+    fftw_destroy_plan(r2c1);
+    fftw_destroy_plan(r2c2);
+
+    // /* The size of the density grid that we will create */
+    // const int N = pars.GridSize;
+    // const double boxlen = pars.BoxLen;
+    //
+    // /* Allocate distributed memory arrays for both boxes */
+    // struct distributed_grid box1;
+    // struct distributed_grid box2;
+    // alloc_local_grid(&box1, N, boxlen, MPI_COMM_WORLD);
+    // alloc_local_grid(&box2, N, boxlen, MPI_COMM_WORLD);
+    //
+    // /* Read the first box */
+    // int err = readFieldFile_dg(&box1, pars.InputFilename);
+    // if (err > 0) {
+    //     printf("Error reading file '%s'\n.", pars.InputFilename);
+    //     exit(1);
+    // }
+    //
+    // /* Read the second box */
+    // err = readFieldFile_dg(&box2, pars.InputFilename2);
+    // if (err > 0) {
+    //     printf("Error reading file '%s'\n.", pars.InputFilename2);
+    //     exit(1);
+    // }
+    //
+    // /* Fourier transform both boxes */
+    // fft_r2c_dg(&box1);
+    // fft_r2c_dg(&box2);
 
 
     if (rank == 0) {
@@ -130,8 +164,8 @@ int main(int argc, char *argv[]) {
         int *obs_in_bins = calloc(bins, sizeof(int));
 
         /* The boxes in momentum space */
-        fftw_complex *fbox1 = box1.fbox;
-        fftw_complex *fbox2 = box2.fbox;
+        // fftw_complex *fbox1 = box1.fbox;
+        // fftw_complex *fbox2 = box2.fbox;
 
         /* Undo the TSC window function */
         // undoTSCWindow(fbox, N, boxlen);
@@ -205,9 +239,15 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
 
+    // /* Free the grids */
+    // free_local_grid(&box1);
+    // free_local_grid(&box2);
+
     /* Free the grids */
-    free_local_grid(&box1);
-    free_local_grid(&box2);
+    fftw_free(box1);
+    fftw_free(box2);
+    fftw_free(fbox1);
+    fftw_free(fbox2);
 
     /* Done with MPI parallelization */
     MPI_Barrier(MPI_COMM_WORLD);
