@@ -187,31 +187,44 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     int ndims = H5Sget_simple_extent_ndims(h_space);
     hsize_t *dims = malloc(ndims * sizeof(hsize_t));
     H5Sget_simple_extent_dims(h_space, dims, NULL);
+    int read_N = dims[0];
 
     /* We should be in 3D */
     if (ndims != 3) {
         printf("Number of dimensions %d != 3.\n", ndims);
         return 2;
     }
-    /* It should be a cube */
-    if (dims[0] != dims[1] || dims[1] != dims[2]) {
+    /* It should be a cube (but allow for padding in the last dimension) */
+    if (read_N != dims[1] || (read_N != dims[2] && (read_N+2) != dims[2])) {
         printf("Non-cubic grid size (%lld, %lld, %lld).\n", dims[0], dims[1], dims[2]);
         return 2;
     }
     /* Store the grid size */
-    *N = dims[0];
+    *N = read_N;
 
-    /* Allocate the array */
-    *box = malloc(dims[0] * dims[1] * dims[2] * sizeof(double));
+    /* Allocate the array (wuthout padding) */
+    *box = malloc(read_N * read_N * read_N * sizeof(double));
+
+    /* The hyperslab that should be read (needed in case of padding) */
+    const hsize_t space_rank = 3;
+    const hsize_t space_dims[3] = {read_N, read_N, read_N}; //3D space
+
+    /* Offset of the hyperslab */
+    const hsize_t space_offset[3] = {0, 0, 0};
+
+    /* Create memory space for the chunk */
+    hid_t h_memspace = H5Screate_simple(space_rank, space_dims, NULL);
+    H5Sselect_hyperslab(h_space, H5S_SELECT_SET, space_offset, NULL, space_dims, NULL);
 
     /* Read out the data */
-    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, *box);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, *box);
     if (h_err < 0) {
         printf("Error reading hdf5 file '%s'.\n", fname);
         return 1;
     }
 
-    /* Close the dataspace and dataset */
+    /* Close the dataspaces and dataset */
+    H5Sclose(h_memspace);
     H5Sclose(h_space);
     H5Dclose(h_data);
 
