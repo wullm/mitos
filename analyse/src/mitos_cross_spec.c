@@ -99,12 +99,14 @@ int main(int argc, char *argv[]) {
     int N;
     double boxlen;
     double *box1;
+    message(rank, "Reading file '%s'\n", pars.InputFilename);
     readFieldFile(&box1, &N, &boxlen, pars.InputFilename);
 
     /* Open the second mesh file */
     int N2;
     double boxlen2;
     double *box2;
+    message(rank, "Reading file '%s'\n", pars.InputFilename2);
     readFieldFile(&box2, &N2, &boxlen2, pars.InputFilename2);
 
     assert(N == N2);
@@ -119,6 +121,7 @@ int main(int argc, char *argv[]) {
     fftw_plan r2c2 = fftw_plan_dft_r2c_3d(N, N, N, box2, fbox2, FFTW_ESTIMATE);
 
     /* Execute and normalize */
+    message(rank, "Executing Fourier transforms.\n");
     fft_execute(r2c1);
     fft_execute(r2c2);
     fft_normalize_r2c(fbox1, N, boxlen);
@@ -167,9 +170,50 @@ int main(int argc, char *argv[]) {
         // fftw_complex *fbox1 = box1.fbox;
         // fftw_complex *fbox2 = box2.fbox;
 
-        /* Undo the TSC window function */
-        // undoTSCWindow(fbox, N, boxlen);
+        message(rank, "Undoing window functions.\n");
 
+        /* Undo the TSC window function */
+        undoTSCWindow(fbox1, N, boxlen);
+        undoTSCWindow(fbox2, N, boxlen);
+
+
+        message(rank, "Computing power spectra.\n");
+
+        /* First, the power spectrum of box1 */
+        calc_cross_powerspec(N, boxlen, fbox1, fbox1, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+        printf("\n");
+        printf("Power spectrum 1:\n");
+        printf("k P_measured(k) observations\n");
+        for (int i=0; i<bins; i++) {
+            if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+
+            /* The power we observe */
+            double k = k_in_bins[i];
+            double Pk = power_in_bins[i];
+            int obs = obs_in_bins[i];
+
+            printf("%f %e %d\n", k, Pk, obs);
+        }
+
+        /* Then, the power spectrum of box2 */
+        calc_cross_powerspec(N, boxlen, fbox2, fbox2, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+        printf("\n");
+        printf("Power spectrum 2:\n");
+        printf("k P_measured(k) observations\n");
+        for (int i=0; i<bins; i++) {
+            if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+
+            /* The power we observe */
+            double k = k_in_bins[i];
+            double Pk = power_in_bins[i];
+            int obs = obs_in_bins[i];
+
+            printf("%f %e %d\n", k, Pk, obs);
+        }
+
+        /* Then, the cross power spectrum */
         calc_cross_powerspec(N, boxlen, fbox1, fbox2, bins, k_in_bins, power_in_bins, obs_in_bins);
 
         printf("\n");
