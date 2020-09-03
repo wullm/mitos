@@ -46,6 +46,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->OutputDirectory = malloc(len);
      pars->Name = malloc(len);
      pars->InputFilename = malloc(len);
+     pars->InputFilename2 = malloc(len);
      pars->HaloInputFilename = malloc(len);
      pars->ImportName = malloc(len);
      pars->OutputFilename = malloc(len);
@@ -57,6 +58,7 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("Output", "SwiftParamFilename", "swift_params.hdf5", pars->SwiftParamFilename, len, fname);
      ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
+     ini_gets("Read", "Filename2", "", pars->InputFilename2, len, fname);
      ini_gets("Read", "ImportName", "", pars->ImportName, len, fname);
      ini_gets("Read", "HaloFilename", "", pars->HaloInputFilename, len, fname);
 
@@ -140,6 +142,8 @@ int cleanParams(struct params *pars) {
     free(pars->OutputDirectory);
     free(pars->Name);
     free(pars->InputFilename);
+    free(pars->InputFilename2);
+    free(pars->HaloInputFilename);
     free(pars->OutputFilename);
     free(pars->PerturbFile);
     free(pars->SwiftParamFilename);

@@ -63,6 +63,7 @@ struct params {
 
     /* Input parameters */
     char *InputFilename;
+    char *InputFilename2;
     char *HaloInputFilename;
     char *ImportName; //name of the particle group to be read
     size_t SlabSize;
