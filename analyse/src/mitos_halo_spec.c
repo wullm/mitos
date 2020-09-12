@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
     double *box = fftw_alloc_real(N * N * N);
 
     double total_mass = 0;
+    double total_weight = 0;
 
     double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
 
@@ -129,9 +130,10 @@ int main(int argc, char *argv[]) {
         double Z = halo_z[l] / (boxlen/N);
         double M = halo_M[l] / (boxlen/N);
 
-        total_mass += M;
-
         double W = 1.0; //used in the CIC
+
+        total_mass += M;
+        total_weight += W;
 
         int iX = (int) floor(X);
         int iY = (int) floor(Y);
@@ -168,6 +170,12 @@ int main(int argc, char *argv[]) {
 		}
     }
 
+    /* Demean the grid */
+    double avg_weight = total_weight / (N * N * N);
+    for (int i=0; i<N*N*N; i++) {
+        box[i] = (box[i] - avg_weight)/avg_weight;
+    }
+
     // /* Reduce the grid */
     // if (rank == 0) {
     //     MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -183,6 +191,7 @@ int main(int argc, char *argv[]) {
     // }
 
     message(rank, "Total mass = %e\n", total_mass);
+    message(rank, "Average weight = %e\n", avg_weight);
 
     /* Prepare for computing the power spectrum */
     int bins = 50;
