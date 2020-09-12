@@ -145,6 +145,9 @@ int main(int argc, char *argv[]) {
             W = 0.0;
         }
 
+        if (W == 0)
+        continue;
+
         total_mass += M;
         total_weight += W;
 
