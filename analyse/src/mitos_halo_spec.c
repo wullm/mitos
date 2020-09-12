@@ -176,6 +176,10 @@ int main(int argc, char *argv[]) {
         box[i] = (box[i] - avg_weight)/avg_weight;
     }
 
+    char box_fname[40];
+    sprintf(box_fname, "density_halos.hdf5");
+    writeFieldFile(box, N, boxlen, box_fname);
+
     // /* Reduce the grid */
     // if (rank == 0) {
     //     MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
