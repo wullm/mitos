@@ -115,6 +115,14 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
 
+    /* The halos under consideration */
+    const double M_min = pars.HaloMinMass;
+    const double M_max = pars.HaloMaxMass;
+
+    message(rank, "Including halos with M in (%e, %e) U_M.\n", M_min, M_max);
+
+
+
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
 
@@ -130,7 +138,12 @@ int main(int argc, char *argv[]) {
         double Z = halo_z[l] / (boxlen/N);
         double M = halo_M[l] / (boxlen/N);
 
-        double W = 1.0; //used in the CIC
+        double W; //weight used in the CIC assignment
+        if (M > M_min && M < M_max) {
+            W = 1.0;
+        } else {
+            W = 0.0;
+        }
 
         total_mass += M;
         total_weight += W;
@@ -195,6 +208,7 @@ int main(int argc, char *argv[]) {
     // }
 
     message(rank, "Total mass = %e\n", total_mass);
+    message(rank, "Total weight = %e\n", total_weight);
     message(rank, "Average weight = %e\n", avg_weight);
 
     /* Prepare for computing the power spectrum */

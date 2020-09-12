@@ -69,6 +69,8 @@ struct params {
     size_t SlabSize;
     char *CrossSpectrumDensity1;
     char *CrossSpectrumDensity2;
+    double HaloMinMass;
+    double HaloMaxMass;
 
     /* Parameters for the Firebolt Boltzmann solver */
     int MaxMultipole;

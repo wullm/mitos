@@ -40,6 +40,8 @@ int readParams(struct params *pars, const char *fname) {
      pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
      pars->MergeDarkMatterBaryons = ini_getbool("PerturbData", "MergeDarkMatterBaryons", 0, fname);
      pars->SlabSize = ini_getl("Read", "SlabSize", 8000000, fname);
+     pars->HaloMinMass = ini_getd("Read", "HaloMinMass", 2.75e4, fname);
+     pars->HaloMaxMass = ini_getd("Read", "HaloMaxMass", 2.75e5, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;
