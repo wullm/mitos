@@ -45,6 +45,34 @@ static inline void kernel_tophat(struct kernel *the_kernel) {
     the_kernel->kern = (k >= k_min && k <= k_max) ? 1.0 : 0.0;
 }
 
+
+static inline void kernel_elliptic_tophat(struct kernel *the_kernel) {
+    double kx = the_kernel->kx;
+    double ky = the_kernel->ky;
+    double kz = the_kernel->kz;
+    double *param = (double *) the_kernel->params;
+    double rx = param[0];
+    double ry = param[1];
+    double rz = param[2];
+    double eta2 = param[3];
+    double kr = kx*rx + ky*ry + kz*rz;
+    double kk = kx*kx + ky*ky + kz*kz;
+    double rr = rx*rx + ry*ry + rz*rz;
+    double theta = kk*rr + (eta2 - 1)*kr*kr;
+    the_kernel->kern = (theta <= 4*M_PI*M_PI) ? 1.0 : 0.0;
+}
+
+static inline void kernel_translate(struct kernel *the_kernel) {
+    double kx = the_kernel->kx;
+    double ky = the_kernel->ky;
+    double kz = the_kernel->kz;
+    double *param = (double *) the_kernel->params;
+    double rx = param[0];
+    double ry = param[1];
+    double rz = param[2];
+    the_kernel->kern = cexp(I*(rx*kx + ry*ky + rz*kz));
+}
+
 static inline void kernel_gaussian(struct kernel *the_kernel) {
     double k = the_kernel->k;
     double R = *((double*) the_kernel->params);
