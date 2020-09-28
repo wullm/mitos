@@ -23,6 +23,7 @@
 #include <hdf5.h>
 #include <assert.h>
 #include <math.h>
+#include <complex.h>
 
 #include "../../include/mitos.h"
 
