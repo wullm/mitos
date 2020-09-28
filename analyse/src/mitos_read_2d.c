@@ -181,6 +181,9 @@ int main(int argc, char *argv[]) {
 
     /* Allocate 2D grid */
     double *box = fftw_alloc_real(N * N);
+    for (int i=0; i<N*N; i++) {
+        box[i] = 0;
+    }
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -318,7 +321,8 @@ int main(int argc, char *argv[]) {
         // /* Close the dataset */
         // H5Dclose(h_dat);
 
-        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
+        double dN = (double) N;
+        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (dN*dN*dN);
 
         /* Assign the particles to the grid with CIC */
         for (int l=0; l<slab_size; l++) {
@@ -416,7 +420,7 @@ int main(int argc, char *argv[]) {
 
         /* Turn the density field into an overdensity field */
         for (int i=0; i<N*N; i++) {
-            box[i] = (box[i] - avg_density)/avg_density / thickness;
+            box[i] = (box[i] - thickness*avg_density)/avg_density / thickness;
         }
 
         /* Find a particle type with a matching ExportName */
