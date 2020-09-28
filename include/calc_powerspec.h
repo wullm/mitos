@@ -26,5 +26,7 @@
 void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
                           const fftw_complex *box2, int bins, double *k_in_bins,
                           double *power_in_bins, int *obs_in_bins);
-
+void calc_cross_powerspec_2d(int N, double anglesize, const fftw_complex *box1,
+                             const fftw_complex *box2, int bins, double *l_in_bins,
+                             double *power_in_bins, int *obs_in_bins);
 #endif

@@ -88,3 +88,63 @@ void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
 		power_in_bins[i] /= boxvol;
 	}
 }
+
+void calc_cross_powerspec_2d(int N, double anglesize, const fftw_complex *box1,
+                             const fftw_complex *box2, int bins, double *l_in_bins,
+                             double *power_in_bins, int *obs_in_bins) {
+
+    const double norm = pow(anglesize*M_PI/180/(N*N),2);
+    const double dl = 360.0/anglesize;
+    const double max_l = sqrt(3)*dl*N/2;
+    const double min_l = dl;
+
+    const double log_max_l = log(max_l);
+    const double log_min_l = log(min_l);
+
+    /* Reset the bins */
+    for (int i=0; i<bins; i++) {
+        l_in_bins[i] = 0;
+        power_in_bins[i] = 0;
+        obs_in_bins[i] = 0;
+    }
+
+    /* Calculate the power spectrum */
+    double lx,ly,l;
+    for (int x=0; x<N; x++) {
+        for (int y=0; y<=N/2; y++) {
+            /* Calculate the wavevector */
+            lx = (x > N/2) ? (x - N)*dl : x*dl;
+            ly = (y > N/2) ? (y - N)*dl : y*dl;
+            l = sqrt(lx*lx + ly*ly);
+
+            if (l==0) continue; //skip the DC mode
+
+            /* Compute the bin */
+            const float u = (log(l) - log_min_l) / (log_max_l - log_min_l);
+            const int bin = floor((bins - 1) * u);
+            const int id = x*(N/2+1) + y;
+
+            assert(bin >= 0 && bin < bins);
+
+            /* Compute the power <X,Y> with X,Y complex */
+            double a1 = creal(box1[id]), a2 = creal(box2[id]);
+            double b1 = cimag(box1[id]), b2 = cimag(box2[id]);
+            double Power = a1*a2 + b1*b2;
+
+            /* All except the z=0 and the z=N/2 planes count double */
+            int multiplicity = (y==0 || y==N/2) ? 1 : 2;
+
+            /* Add to the tables */
+            l_in_bins[bin] += multiplicity * l;
+			power_in_bins[bin] += multiplicity * Power;
+			obs_in_bins[bin] += multiplicity;
+        }
+    }
+
+    /* Divide to obtain averages */
+	for (int i=0; i<bins; i++) {
+		l_in_bins[i] /= obs_in_bins[i];
+		power_in_bins[i] /= obs_in_bins[i];
+		power_in_bins[i] *= norm;
+	}
+}
