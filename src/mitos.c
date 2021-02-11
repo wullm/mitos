@@ -288,9 +288,17 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing density & displacement grids for '%s'.\n", Identifier);
 
-            /* Generate density grid by applying the transfer function to the GRF */
-            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
-            catch_error(err, "Error while generating '%s'.", density_filename);
+            /* Should we generate a density field or load it from the disk? */
+            if (strcmp(ptype->InputFilenameDensity, "") == 0) {
+              /* Generate density grid by applying the transfer function to the GRF */
+              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
+              catch_error(err, "Error while generating '%s'.", density_filename);
+            } else {
+               /* Load input density field */
+               message(rank, "Loading density grid from '%s'.\n", ptype->InputFilenameDensity);
+               err = readFieldFile_dg(&grid, ptype->InputFilenameDensity);
+               catch_error(err, "Error while loading '%s'.", ptype->InputFilenameDensity);
+            }
 
             /* Fourier transform the density grid */
             fft_r2c_dg(&grid);
@@ -343,9 +351,17 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
 
-            /* Generate flux grid by applying the transfer function to the GRF */
-            err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
-            catch_error(err, "Error while generating '%s'.", velocity_filename);
+            /* Should we generate a flux density field or load it from the disk? */
+            if (strcmp(ptype->InputFilenameVelocity, "") == 0) {
+              /* Generate flux grid by applying the transfer function to the GRF */
+              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
+              catch_error(err, "Error while generating '%s'.", velocity_filename);
+            } else {
+               /* Load input flux density field */
+               message(rank, "Loading flux density grid from '%s'.\n", ptype->InputFilenameVelocity);
+               err = readFieldFile_dg(&grid, ptype->InputFilenameVelocity);
+               catch_error(err, "Error while loading '%s'.", ptype->InputFilenameVelocity);
+            }
 
             /* Fourier transform the flux density grid */
             fft_r2c_dg(&grid);

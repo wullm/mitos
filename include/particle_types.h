@@ -39,6 +39,10 @@ struct particle_type {
     char *TransferFunctionDensity;
     char *TransferFunctionVelocity;
 
+    /* Possible input filenames for density and energy flux fields */
+    char *InputFilenameDensity;
+    char *InputFilenameVelocity;
+
     /* Thermal species properties */
     double MicroscopicMass_eV;
     double MicroscopyTemperature;

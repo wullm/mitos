@@ -61,6 +61,13 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
             tp->CyclesOfMongeAmpere = ini_getl(seek_str, "CyclesOfMongeAmpere", 0, fname);
             tp->CyclesOfSPT = ini_getl(seek_str, "CyclesOfSPT", 0, fname);
 
+            /* Possible input filenames for density and energy flux fields */
+            int len = DEFAULT_STRING_LENGTH;
+            tp->InputFilenameDensity = malloc(len);
+            tp->InputFilenameVelocity = malloc(len);
+            ini_gets(seek_str, "InputFilenameDensity", "", tp->InputFilenameDensity, len, fname);
+            ini_gets(seek_str, "InputFilenameVelocity", "", tp->InputFilenameVelocity, len, fname);
+
             /* Further strings */
             tp->TransferFunctionDensity = malloc(20);
             tp->TransferFunctionVelocity = malloc(20);
@@ -112,6 +119,8 @@ int cleanTypes(struct params *pars, struct particle_type **tps) {
         free(tp->TransferFunctionDensity);
         free(tp->TransferFunctionVelocity);
         free(tp->ThermalMotionType);
+        free(tp->InputFilenameDensity);
+        free(tp->InputFilenameVelocity);
     }
     free(*tps);
     return 0;
