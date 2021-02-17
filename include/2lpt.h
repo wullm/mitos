@@ -17,8 +17,8 @@
  *
  ******************************************************************************/
 
-#ifndef 2LPT_H
-#define 2LPT_H
+#ifndef TWOLPT_H
+#define TWOLPT_H
 
 #include <fftw3.h>
 #include "input.h"
