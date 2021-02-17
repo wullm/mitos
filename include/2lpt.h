@@ -17,8 +17,8 @@
  *
  ******************************************************************************/
 
-#ifndef MONGE_AMPERE_H
-#define MONGE_AMPERE_H
+#ifndef 2LPT_H
+#define 2LPT_H
 
 #include <fftw3.h>
 #include "input.h"
