@@ -34,6 +34,7 @@ struct particle_type {
     int ChunkSize; //except possibly the last chunk
     int CyclesOfMongeAmpere;
     int CyclesOfSPT;
+    int Run2LPT;
 
     /* The transfer function titles from CLASS */
     char *TransferFunctionDensity;

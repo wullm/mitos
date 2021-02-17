@@ -40,6 +40,7 @@
 #include "shrink_grids.h"
 #include "poisson.h"
 #include "monge_ampere.h"
+#include "2lpt.h"
 #include "spt_convolve.h"
 #include "spt_grid.h"
 #include "grids_interp.h"

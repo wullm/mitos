@@ -60,6 +60,7 @@ int readTypes(struct params *pars, struct particle_type **tps, const char *fname
 
             tp->CyclesOfMongeAmpere = ini_getl(seek_str, "CyclesOfMongeAmpere", 0, fname);
             tp->CyclesOfSPT = ini_getl(seek_str, "CyclesOfSPT", 0, fname);
+            tp->Run2LPT = ini_getl(seek_str, "Run2LPT", 0, fname);
 
             /* Possible input filenames for density and energy flux fields */
             int len = DEFAULT_STRING_LENGTH;

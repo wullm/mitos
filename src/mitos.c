@@ -307,6 +307,9 @@ int main(int argc, char *argv[]) {
             if (ptype->CyclesOfMongeAmpere > 0) {
                 /* Solve the Monge Ampere equation */
                 err = solveMongeAmpere(&potential, &grid, &derivative, ptype->CyclesOfMongeAmpere);
+            } else if (ptype->Run2LPT > 0) {
+                /* Solve for the 2LPT potential */
+                err = solve2LPT(&potential, &grid, &derivative);
             } else {
                 /* Approximate the potential with the Zel'dovich approximation */
                 fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
@@ -366,8 +369,13 @@ int main(int argc, char *argv[]) {
             /* Fourier transform the flux density grid */
             fft_r2c_dg(&grid);
 
-            /* Compute flux potential grid by applying the inverse Poisson kernel */
-            fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
+            if (ptype->Run2LPT > 0) {
+                /* Solve for the 2LPT potential */
+                err = solve2LPT(&potential, &grid, &derivative);
+            } else {
+                /* Compute flux potential grid by applying the inverse Poisson kernel */
+                fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
+            }
 
             /* Undo the TSC window function for later */
             struct Hermite_kern_params Hkp;
