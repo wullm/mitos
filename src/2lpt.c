@@ -37,7 +37,7 @@ typedef double* dp;
 
 int solve2LPT(struct distributed_grid *potential,
               struct distributed_grid *density,
-              struct distributed_grid *workspace, double factor) {
+              struct distributed_grid *workspace, double factor1, double factor2) {
 
     /* Size of the problem */
     const int N = density->N;
@@ -127,12 +127,9 @@ int solve2LPT(struct distributed_grid *potential,
     /* Transform the potential grid back to configuration space */
     fft_c2r_dg(potential);
 
-    /* The second order growth factor (the term D^2 is already included) */
-    double growth_factor_2 = -3./7. * factor;
-
     /* Add the second order potential on top of the first order potential */
     for (int k=0; k<chunk_size; k++) {
-        potential->box[k] += growth_factor_2 * workspace->box[k];
+        potential->box[k] = potential->box[k] * factor1 +  factor2 * workspace->box[k];
     }
 
     /* Transform the potential grid to momentum space */

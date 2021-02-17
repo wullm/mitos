@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
                 err = solveMongeAmpere(&potential, &grid, &derivative, ptype->CyclesOfMongeAmpere);
             } else if (ptype->Run2LPT > 0) {
                 /* Solve for the 2LPT potential */
-                err = solve2LPT(&potential, &grid, &derivative, 1.0);
+                err = solve2LPT(&potential, &grid, &derivative, 1.0, -3./7.);
             } else {
                 /* Approximate the potential with the Zel'dovich approximation */
                 fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
 
             if (ptype->Run2LPT > 0) {
                 /* Solve for the 2LPT potential */
-                err = solve2LPT(&potential, &grid, &derivative, 2.02);
+                err = solve2LPT(&potential, &grid, &derivative, -0.001147273637728, 3.19354920304769E-05);
             } else {
                 /* Compute flux potential grid by applying the inverse Poisson kernel */
                 fft_apply_kernel_dg(&potential, &grid, kernel_inv_poisson, NULL);
