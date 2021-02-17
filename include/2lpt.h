@@ -26,6 +26,6 @@
 
 int solve2LPT(struct distributed_grid *potential,
               struct distributed_grid *density,
-              struct distributed_grid *workspace);
+              struct distributed_grid *workspace, double factor);
 
 #endif
