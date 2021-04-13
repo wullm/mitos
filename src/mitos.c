@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
     } else {
         /* Prepare to read the Gassian random field */
         header(rank, "Reading Primordial Fluctuations");
-        message(rank, "Reading file '%s'.", pars.ReadGaussianFileName);
+        message(rank, "Reading file '%s'.\n", pars.ReadGaussianFileName);
 
         /* Read the field dimensions */
         readFieldDimensions(&N, &boxlen, pars.ReadGaussianFileName);
