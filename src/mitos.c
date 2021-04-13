@@ -153,24 +153,46 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Create Gaussian random field */
-    const int N = pars.GridSize;
-    const double boxlen = pars.BoxLen;
-
-    /* Allocate distributed memory arrays (one complex & one real) */
+    /* Create or read a Gaussian random field */
+    int N;
+    double boxlen;
     struct distributed_grid grf;
-    alloc_local_grid(&grf, N, boxlen, MPI_COMM_WORLD);
 
-    /* Generate a complex Hermitian Gaussian random field */
-    header(rank, "Generating Primordial Fluctuations");
-    generate_complex_grf(&grf, &seed);
-    enforce_hermiticity(&grf);
+    if (strcmp(pars.ReadGaussianFileName, "") == 0) {
+        /* Create Gaussian random field */
+        N = pars.GridSize;
+        boxlen = pars.BoxLen;
 
-    /* Apply the bare power spectrum, without any transfer functions */
-    fft_apply_kernel_dg(&grf, &grf, kernel_power_no_transfer, &cosmo);
+        /* Allocate distributed memory arrays (one complex & one real) */
+        alloc_local_grid(&grf, N, boxlen, MPI_COMM_WORLD);
 
-    /* Execute the Fourier transform and normalize */
-    fft_c2r_dg(&grf);
+        /* Generate a complex Hermitian Gaussian random field */
+        header(rank, "Generating Primordial Fluctuations");
+        generate_complex_grf(&grf, &seed);
+        enforce_hermiticity(&grf);
+
+        /* Apply the bare power spectrum, without any transfer functions */
+        fft_apply_kernel_dg(&grf, &grf, kernel_power_no_transfer, &cosmo);
+
+        /* Execute the Fourier transform and normalize */
+        fft_c2r_dg(&grf);
+    } else {
+        /* Prepare to read the Gassian random field */
+        header(rank, "Reading Primordial Fluctuations");
+        message(rank, "Reading file '%s'.", pars.ReadGaussianFileName);
+
+        /* Read the field dimensions */
+        readFieldDimensions(&N, &boxlen, pars.ReadGaussianFileName);
+
+        message(rank, "Read BoxLen = %.2f U_L\n", boxlen);
+        message(rank, "Read GridSize = %d\n", N);
+
+        /* Allocate distributed memory arrays (one complex & one real) */
+        alloc_local_grid(&grf, N, boxlen, MPI_COMM_WORLD);
+
+        /* Read the file */
+        readFieldFile_dg(&grf, pars.ReadGaussianFileName);
+    }
 
     /* Generate a filename */
     char grf_fname[DEFAULT_STRING_LENGTH];

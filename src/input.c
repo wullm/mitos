@@ -56,6 +56,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->SwiftParamFilename = malloc(len);
      pars->CrossSpectrumDensity1 = malloc(len);
      pars->CrossSpectrumDensity2 = malloc(len);
+     pars->ReadGaussianFileName = malloc(len);
      ini_gets("Output", "Directory", "./output", pars->OutputDirectory, len, fname);
      ini_gets("Simulation", "Name", "No Name", pars->Name, len, fname);
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
@@ -67,6 +68,7 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("Read", "HaloFilename", "", pars->HaloInputFilename, len, fname);
      ini_gets("Read", "CrossSpectrumDensity1", "", pars->CrossSpectrumDensity1, len, fname);
      ini_gets("Read", "CrossSpectrumDensity2", "", pars->CrossSpectrumDensity2, len, fname);
+     ini_gets("Read", "ReadGaussianFileName", "", pars->ReadGaussianFileName, len, fname);
 
      /* Read optional settings for the Firebolt Boltzmann solver */
      pars->MaxMultipole = ini_getl("Firebolt", "MaxMultipole", 2000, fname);
@@ -155,6 +157,7 @@ int cleanParams(struct params *pars) {
     free(pars->SwiftParamFilename);
     free(pars->CrossSpectrumDensity1);
     free(pars->CrossSpectrumDensity2);
+    free(pars->ReadGaussianFileName);
 
     return 0;
 }
@@ -280,6 +283,72 @@ int readFieldFileInPlace(double *box, const char *fname) {
     /* Close the dataspace and dataset */
     H5Sclose(h_space);
     H5Dclose(h_data);
+
+    /* Close the Field group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    /* Free memory */
+    free(dims);
+
+    return 0;
+}
+
+int readFieldDimensions(int *N, double *box_len, const char *fname) {
+    /* Open the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    /* Open the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
+
+    /* Read the size of the field */
+    hid_t h_attr, h_err;
+    double boxsize[3];
+
+    /* Open and read out the attribute */
+    h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &boxsize);
+    if (h_err < 0) {
+        printf("Error reading hdf5 attribute '%s'.\n", "BoxSize");
+        return 1;
+    }
+
+    /* It should be a cube */
+    assert(boxsize[0] == boxsize[1]);
+    assert(boxsize[1] == boxsize[2]);
+    *box_len = boxsize[0];
+
+    /* Close the attribute, and the Header group */
+    H5Aclose(h_attr);
+    H5Gclose(h_grp);
+
+    /* Open the Field group */
+    h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Open the dataspace and fetch the grid dimensions */
+    hid_t h_space = H5Dget_space(h_data);
+    int ndims = H5Sget_simple_extent_ndims(h_space);
+    hsize_t *dims = malloc(ndims * sizeof(hsize_t));
+    H5Sget_simple_extent_dims(h_space, dims, NULL);
+    int read_N = dims[0];
+
+    /* We should be in 3D */
+    if (ndims != 3) {
+        printf("Number of dimensions %d != 3.\n", ndims);
+        return 2;
+    }
+    /* It should be a cube (but allow for padding in the last dimension) */
+    if (read_N != dims[1] || (read_N != dims[2] && (read_N+2) != dims[2])) {
+        printf("Non-cubic grid size (%lld, %lld, %lld).\n", dims[0], dims[1], dims[2]);
+        return 2;
+    }
+    /* Store the grid size */
+    *N = read_N;
 
     /* Close the Field group */
     H5Gclose(h_grp);
