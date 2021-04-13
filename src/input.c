@@ -350,6 +350,10 @@ int readFieldDimensions(int *N, double *box_len, const char *fname) {
     /* Store the grid size */
     *N = read_N;
 
+    /* Close the dataspace and dataset */
+    H5Sclose(h_space);
+    H5Dclose(h_data);
+
     /* Close the Field group */
     H5Gclose(h_grp);
 
