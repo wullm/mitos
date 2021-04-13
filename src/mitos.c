@@ -192,13 +192,10 @@ int main(int argc, char *argv[]) {
 
         message(rank, "Grid has been allocated.\n", N);
 
-        /* Read the file */
+        /* Read the real-space grid from the file */
         readFieldFile_dg(&grf, pars.ReadGaussianFileName);
 
-        message(rank, "Grid has been read. Doing FFT next.\n", N);
-
-        /* Execute the Fourier transform and normalize */
-        fft_c2r_dg(&grf);
+        message(rank, "Grid has been read.\n", N);
     }
 
     /* Generate a filename */
