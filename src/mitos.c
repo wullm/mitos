@@ -190,8 +190,15 @@ int main(int argc, char *argv[]) {
         /* Allocate distributed memory arrays (one complex & one real) */
         alloc_local_grid(&grf, N, boxlen, MPI_COMM_WORLD);
 
+        message(rank, "Grid has been allocated.\n", N);
+
         /* Read the file */
         readFieldFile_dg(&grf, pars.ReadGaussianFileName);
+
+        message(rank, "Grid has been read. Doing FFT next.\n", N);
+
+        /* Execute the Fourier transform and normalize */
+        fft_c2r_dg(&grf);
     }
 
     /* Generate a filename */
