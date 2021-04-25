@@ -1,0 +1,11 @@
+lib/*.o
+output/*
+mitos
+*.hdf5
+analyse/mitos_read
+analyse/mitos_box
+analyse/mitos_cross_spec
+analyse/mitos_profiles
+analyse/mitos_mesh_profiles
+analyse/mitos_render
+analyse/mitos_gauss_purifier
