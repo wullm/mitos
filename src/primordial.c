@@ -21,6 +21,7 @@
 #include "../include/primordial.h"
 
 /* The bare primordial power spectrum, without transfer functions */
+/* This is k^4 * P(k); the transfer functions are -T(k)/k^2 */
 double primordialPower(double k, const struct cosmology *cosmo) {
     if (k == 0) return 0;
 
