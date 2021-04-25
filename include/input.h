@@ -118,6 +118,12 @@ struct cosmology {
     double z_ini;
     double log_tau_ini; //conformal time
     double rho_crit; //not user-specified, but inferred from h
+
+    /* Redshift at which to evaluate the transfer functions. The default is
+     * z_ini. If another value is used, the power spectrum is scaled to z_ini
+     * using the linear growth factor */
+    double z_source;
+    double log_tau_source;
 };
 
 int readParams(struct params *parser, const char *fname);

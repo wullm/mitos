@@ -137,12 +137,15 @@ int main(int argc, char *argv[]) {
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+    /* Determine the conformal time at the source redshift (usually z_ini) */
+    cosmo.log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
 
     /* Print some useful numbers */
     if (rank == 0) {
         header(rank, "Settings");
         printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
         printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+        printf("Source time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_source, exp(cosmo.log_tau_source));
         printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
 
         header(rank, "Requested Particle Types");
@@ -259,11 +262,6 @@ int main(int argc, char *argv[]) {
     header(rank, "Fetching Background Densities");
     retrieveDensities(&pars, &cosmo, &types, &ptdat);
     retrieveMicroMasses(&pars, &cosmo, &types, &ptpars);
-
-    /* Find the interpolation index along the time dimension */
-    int tau_index; //greatest lower bound bin index
-    double u_tau; //spacing between subsequent bins
-    perturbSplineFindTau(&spline, cosmo.log_tau_ini, &tau_index, &u_tau);
 
     /* Allocate a second grid to compute densities */
     struct distributed_grid grid;

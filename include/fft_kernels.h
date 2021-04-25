@@ -25,6 +25,11 @@
 
 typedef void (*kernel_func)(struct kernel *the_kernel);
 
+static inline void kernel_constant(struct kernel *the_kernel) {
+    double constant = *((double*) the_kernel->params);
+    the_kernel->kern = constant;
+}
+
 static inline void kernel_lowpass(struct kernel *the_kernel) {
     double k = the_kernel->k;
     double k_max = *((double*) the_kernel->params);

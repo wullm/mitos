@@ -33,11 +33,10 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
                              const char *fname) {
 
     /* Find the interpolation index along the time dimension */
-    double log_tau = cosmo->log_tau_ini; //log of conformal time
+    double log_tau = cosmo->log_tau_source; //log of conformal time
     int tau_index; //greatest lower bound bin index
     double u_tau; //spacing between subsequent bins
     perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
-
 
     /* Find the title among the transfer functions */
     int index_src = findTitle(spline->ptdat->titles, transfer_func_title, spline->ptdat->n_functions);
@@ -51,6 +50,14 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
 
     /* Apply the transfer function */
     fft_apply_kernel_dg(grid, grf, kernel_transfer_function, &sp);
+
+    /* Multiply by the growth factor ratio if needed */
+    if (cosmo->z_ini != cosmo->z_source) {
+        double D_source = perturbGrowthFactorAtLogTau(spline, cosmo->log_tau_source);
+        double D_ini = perturbGrowthFactorAtLogTau(spline, cosmo->log_tau_ini);
+        double factor = D_ini / D_source;
+        fft_apply_kernel_dg(grid, grid, kernel_constant, &factor);
+    }
 
     /* Transform back to configuration space */
     fft_c2r_dg(grid);

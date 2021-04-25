@@ -140,6 +140,9 @@ int readCosmology(struct cosmology *cosmo, struct units *us, const char *fname) 
      cosmo->k_pivot = ini_getd("Cosmology", "k_pivot", 0.05, fname);
      cosmo->z_ini = ini_getd("Cosmology", "z_ini", 40.0, fname);
 
+     /* Default value for z_source is z_ini */
+     cosmo->z_source = ini_getd("Cosmology", "z_source", cosmo->z_ini, fname);
+
      double H0 = 100 * cosmo->h * KM_METRES / MPC_METRES * us->UnitTimeSeconds;
      cosmo->rho_crit = 3 * H0 * H0 / (8 * M_PI * us->GravityG);
 
