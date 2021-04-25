@@ -110,6 +110,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     pt->log_tau = calloc(pt->tau_size, sizeof(double));
     pt->redshift = calloc(pt->tau_size, sizeof(double));
     pt->D_growth = calloc(pt->tau_size, sizeof(double));
+    pt->f_growth = calloc(pt->tau_size, sizeof(double));
     pt->delta = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
     pt->Omega = malloc(pt->n_functions * pt->tau_size * sizeof(double));
     // pt->dydt = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
@@ -139,6 +140,11 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
 
     /* Read the growth factors */
     h_data = H5Dopen2(h_grp, "Growth factors (D)", H5P_DEFAULT);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->D_growth);
+    H5Dclose(h_data);
+
+    /* Read the logarithmic growth rates */
+    h_data = H5Dopen2(h_grp, "Logarithmic growth rates (f)", H5P_DEFAULT);
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->D_growth);
     H5Dclose(h_data);
 
@@ -250,6 +256,7 @@ int cleanPerturb(struct perturb_data *pt) {
     free(pt->log_tau);
     free(pt->redshift);
     free(pt->D_growth);
+    free(pt->f_growth);
     free(pt->delta);
     free(pt->Omega);
     for (int i=0; i<pt->n_functions; i++) {

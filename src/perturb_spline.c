@@ -211,6 +211,19 @@ double perturbGrowthFactorAtLogTau(const struct perturb_spline *spline, double l
                + u_tau * spline->ptdat->D_growth[tau_index + 1];
 }
 
+double perturbLogGrowthRateAtLogTau(const struct perturb_spline *spline, double log_tau) {
+    /* Indices in the tau directions */
+    int tau_index = 0;
+    /* Spacing (0 <= u <= 1) between subsequent indices */
+    double u_tau;
+
+    /* Find the index and spacing */
+    perturbSplineFindTau(spline, log_tau, &tau_index, &u_tau);
+
+    return (1 - u_tau) * spline->ptdat->f_growth[tau_index]
+               + u_tau * spline->ptdat->f_growth[tau_index + 1];
+}
+
 double perturbLogTauAtRedshift(const struct perturb_spline *spline, double redshift) {
 
     /* Number of time/redshift bins */
