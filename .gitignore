@@ -2,6 +2,7 @@ lib/*.o
 output/*
 mitos
 *.hdf5
+parser/*.o
 analyse/mitos_read
 analyse/mitos_box
 analyse/mitos_cross_spec
