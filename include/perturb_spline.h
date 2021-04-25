@@ -69,6 +69,9 @@ double perturbGrowthFactorAtLogTau(const struct perturb_spline *spline, double l
 /* Linear interpolation of the log growth rate vector */
 double perturbLogGrowthRateAtLogTau(const struct perturb_spline *spline, double log_tau);
 
+/* Linear interpolation of the Hubble rate vector */
+double perturbHubbleAtLogTau(const struct perturb_spline *spline, double log_tau);
+
 /* Linear interpolation of the log_tau vector */
 double perturbLogTauAtRedshift(const struct perturb_spline *spline, double redshift);
 

@@ -111,6 +111,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     pt->redshift = calloc(pt->tau_size, sizeof(double));
     pt->D_growth = calloc(pt->tau_size, sizeof(double));
     pt->f_growth = calloc(pt->tau_size, sizeof(double));
+    pt->H_Hubble = calloc(pt->tau_size, sizeof(double));
     pt->delta = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
     pt->Omega = malloc(pt->n_functions * pt->tau_size * sizeof(double));
     // pt->dydt = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
@@ -146,6 +147,11 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     /* Read the logarithmic growth rates */
     h_data = H5Dopen2(h_grp, "Logarithmic growth rates (f)", H5P_DEFAULT);
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->D_growth);
+    H5Dclose(h_data);
+
+    /* Read the Hubble rates */
+    h_data = H5Dopen2(h_grp, "Hubble rates", H5P_DEFAULT);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->H_Hubble);
     H5Dclose(h_data);
 
     /* Read the background densities */
@@ -189,6 +195,11 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
 
     if (fabs(1./unit_time_factor - 1) > 1e-5 ) {
       message(pars->rank, "Velocity factor = %e\n", 1./unit_time_factor);
+    }
+
+    /* Perform unit conversion for the Hubble rates */
+    for (int i=0; i<pt->tau_size; i++) {
+        pt->H_Hubble[i] /= unit_time_factor;
     }
 
     /* Perform unit conversions for the transfer functions */
@@ -257,6 +268,7 @@ int cleanPerturb(struct perturb_data *pt) {
     free(pt->redshift);
     free(pt->D_growth);
     free(pt->f_growth);
+    free(pt->H_Hubble);
     free(pt->delta);
     free(pt->Omega);
     for (int i=0; i<pt->n_functions; i++) {

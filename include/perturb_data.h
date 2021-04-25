@@ -44,6 +44,8 @@ struct perturb_data {
     double *D_growth;
     /* Vector of corresponding logarithmic growth factors (tau_size) */
     double *f_growth;
+    /* Vector of Hubble rates (tau_size) */
+    double *H_Hubble;
     /* Titles of the transfer functions */
     char **titles;
     /* Vector of background densities (tau_size * n_functions) */
