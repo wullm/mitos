@@ -29,5 +29,5 @@ double primordialPower(double k, const struct cosmology *cosmo) {
     double n_s = cosmo->n_s;
     double k_pivot = cosmo->k_pivot;
 
-    return A_s * pow(k/k_pivot, n_s);
+    return A_s * pow(k/k_pivot, n_s - 1.) * k * (2. * M_PI * M_PI);
 }
