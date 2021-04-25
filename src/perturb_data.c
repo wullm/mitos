@@ -146,7 +146,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
 
     /* Read the logarithmic growth rates */
     h_data = H5Dopen2(h_grp, "Logarithmic growth rates (f)", H5P_DEFAULT);
-    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->D_growth);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->f_growth);
     H5Dclose(h_data);
 
     /* Read the Hubble rates */
