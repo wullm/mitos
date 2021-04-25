@@ -217,7 +217,7 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     /* Store the grid size */
     *N = read_N;
 
-    /* Allocate the array (wuthout padding) */
+    /* Allocate the array (without padding) */
     *box = malloc(read_N * read_N * read_N * sizeof(double));
 
     /* The hyperslab that should be read (needed in case of padding) */

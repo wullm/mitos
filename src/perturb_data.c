@@ -109,6 +109,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     pt->k = calloc(pt->k_size, sizeof(double));
     pt->log_tau = calloc(pt->tau_size, sizeof(double));
     pt->redshift = calloc(pt->tau_size, sizeof(double));
+    pt->D_growth = calloc(pt->tau_size, sizeof(double));
     pt->delta = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
     pt->Omega = malloc(pt->n_functions * pt->tau_size * sizeof(double));
     // pt->dydt = malloc(pt->n_functions * pt->k_size * pt->tau_size * sizeof(double));
@@ -117,7 +118,7 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     hid_t h_data;
 
     /* Allocation successful? */
-    if (pt->k == NULL || pt->log_tau == NULL || pt->delta == NULL || pt->redshift == NULL) {
+    if (pt->k == NULL || pt->log_tau == NULL || pt->delta == NULL || pt->redshift == NULL || pt->D_growth == NULL) {
         printf("ERROR: unable to allocate memory for perturbation data.");
     }
 
@@ -134,6 +135,11 @@ int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) 
     /* Read the redshifts */
     h_data = H5Dopen2(h_grp, "Redshifts", H5P_DEFAULT);
     h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->redshift);
+    H5Dclose(h_data);
+
+    /* Read the growth factors */
+    h_data = H5Dopen2(h_grp, "Growth factors (D)", H5P_DEFAULT);
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pt->D_growth);
     H5Dclose(h_data);
 
     /* Read the background densities */
@@ -243,6 +249,7 @@ int cleanPerturb(struct perturb_data *pt) {
     free(pt->k);
     free(pt->log_tau);
     free(pt->redshift);
+    free(pt->D_growth);
     free(pt->delta);
     free(pt->Omega);
     for (int i=0; i<pt->n_functions; i++) {
