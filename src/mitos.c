@@ -148,11 +148,19 @@ int main(int argc, char *argv[]) {
         printf("Source time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_source, exp(cosmo.log_tau_source));
         printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
 
-        /* Print growth factors */
+        /* Print growth factors and rates */
         double D_source = perturbGrowthFactorAtLogTau(&spline, cosmo.log_tau_source);
         double D_ini = perturbGrowthFactorAtLogTau(&spline, cosmo.log_tau_ini);
-        double ratio = D_ini / D_source;
-        printf("Growth factors\t\t [D_ini, D_source, ratio] = [%e, %e, %e]\n", D_ini, D_source, ratio);
+        double D_ratio = D_ini / D_source;
+        double f_source = perturbLogGrowthRateAtLogTau(&spline, cosmo.log_tau_source);
+        double f_ini = perturbLogGrowthRateAtLogTau(&spline, cosmo.log_tau_ini);
+        double f_ratio = f_ini / f_source;
+        double H_source = perturbHubbleAtLogTau(&spline, cosmo.log_tau_source);
+        double H_ini = perturbHubbleAtLogTau(&spline, cosmo.log_tau_ini);
+        double H_ratio = H_ini / H_source;
+        printf("Growth factors\t\t [D_ini, D_source, ratio] = [%e, %e, %e]\n", D_ini, D_source, D_ratio);
+        printf("Growth rates\t\t [f_ini, f_source, ratio] = [%e, %e, %e]\n", f_ini, f_source, f_ratio);
+        printf("Hubble rates\t\t [H_ini, H_source, ratio] = [%e, %e, %e]\n", H_ini, H_source, H_ratio);
 
         header(rank, "Requested Particle Types");
         for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
