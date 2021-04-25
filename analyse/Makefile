@@ -29,3 +29,4 @@ all:
 	$(GCC) src/mitos_mesh_profiles.c -o mitos_mesh_profiles $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
 	$(GCC) src/mitos_render.c -o mitos_render $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
 	$(GCC) src/mitos_gauss_purifier.c -o mitos_gauss_purifier $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+	$(GCC) src/mitos_vel3.c -o mitos_vel3 $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
