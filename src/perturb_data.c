@@ -26,8 +26,8 @@
 #include "../include/message.h"
 
 /* Read the perturbation data from file */
-int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt,
-                char *fname) {
+int readPerturb(const struct params *pars, const struct units *us,
+                struct perturb_data *pt, char *fname) {
     message(pars->rank, "Reading cosmological perturbations from '%s'.\n", fname);
 
     /* Open the hdf5 file (file exists error handled by HDF5) */
@@ -350,7 +350,7 @@ int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title
     return 0;
 }
 
-int readPerturbParams(struct params *pars, struct units *us,
+int readPerturbParams(const struct params *pars, const struct units *us,
                       struct perturb_params *ptpars, char *fname) {
 
     message(pars->rank, "Reading cosmological parameters from '%s'.\n", fname);

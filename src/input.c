@@ -39,6 +39,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->NumParticleTypes = 0; //should not be read, but inferred
      pars->Homogeneous = ini_getbool("Simulation", "Homogeneous", 0, fname);
      pars->MergeDarkMatterBaryons = ini_getbool("PerturbData", "MergeDarkMatterBaryons", 0, fname);
+     pars->GrowthFactorsFromSecondFile = ini_getbool("PerturbData", "GrowthFactorsFromSecondFile", 0, fname);
      pars->SlabSize = ini_getl("Read", "SlabSize", 8000000, fname);
      pars->HaloMinMass = ini_getd("Read", "HaloMinMass", 2.75e4, fname);
      pars->HaloMaxMass = ini_getd("Read", "HaloMaxMass", 2.75e5, fname);
@@ -53,6 +54,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->ImportName = malloc(len);
      pars->OutputFilename = malloc(len);
      pars->PerturbFile = malloc(len);
+     pars->SecondPerturbFile = malloc(len);
      pars->SwiftParamFilename = malloc(len);
      pars->CrossSpectrumDensity1 = malloc(len);
      pars->CrossSpectrumDensity2 = malloc(len);
@@ -62,6 +64,7 @@ int readParams(struct params *pars, const char *fname) {
      ini_gets("Output", "Filename", "particles.hdf5", pars->OutputFilename, len, fname);
      ini_gets("Output", "SwiftParamFilename", "swift_params.hdf5", pars->SwiftParamFilename, len, fname);
      ini_gets("PerturbData", "File", "", pars->PerturbFile, len, fname);
+     ini_gets("PerturbData", "SecondFile", "", pars->SecondPerturbFile, len, fname);
      ini_gets("Read", "Filename", "", pars->InputFilename, len, fname);
      ini_gets("Read", "Filename2", "", pars->InputFilename2, len, fname);
      ini_gets("Read", "ImportName", "", pars->ImportName, len, fname);
@@ -157,6 +160,7 @@ int cleanParams(struct params *pars) {
     free(pars->HaloInputFilename);
     free(pars->OutputFilename);
     free(pars->PerturbFile);
+    free(pars->SecondPerturbFile);
     free(pars->SwiftParamFilename);
     free(pars->CrossSpectrumDensity1);
     free(pars->CrossSpectrumDensity2);

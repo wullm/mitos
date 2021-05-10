@@ -67,7 +67,9 @@ int main(int argc, char *argv[]) {
     struct export_group *export_groups = NULL;
     struct cosmology cosmo;
     struct perturb_data ptdat;
+    struct perturb_data ptdat_alternative;
     struct perturb_spline spline;
+    struct perturb_spline spline_alternative;
     struct perturb_params ptpars;
 
     #if(COMPILED_WITH_FIREBOLT)
@@ -132,6 +134,16 @@ int main(int argc, char *argv[]) {
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
+    /* Did the user requested a second alternative perturbation data file? */
+    if (strcmp(pars.SecondPerturbFile, "") != 0) {
+        message(pars.rank, "Opening another perturbation data file.\n");
+        readPerturb(&pars, &us, &ptdat_alternative, pars.SecondPerturbFile);
+
+        /* Initialize the interpolation spline for the second data file */
+        initPerturbSpline(&spline_alternative, DEFAULT_K_ACC_TABLE_SIZE,
+                          &ptdat_alternative);
+    }
+
     /* Seed the random number generator */
     rng_state seed = rand_uint64_init(pars.Seed + rank);
 
@@ -146,17 +158,34 @@ int main(int argc, char *argv[]) {
         printf("Random numbers\t\t [seed] = [%ld]\n", pars.Seed);
         printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
         printf("Source time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_source, exp(cosmo.log_tau_source));
-        printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
+        printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
+
+        /* Should we use the primary perturbation data or the alternative data
+         * (if specified) for the growth factors? */
+         struct perturb_spline *growth_factors_spline;
+         if (pars.GrowthFactorsFromSecondFile) {
+             printf("Using growth factors from second file: '%s'.\n", pars.SecondPerturbFile);
+             growth_factors_spline = &spline_alternative;
+
+             if (strcmp(pars.SecondPerturbFile, "") == 0) {
+                 catch_error(1, "Requested growth factors from second file without specifying second perturbation file.\n");
+             }
+         } else {
+             printf("Using growth factors from file: '%s'.\n", pars.PerturbFile);
+             growth_factors_spline = &spline;
+         }
 
         /* Print growth factors and rates */
-        double D_source = perturbGrowthFactorAtLogTau(&spline, cosmo.log_tau_source);
-        double D_ini = perturbGrowthFactorAtLogTau(&spline, cosmo.log_tau_ini);
+        double log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
+        double log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+        double D_source = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_source);
+        double D_ini = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_ini);
         double D_ratio = D_ini / D_source;
-        double f_source = perturbLogGrowthRateAtLogTau(&spline, cosmo.log_tau_source);
-        double f_ini = perturbLogGrowthRateAtLogTau(&spline, cosmo.log_tau_ini);
+        double f_source = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_source);
+        double f_ini = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_ini);
         double f_ratio = f_ini / f_source;
-        double H_source = perturbHubbleAtLogTau(&spline, cosmo.log_tau_source);
-        double H_ini = perturbHubbleAtLogTau(&spline, cosmo.log_tau_ini);
+        double H_source = perturbHubbleAtLogTau(growth_factors_spline, log_tau_source);
+        double H_ini = perturbHubbleAtLogTau(growth_factors_spline, log_tau_ini);
         double H_ratio = H_ini / H_source;
         printf("Growth factors\t\t [D_ini, D_source, ratio] = [%e, %e, %e]\n", D_ini, D_source, D_ratio);
         printf("Growth rates\t\t [f_ini, f_source, ratio] = [%e, %e, %e]\n", f_ini, f_source, f_ratio);
@@ -1201,6 +1230,11 @@ int main(int argc, char *argv[]) {
     /* Release the interpolation splines */
     cleanPerturbSpline(&spline);
 
+    /* Clean up the alternative perturbation file and associated spline */
+    if (strcmp(pars.SecondPerturbFile, "") != 0) {
+        cleanPerturb(&ptdat_alternative);
+        cleanPerturbSpline(&spline_alternative);
+    }
 
     /* Timer */
     gettimeofday(&time_stop, NULL);

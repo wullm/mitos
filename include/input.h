@@ -52,10 +52,14 @@ struct params {
     int MaxParticleTypes;
     int NumParticleTypes;
     int NumExportGroups;
-    char *PerturbFile;
-    char MergeDarkMatterBaryons;
     char Homogeneous;
     char *ReadGaussianFileName;
+
+    /* Perturbation file parameters */
+    char *PerturbFile;
+    char *SecondPerturbFile;
+    char GrowthFactorsFromSecondFile;
+    char MergeDarkMatterBaryons;
 
     /* Output parameters */
     char *OutputDirectory;
