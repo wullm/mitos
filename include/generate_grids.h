@@ -31,5 +31,5 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
                              struct distributed_grid *grf,
                              struct distributed_grid *grid,
                              const char *transfer_func_title,
-                             const char *fname);
+                             const char *fname, const double rescale_factor);
 #endif

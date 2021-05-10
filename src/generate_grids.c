@@ -30,7 +30,7 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
                              struct distributed_grid *grf,
                              struct distributed_grid *grid,
                              const char *transfer_func_title,
-                             const char *fname) {
+                             const char *fname, const double rescale_factor) {
 
     /* Find the interpolation index along the time dimension */
     double log_tau = cosmo->log_tau_source; //log of conformal time
@@ -52,24 +52,8 @@ int generatePerturbationGrid(const struct cosmology *cosmo,
     fft_apply_kernel_dg(grid, grf, kernel_transfer_function, &sp);
 
     /* Multiply by the growth factor ratio if needed */
-    if (cosmo->z_ini != cosmo->z_source) {
-        double D_source = perturbGrowthFactorAtLogTau(spline, cosmo->log_tau_source);
-        double D_ini = perturbGrowthFactorAtLogTau(spline, cosmo->log_tau_ini);
-        double D_factor = D_ini / D_source;
-        fft_apply_kernel_dg(grid, grid, kernel_constant, &D_factor);
-
-        /* For velocity transfer functions, also multiply by the afH ratio */
-        if (strncmp(transfer_func_title, "t_", 2) == 0) {
-            double a_source = 1./(1. + cosmo->z_source);
-            double a_ini = 1./(1. + cosmo->z_ini);
-            double f_source = perturbLogGrowthRateAtLogTau(spline, cosmo->log_tau_source);
-            double f_ini = perturbLogGrowthRateAtLogTau(spline, cosmo->log_tau_ini);
-            double H_source = perturbHubbleAtLogTau(spline, cosmo->log_tau_source);
-            double H_ini = perturbHubbleAtLogTau(spline, cosmo->log_tau_ini);
-            double afH_factor = (a_ini * f_ini * H_ini) / (a_source * f_source * H_source);
-
-            fft_apply_kernel_dg(grid, grid, kernel_constant, &afH_factor);
-        }
+    if (rescale_factor != 1.0) {
+        fft_apply_kernel_dg(grid, grid, kernel_constant, &rescale_factor);
     }
 
     /* Transform back to configuration space */

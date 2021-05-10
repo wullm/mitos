@@ -97,6 +97,16 @@ int main(int argc, char *argv[]) {
     readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
     readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
 
+    /* Did the user requested a second alternative perturbation data file? */
+    if (strcmp(pars.SecondPerturbFile, "") != 0) {
+        message(pars.rank, "Opening another perturbation data file.\n");
+        readPerturb(&pars, &us, &ptdat_alternative, pars.SecondPerturbFile);
+
+        /* Initialize the interpolation spline for the second data file */
+        initPerturbSpline(&spline_alternative, DEFAULT_K_ACC_TABLE_SIZE,
+                          &ptdat_alternative);
+    }
+
     /* Do a sanity check */
     if (fabs(cosmo.h - ptpars.h) / cosmo.h > 1e-5) {
         catch_error(1, "ERROR: h from parameter file does not match perturbation file.\n");
@@ -134,16 +144,6 @@ int main(int argc, char *argv[]) {
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
 
-    /* Did the user requested a second alternative perturbation data file? */
-    if (strcmp(pars.SecondPerturbFile, "") != 0) {
-        message(pars.rank, "Opening another perturbation data file.\n");
-        readPerturb(&pars, &us, &ptdat_alternative, pars.SecondPerturbFile);
-
-        /* Initialize the interpolation spline for the second data file */
-        initPerturbSpline(&spline_alternative, DEFAULT_K_ACC_TABLE_SIZE,
-                          &ptdat_alternative);
-    }
-
     /* Seed the random number generator */
     rng_state seed = rand_uint64_init(pars.Seed + rank);
 
@@ -151,6 +151,30 @@ int main(int argc, char *argv[]) {
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
     /* Determine the conformal time at the source redshift (usually z_ini) */
     cosmo.log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
+
+    /* Should we use the primary perturbation data or the alternative data
+     * (if specified) for the growth factors? */
+     struct perturb_spline *growth_factors_spline;
+     if (pars.GrowthFactorsFromSecondFile) {
+         growth_factors_spline = &spline_alternative;
+         if (strcmp(pars.SecondPerturbFile, "") == 0) {
+             catch_error(1, "Requested growth factors from second file without specifying second perturbation file.\n");
+         }
+     } else {
+         growth_factors_spline = &spline;
+     }
+
+    /* Compute the growth factors and rates */
+    const double log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
+    const double log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+    const double a_source = 1.0 / (1.0 + cosmo.z_source);
+    const double a_ini = 1.0 / (1.0 + cosmo.z_ini);
+    const double D_source = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_source);
+    const double D_ini = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_ini);
+    const double f_source = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_source);
+    const double f_ini = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_ini);
+    const double H_source = perturbHubbleAtLogTau(growth_factors_spline, log_tau_source);
+    const double H_ini = perturbHubbleAtLogTau(growth_factors_spline, log_tau_ini);
 
     /* Print some useful numbers */
     if (rank == 0) {
@@ -160,36 +184,15 @@ int main(int argc, char *argv[]) {
         printf("Source time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_source, exp(cosmo.log_tau_source));
         printf("Primordial power\t [A_s, n_s, k_pivot] = [%.4e, %.4f, %.4f U_L]\n\n", cosmo.A_s, cosmo.n_s, cosmo.k_pivot);
 
-        /* Should we use the primary perturbation data or the alternative data
-         * (if specified) for the growth factors? */
-         struct perturb_spline *growth_factors_spline;
-         if (pars.GrowthFactorsFromSecondFile) {
-             printf("Using growth factors from second file: '%s'.\n", pars.SecondPerturbFile);
-             growth_factors_spline = &spline_alternative;
+        if (pars.GrowthFactorsFromSecondFile) {
+            printf("Using growth factors from second file: '%s'.\n", pars.SecondPerturbFile);
+        } else {
+            printf("Using growth factors from file: '%s'.\n", pars.PerturbFile);
+        }
 
-             if (strcmp(pars.SecondPerturbFile, "") == 0) {
-                 catch_error(1, "Requested growth factors from second file without specifying second perturbation file.\n");
-             }
-         } else {
-             printf("Using growth factors from file: '%s'.\n", pars.PerturbFile);
-             growth_factors_spline = &spline;
-         }
-
-        /* Print growth factors and rates */
-        double log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
-        double log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
-        double D_source = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_source);
-        double D_ini = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_ini);
-        double D_ratio = D_ini / D_source;
-        double f_source = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_source);
-        double f_ini = perturbLogGrowthRateAtLogTau(growth_factors_spline, log_tau_ini);
-        double f_ratio = f_ini / f_source;
-        double H_source = perturbHubbleAtLogTau(growth_factors_spline, log_tau_source);
-        double H_ini = perturbHubbleAtLogTau(growth_factors_spline, log_tau_ini);
-        double H_ratio = H_ini / H_source;
-        printf("Growth factors\t\t [D_ini, D_source, ratio] = [%e, %e, %e]\n", D_ini, D_source, D_ratio);
-        printf("Growth rates\t\t [f_ini, f_source, ratio] = [%e, %e, %e]\n", f_ini, f_source, f_ratio);
-        printf("Hubble rates\t\t [H_ini, H_source, ratio] = [%e, %e, %e]\n", H_ini, H_source, H_ratio);
+        printf("Growth factors\t\t [D_ini, D_source, ratio] = [%e, %e, %e]\n", D_ini, D_source, D_ini / D_source);
+        printf("Growth rates\t\t [f_ini, f_source, ratio] = [%e, %e, %e]\n", f_ini, f_source, f_ini / f_source);
+        printf("Hubble rates\t\t [H_ini, H_source, ratio] = [%e, %e, %e]\n", H_ini, H_source, H_ini / H_source);
 
         header(rank, "Requested Particle Types");
         for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
@@ -350,10 +353,18 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing density & displacement grids for '%s'.\n", Identifier);
 
+            /* If we are backscaling, multiply by the growth factor ratio */
+            double rescale_factor;
+            if (cosmo.z_ini != cosmo.z_source) {
+                rescale_factor = D_ini / D_source;
+            } else {
+                rescale_factor = 1.0;
+            }
+
             /* Should we generate a density field or load it from the disk? */
             if (strcmp(ptype->InputFilenameDensity, "") == 0) {
               /* Generate density grid by applying the transfer function to the GRF */
-              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename);
+              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, density_title, density_filename, rescale_factor);
               catch_error(err, "Error while generating '%s'.", density_filename);
             } else {
                /* Load input density field */
@@ -416,10 +427,18 @@ int main(int argc, char *argv[]) {
 
             message(rank, "Computing flux density & velocity grids for '%s'.\n", Identifier);
 
+            /* If we are backscaling, multiply by the DaHf ratio */
+            double rescale_factor;
+            if (cosmo.z_ini != cosmo.z_source) {
+                rescale_factor = (a_ini * f_ini * H_ini) / (a_source * f_source * H_source);
+            } else {
+                rescale_factor = 1.0;
+            }
+
             /* Should we generate a flux density field or load it from the disk? */
             if (strcmp(ptype->InputFilenameVelocity, "") == 0) {
               /* Generate flux grid by applying the transfer function to the GRF */
-              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename);
+              err = generatePerturbationGrid(&cosmo, &spline, &grf, &grid, velocity_title, velocity_filename, rescale_factor);
               catch_error(err, "Error while generating '%s'.", velocity_filename);
             } else {
                /* Load input flux density field */
@@ -890,8 +909,6 @@ int main(int argc, char *argv[]) {
 
         /* Add thermal motion */
         if (strcmp(ptype->ThermalMotionType, "") != 0) {
-            const double a_ini = 1.0 / (cosmo.z_ini + 1.0);
-
             /* Read the high-resolution configuration space density field */
             char dbox_fname[DEFAULT_STRING_LENGTH];
             sprintf(dbox_fname, "%s/%s_%s%s", pars.OutputDirectory, GRID_NAME_DENSITY, ptype->Identifier, ".hdf5");
