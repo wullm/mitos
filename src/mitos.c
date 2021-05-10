@@ -164,9 +164,9 @@ int main(int argc, char *argv[]) {
          growth_factors_spline = &spline;
      }
 
-    /* Compute the growth factors and rates */
-    const double log_tau_source = perturbLogTauAtRedshift(&spline, cosmo.z_source);
-    const double log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+    /* Compute the growth factors and rates (!! careful with log_taus from the alterative file !!)*/
+    const double log_tau_source = perturbLogTauAtRedshift(growth_factors_spline, cosmo.z_source);
+    const double log_tau_ini = perturbLogTauAtRedshift(growth_factors_spline, cosmo.z_ini);
     const double a_source = 1.0 / (1.0 + cosmo.z_source);
     const double a_ini = 1.0 / (1.0 + cosmo.z_ini);
     const double D_source = perturbGrowthFactorAtLogTau(growth_factors_spline, log_tau_source);
