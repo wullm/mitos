@@ -10,3 +10,4 @@ analyse/mitos_profiles
 analyse/mitos_mesh_profiles
 analyse/mitos_render
 analyse/mitos_gauss_purifier
+analyse/mitos_vel3

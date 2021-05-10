@@ -26,11 +26,12 @@
 #include "../include/message.h"
 
 /* Read the perturbation data from file */
-int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt) {
-    message(pars->rank, "Reading cosmological perturbations from '%s'.\n", pars->PerturbFile);
+int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt,
+                char *fname) {
+    message(pars->rank, "Reading cosmological perturbations from '%s'.\n", fname);
 
     /* Open the hdf5 file (file exists error handled by HDF5) */
-    hid_t h_file = H5Fopen(pars->PerturbFile, H5F_ACC_RDONLY, H5P_DEFAULT);
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
@@ -350,12 +351,12 @@ int mergeBackgroundDensities(struct perturb_data *pt, char *title_a, char *title
 }
 
 int readPerturbParams(struct params *pars, struct units *us,
-                      struct perturb_params *ptpars) {
+                      struct perturb_params *ptpars, char *fname) {
 
-    message(pars->rank, "Reading cosmological parameters from '%s'.\n", pars->PerturbFile);
+    message(pars->rank, "Reading cosmological parameters from '%s'.\n", fname);
 
     /* Open the hdf5 file (file exists error handled by HDF5) */
-    hid_t h_file = H5Fopen(pars->PerturbFile, H5F_ACC_RDONLY, H5P_DEFAULT);
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);

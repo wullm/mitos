@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     readTypes(&pars, &types, fname);
 
     /* Read the perturbation data file */
-    readPerturb(&pars, &us, &ptdat);
+    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
 
     /* Initialize the interpolation spline for the perturbation data */
     initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);

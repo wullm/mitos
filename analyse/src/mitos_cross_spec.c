@@ -59,8 +59,8 @@ int main(int argc, char *argv[]) {
     readTypes(&pars, &types, fname);
 
     /* Read the perturbation data file */
-    readPerturb(&pars, &us, &ptdat);
-    readPerturbParams(&pars, &us, &ptpars);
+    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
+    readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
 
     /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
     if (pars.MergeDarkMatterBaryons) {

@@ -69,14 +69,15 @@ struct perturb_params {
 };
 
 /* Read the perturbation data from file */
-int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt);
+int readPerturb(struct params *pars, struct units *us, struct perturb_data *pt,
+                char *fname);
 
 /* Clean up the memory */
 int cleanPerturb(struct perturb_data *pt);
 
 /* Read extra cosmological parameters from file */
 int readPerturbParams(struct params *pars, struct units *us,
-                      struct perturb_params *ptpars);
+                      struct perturb_params *ptpars, char *fname);
 
 /* Clean up the memory */
 int cleanPerturbParams(struct perturb_params *ptpars);

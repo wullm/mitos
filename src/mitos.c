@@ -92,8 +92,8 @@ int main(int argc, char *argv[]) {
     fillExportGroups(&pars, &types, &export_groups);
 
     /* Read the perturbation data file */
-    readPerturb(&pars, &us, &ptdat);
-    readPerturbParams(&pars, &us, &ptpars);
+    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
+    readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
 
     /* Do a sanity check */
     if (fabs(cosmo.h - ptpars.h) / cosmo.h > 1e-5) {
