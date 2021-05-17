@@ -131,51 +131,18 @@ int main(int argc, char *argv[]) {
     fftw_destroy_plan(r2c1);
     fftw_destroy_plan(r2c2);
 
-    // /* The size of the density grid that we will create */
-    // const int N = pars.GridSize;
-    // const double boxlen = pars.BoxLen;
-    //
-    // /* Allocate distributed memory arrays for both boxes */
-    // struct distributed_grid box1;
-    // struct distributed_grid box2;
-    // alloc_local_grid(&box1, N, boxlen, MPI_COMM_WORLD);
-    // alloc_local_grid(&box2, N, boxlen, MPI_COMM_WORLD);
-    //
-    // /* Read the first box */
-    // int err = readFieldFile_dg(&box1, pars.InputFilename);
-    // if (err > 0) {
-    //     printf("Error reading file '%s'\n.", pars.InputFilename);
-    //     exit(1);
-    // }
-    //
-    // /* Read the second box */
-    // err = readFieldFile_dg(&box2, pars.InputFilename2);
-    // if (err > 0) {
-    //     printf("Error reading file '%s'\n.", pars.InputFilename2);
-    //     exit(1);
-    // }
-    //
-    // /* Fourier transform both boxes */
-    // fft_r2c_dg(&box1);
-    // fft_r2c_dg(&box2);
-
 
     if (rank == 0) {
-        int bins = 50;
+        int bins = pars.PowerSpectrumBins;
         double *k_in_bins = malloc(bins * sizeof(double));
         double *power_in_bins = malloc(bins * sizeof(double));
         int *obs_in_bins = calloc(bins, sizeof(int));
-
-        /* The boxes in momentum space */
-        // fftw_complex *fbox1 = box1.fbox;
-        // fftw_complex *fbox2 = box2.fbox;
 
         message(rank, "Undoing window functions.\n");
 
         /* Undo the TSC window function */
         undoTSCWindow(fbox1, N, boxlen);
         undoTSCWindow(fbox2, N, boxlen);
-
 
         message(rank, "Computing power spectra.\n");
 
@@ -227,15 +194,9 @@ int main(int argc, char *argv[]) {
             double Pk = power_in_bins[i];
             int obs = obs_in_bins[i];
 
-
-            // double k_long = 0.05;
-            // double Bk = calc_cross_bispec(N, boxlen[0], fbox, fbox, fbox, k, k, k, k*0.25, k*0.25, k*0.25);
-            // double norm = calc_norm_bispec(N, boxlen[0], k, k, k, k*0.25, k*0.25, k*0.25);
-
             printf("%f %e %d\n", k, Pk, obs);
         }
-
-
+        
         /* Next, for the total power spectrum, compute the weighted average of the grids */
 
         /* The indices of the density transfer functions */
@@ -254,9 +215,33 @@ int main(int argc, char *argv[]) {
         message(rank, "Using weights [w_1, w_2] = [%f, %f]\n", weight_1, weight_2);
 
         /* Compute the weighted average of the two grids, replacing the first */
+        /* Also compute the difference fbox2 - fbox1, replacing the second */
         for (int i=0; i<N*N*(N/2+1); i++) {
-            fbox1[i] = weight_1 * fbox1[i] + weight_2 * fbox2[i];
+            double d1 = fbox1[i];
+            double d2 = fbox2[i];
+            
+            fbox1[i] = weight_1 * d1 + weight_2 * d2;
+            fbox2[i] = d2 - d1;
         }
+        
+        /* Compute the difference power spectrum */
+        calc_cross_powerspec(N, boxlen, fbox2, fbox2, bins, k_in_bins, power_in_bins, obs_in_bins);
+
+        printf("\n");
+        printf("Difference (delta2 - delta1) power spectrum:\n");
+        printf("k P_measured(k) observations\n");
+        for (int i=0; i<bins; i++) {
+            if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+
+            /* The power we observe */
+            double k = k_in_bins[i];
+            double Pk = power_in_bins[i];
+            int obs = obs_in_bins[i];
+
+            printf("%f %e %d\n", k, Pk, obs);
+        }
+
+        printf("\n");
 
         /* Compute the total power spectrum */
         calc_cross_powerspec(N, boxlen, fbox1, fbox1, bins, k_in_bins, power_in_bins, obs_in_bins);
@@ -272,20 +257,11 @@ int main(int argc, char *argv[]) {
             double Pk = power_in_bins[i];
             int obs = obs_in_bins[i];
 
-
-            // double k_long = 0.05;
-            // double Bk = calc_cross_bispec(N, boxlen[0], fbox, fbox, fbox, k, k, k, k*0.25, k*0.25, k*0.25);
-            // double norm = calc_norm_bispec(N, boxlen[0], k, k, k, k*0.25, k*0.25, k*0.25);
-
             printf("%f %e %d\n", k, Pk, obs);
         }
 
         printf("\n");
     }
-
-    // /* Free the grids */
-    // free_local_grid(&box1);
-    // free_local_grid(&box2);
 
     /* Free the grids */
     fftw_free(box1);

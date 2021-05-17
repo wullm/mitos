@@ -76,6 +76,7 @@ struct params {
     char *CrossSpectrumDensity2;
     double HaloMinMass;
     double HaloMaxMass;
+    int PowerSpectrumBins;
 
     /* Parameters for the Firebolt Boltzmann solver */
     int MaxMultipole;
