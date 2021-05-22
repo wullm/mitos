@@ -23,6 +23,7 @@
 #include <hdf5.h>
 #include <assert.h>
 #include <math.h>
+#include <time.h>
 
 #include "../../include/mitos.h"
 
@@ -31,6 +32,10 @@ int main(int argc, char *argv[]) {
         printf("No parameter file specified.\n");
         return 0;
     }
+    
+    /* Seed by the time */
+    time_t seconds = time(NULL);
+    srand(seconds);
 
     /* Initialize MPI for distributed memory parallelization */
     MPI_Init(&argc, &argv);
@@ -307,6 +312,8 @@ int main(int argc, char *argv[]) {
     		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
     		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
     		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
+            
+            int grid = rand() % 2;
 
             //Do the mass assignment
     		for (int x=lookLftX; x<=lookRgtX; x++) {
@@ -323,7 +330,7 @@ int main(int argc, char *argv[]) {
         				double part_z = zz < 0.5 ? (0.75-zz*zz)
                                                 : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
 
-                        if (rand()%2 == 0)
+                        if (grid == 0)
                             box1[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
                         else
                             box2[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
@@ -340,12 +347,17 @@ int main(int argc, char *argv[]) {
     H5Gclose(h_grp);
 
 
-    /* Reduce the grid */
+    /* Reduce the first grid */
     if (rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, box1, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(MPI_IN_PLACE, box2, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
         MPI_Reduce(box1, box1, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+    
+    /* Reduce the second grid */
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box2, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
         MPI_Reduce(box2, box2, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
@@ -367,7 +379,10 @@ int main(int argc, char *argv[]) {
         message(rank, "Average density %f\n", avg_density);
         
         /* Reset the density */
-        message(rank, "Density reset to %f\n", Omega * rho_crit);
+        avg_density = Omega * rho_crit;
+        message(rank, "Density reset to %f\n", avg_density);
+        
+        
 
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
@@ -440,7 +455,7 @@ int main(int argc, char *argv[]) {
             double Pk = power_in_bins[i];
             int obs = obs_in_bins[i];
 
-            printf("%f %e %d\n", k, Pk, obs);
+            printf("%e %e %d\n", k, Pk, obs);
         }
 
         fftw_destroy_plan(r2c1);
