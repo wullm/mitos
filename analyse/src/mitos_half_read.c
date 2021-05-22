@@ -49,11 +49,36 @@ int main(int argc, char *argv[]) {
     struct units us;
     struct particle_type *types = NULL;
     struct cosmology cosmo;
+    struct perturb_data ptdat;
+    struct perturb_params ptpars;
 
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
+    
+    /* Read the perturbation data file */
+    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
+    readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
+    
+    /* Retrieve the physical density at z = 0 */
+    
+    /* The indices of the density transfer functions */
+    int index = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
+
+    /* Find the present-day background densities */
+    int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+    double Omega = ptdat.Omega[ptdat.tau_size * index + today_index];
+    
+    /* Critical density */
+    double H_unit = 0.1022012156719; //100 km/s/Mpc in 1/Gyr
+    double H = H_unit * ptpars.h;
+    double G_newt = 4.49233855e-05; //Mpc^3/(1e10 M_sol)/Gyr^2 (my Mpc,Gyr,M_sol)
+    double rho_crit = 3. * H * H / (8. * M_PI * G_newt);
+    
+    message(rank, "Omega = %g\n", Omega);
+    message(rank, "density = %g\n", rho_crit * Omega);
+    
 
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
@@ -340,11 +365,9 @@ int main(int argc, char *argv[]) {
         double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2]);
 
         message(rank, "Average density %f\n", avg_density);
-
-        // if (strcmp(tp.Identifier, "ncdm") == 0) {
-        //     avg_density = 0.179075;
-        //     printf("Reset avg_density to %f\n", avg_density);
-        // }
+        
+        /* Reset the density */
+        message(rank, "Density reset to %f\n", Omega * rho_crit);
 
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
