@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         
         /* Copy the correct data */
         memcpy(ph_i, grids_h[dim], N*N*N*sizeof(double));
-        memcpy(vm_i, grids_h[dim], N*N*N*sizeof(double));
+        memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
         
         /* Allocate 3D complex arrays */
         fftw_complex *f_ph_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
