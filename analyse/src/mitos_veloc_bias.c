@@ -405,6 +405,11 @@ int main(int argc, char *argv[]) {
                 double Pk = power_in_bins_1[i] + power_in_bins_2[i];
                 reconstructed_Pks[ITER * bins + i] += Pk;
             }
+            
+            /* Free the grid */
+            free(vm_i);
+            free(f_vm_i);
+            free(f_dhvm_i);
         }
         
         /* Free the halo overdensity grid */
