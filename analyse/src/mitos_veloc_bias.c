@@ -307,17 +307,12 @@ int main(int argc, char *argv[]) {
             /* Calculate the power spectrum */
             calc_cross_powerspec(N, boxlen, f_ph_i, f_vm_i, bins, k_in_bins, power_in_bins, obs_in_bins);
             
-            printf("\n");
-            printf("k P_measured(k) observations\n");
+            /* Add the data (note that we add x + y + z) */
             for (int i=0; i<bins; i++) {
-                if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
-            
-                /* Add the data (note that we add x + y + z) */
                 bootstrap_ks[i] = k_in_bins[i]; //the same everytime
                 bootstrap_Pks[ITER * bins + i] += power_in_bins[i];
             }
-            printf("\n");
-            
+
             /* Clean up the grids */
             free(f_ph_i);
             free(f_vm_i);
