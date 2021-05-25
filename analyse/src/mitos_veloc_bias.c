@@ -568,6 +568,21 @@ int main(int argc, char *argv[]) {
         }
     }
     
+    printf("\n E = \n");
+    for (int i = 0; i < num_bias_bins; i++) {
+        for (int j = 0; j < num_bias_bins; j++) {
+            printf("%e ", E_matrix[i * num_bias_bins + j]);
+        }
+        printf("\n");
+    }
+    
+    printf("\n");
+    printf("\n D = \n");
+    for (int i = 0; i < num_bias_bins; i++) {
+        printf("%e\n", D_vec[i]);
+    }
+    
+    
     /* Linear algebra */
     gsl_matrix_view E = gsl_matrix_view_array(E_matrix, num_bias_bins, num_bias_bins);
     gsl_vector_view D = gsl_vector_view_array(D_vec, num_bias_bins);
@@ -584,20 +599,6 @@ int main(int argc, char *argv[]) {
     
     gsl_permutation_free(p);
     gsl_vector_free(b);
-    
-    printf("\n E = \n");
-    for (int i = 0; i < num_bias_bins; i++) {
-        for (int j = 0; j < num_bias_bins; j++) {
-            printf("%e ", E_matrix[i * num_bias_bins + j]);
-        }
-        printf("\n");
-    }
-    
-    printf("\n");
-    printf("\n D = \n");
-    for (int i = 0; i < num_bias_bins; i++) {
-        printf("%e\n", D_vec[i]);
-    }
     
     free(reconstructed_Pks);
     free(bootstrap_ks);
