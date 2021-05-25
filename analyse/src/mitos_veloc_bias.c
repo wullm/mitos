@@ -141,10 +141,12 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
     const double redshift = 0.0;
+    const double vel_conversion_factor = 9.7846194238e2; // km/s to Mpc/Gyr
     
     printf("\n");
     printf("Using N = %d, BoxLen = %g\n", N, boxlen);
     printf("Using redshift z = %f\n", redshift);
+    printf("Using velocity conversion factor = %e\n", vel_conversion_factor);
     
     /* The halos under consideration */
     const double M_min = pars.HaloMinMass;
@@ -215,9 +217,9 @@ int main(int argc, char *argv[]) {
             double Z = halo_z[l] / (boxlen/N) * (1.0 + redshift);
             double M = halo_M[l];
 
-            double V_X = halo_vx[l];
-            double V_Y = halo_vy[l];
-            double V_Z = halo_vz[l];
+            double V_X = halo_vx[l] / vel_conversion_factor;
+            double V_Y = halo_vy[l] / vel_conversion_factor;
+            double V_Z = halo_vz[l] / vel_conversion_factor;
 
             double W; //weight used in the CIC assignment
             if (M > M_min && M < M_max) {
