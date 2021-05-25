@@ -188,6 +188,8 @@ int main(int argc, char *argv[]) {
     double *bootstrap_ks = calloc(bins, sizeof(double));
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
     double *reconstructed_Pks = calloc(bins * num_samples, sizeof(double));
+    double mean_total_weight = 0;
+    double mean_total_mass = 0;
     
     printf("\n");
     printf("Computing bootstrapped errors in the empirical power spectrum.\n");
@@ -277,6 +279,10 @@ int main(int argc, char *argv[]) {
         
         /* Average weight */
         double avg_density = total_weight / (boxlen*boxlen*boxlen);
+        
+        /* Update the halo count */
+        mean_total_weight += total_weight / num_samples;
+        mean_total_mass += total_mass / num_samples;
         
         /* Convert to halo number overdensity: delta_h */
         for (int i=0; i<N*N*N; i++) {
@@ -403,6 +409,11 @@ int main(int argc, char *argv[]) {
         free(delta_h);
         
     }
+    
+    printf("\n");
+    printf("Mean total weight: %e\n", mean_total_weight);
+    printf("Mean total mass: %e\n", mean_total_mass);
+    printf("\n");
         
     /* Print the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
