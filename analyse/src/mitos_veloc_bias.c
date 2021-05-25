@@ -141,6 +141,8 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
     const double redshift = 0.0;
+    
+    printf("\n");
     printf("Using N = %d, BoxLen = %g\n", N, boxlen);
     printf("Using redshift z = %f\n", redshift);
     
@@ -149,6 +151,7 @@ int main(int argc, char *argv[]) {
     const double M_max = pars.HaloMaxMass;
 
     message(rank, "Including halos with M in (%e, %e) U_M.\n", M_min, M_max);
+    printf("\n");
 
     /* We will read the matter velocity fields into these arrays */
     double *vm_x = NULL; //matter x-velocity
@@ -185,6 +188,7 @@ int main(int argc, char *argv[]) {
     double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
     double *bootstrap_Pk_var = calloc(bins, sizeof(double));
     
+    printf("\n");
     printf("Computing bootstrapped errors in the empirical power spectrum.\n");
     
     /* Bootstrap errors in the empirical power spectrum */
@@ -563,6 +567,8 @@ int main(int argc, char *argv[]) {
                 double Pk_i = reconstructed_Pks[i * bins + k];
                 double Pk_j = reconstructed_Pks[j * bins + k];
                 double Pk_var_empirical = bootstrap_Pk_var[k];
+                
+                if (Pk_var_empirical > 0.)
                 E_matrix[i * num_bias_bins + j] += Pk_i * Pk_j / Pk_var_empirical;
             }
         }
@@ -575,6 +581,7 @@ int main(int argc, char *argv[]) {
             double Pk_i = reconstructed_Pks[i * bins + k];
             double Pk_empirical = bootstrap_Pk_mean[k];
             double Pk_var_empirical = bootstrap_Pk_var[k];
+            if (Pk_var_empirical > 0.)
             D_vec[i] += Pk_i * Pk_empirical / Pk_var_empirical;
         }
     }
