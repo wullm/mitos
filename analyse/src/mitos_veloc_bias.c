@@ -180,6 +180,8 @@ int main(int argc, char *argv[]) {
     int num_samples = 8;
     double *bootstrap_ks = calloc(bins, sizeof(double));
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
+    double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
+    double *bootstrap_Pk_var = calloc(bins, sizeof(double));
     
     /* Bootstrap errors in the empirical power spectrum */
     for (int ITER = 0; ITER < num_samples; ITER++) {
@@ -340,7 +342,7 @@ int main(int argc, char *argv[]) {
         
     /* Print the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
-        printf("%e", bootstrap_ks[i]);
+        printf("%e ", bootstrap_ks[i]);
             
         for (int j=0; j<num_samples; j++) {
             printf("%e ", bootstrap_Pks[j * bins + i]);
@@ -348,10 +350,32 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
     
+    /* Compute the mean bootstrapped power spectrum */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            bootstrap_Pk_mean[i] += bootstrap_Pks[j * bins + i] / num_samples;
+        }
+    }
+    
+    /* Compute the variance of the bootstrapped power spectrum */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            double dPk = (bootstrap_Pks[j * bins + i] - bootstrap_Pk_mean[i]);
+            bootstrap_Pk_var[i] += (dPk * dPk) / (num_samples - 1.0);
+        }
+    }
     
     /* Free the bootstrapped power spectrum */
     free(bootstrap_ks);
     free(bootstrap_Pks);
+    
+    printf("\n\n");
+    
+    /* Print the mean and error of the bootstrapped power spectrum */
+    for (int i=0; i<bins; i++) {
+        printf("%e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i]);
+    }
+    
 
     /* First, compute the empirical power spectrum <(1+delta_h)v_h, v_m> */
     
