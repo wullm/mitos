@@ -180,6 +180,13 @@ int main(int argc, char *argv[]) {
         }
     }   
     
+    /* Unit conversions */
+    for (int i=0; i<N*N*N; i++) {
+        vm_x[i] *= 978.46194238;
+        vm_y[i] *= 978.46194238;
+        vm_z[i] *= 978.46194238;
+    }
+    
     /* Allocate power spectrum arrays for the bootstrap errors */
     int bins = pars.PowerSpectrumBins;
     int num_samples = 2;
