@@ -438,9 +438,9 @@ int main(int argc, char *argv[]) {
 
     printf("Average density = %g\n", avg_density);
     
-    /* Convert to halo momentum number density: (1+delta_h) v_h */
+    /* Convert to halo number overdensity: delta_h */
     for (int i=0; i<N*N*N; i++) {
-         delta_h[i] = delta_h[i] / avg_density;
+         delta_h[i] = (delta_h[i] - avg_density) / avg_density;
     }
     
     /* Free memory for the halo stats */
