@@ -464,8 +464,8 @@ int main(int argc, char *argv[]) {
     /* Compute the S_alpha power spectrum in each bin */
     for (int bias_bin = 0; bias_bin < num_bias_bins; bias_bin++) {
         /* Specification of the bin */
-        double k_min = (bias_bin == 0) ? 0.0 : bootstrap_ks[(int) (delta * bias_bin)] * 0.5;
-        double k_max = (bias_bin == num_bias_bins - 1) ? DBL_MAX : bootstrap_ks[(int) (delta * (bias_bin+1))] * 2.0;
+        double k_min = (bias_bin == 0) ? 0.0 : bootstrap_ks[(int) (delta * bias_bin)];
+        double k_max = (bias_bin == num_bias_bins - 1) ? DBL_MAX : bootstrap_ks[(int) (delta * (bias_bin+1))];
         double params[2] = {k_min, k_max};
         
         printf("Bias bin covering: %g < k < %g\n", k_min, k_max);
