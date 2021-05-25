@@ -368,8 +368,10 @@ int main(int argc, char *argv[]) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
+                    /* Overdensity */
                     box_dens[id] = (box_dens[id] - avg_density)/avg_density;
 
+                    /* Velocity fields */
                     box_vx[id] = box_vx[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
                     box_vy[id] = box_vy[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
                     box_vz[id] = box_vz[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
