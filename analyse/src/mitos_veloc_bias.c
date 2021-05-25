@@ -216,6 +216,9 @@ int main(int argc, char *argv[]) {
 
             if (W == 0)
             continue;
+            
+            /* Randomly select halos for the bootstrap */
+            if (rand()%num_samples > 0) continue;
 
             total_mass += M;
             total_weight += W;
@@ -226,9 +229,6 @@ int main(int argc, char *argv[]) {
 
             double shift = 0;
             
-            /* Randomly select halos for the bootstrap */
-            if (rand()%num_samples > 0) continue;
-
             //The search window with respect to the top-left-upper corner
     		int lookLftX = (int) floor((X-iX) - 1.5 + shift);
     		int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
