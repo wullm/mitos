@@ -140,6 +140,8 @@ int main(int argc, char *argv[]) {
     /* The size of the density grid that we will create */
     const int N = pars.GridSize;
     const double boxlen = pars.BoxLen;
+    
+    /* Hard coded unit conversions from velociraptor (todo...) */
     const double redshift = 0.0;
     const double vel_conversion_factor = 9.7846194238e2; // km/s to Mpc/Gyr
     
