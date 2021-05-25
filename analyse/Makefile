@@ -20,14 +20,10 @@ CFLAGS = -Wall -Wshadow=global -fopenmp -march=native -O4
 LDFLAGS =
 
 OBJECTS = ../lib/input.o ../lib/output.o ../lib/input_mpi.o ../lib/output_mpi.o ../lib/fft.o ../lib/calc_powerspec.o ../lib/grids_interp.o ../lib/particle_types.o ../lib/titles.o ../lib/distributed_grid.o ../lib/random.o ../lib/perturb_data.o ../lib/perturb_spline.o ../lib/primordial.o
+	
+PROGRAMS = mitos_read mitos_half_read mitos_box mitos_cross_spec mitos_profiles mitos_mesh_profiles mitos_render mitos_gauss_purifier mitos_vel3 mitos_veloc_bias mitos_halo_vel3
+	
+all: $(PROGRAMS)
 
-all:
-	$(GCC) src/mitos_read.c -o mitos_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_half_read.c -o mitos_half_read $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_box.c -o mitos_box $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_cross_spec.c -o mitos_cross_spec $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_profiles.c -o mitos_profiles $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_mesh_profiles.c -o mitos_mesh_profiles $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
-	$(GCC) src/mitos_render.c -o mitos_render $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/mitos_gauss_purifier.c -o mitos_gauss_purifier $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
-	$(GCC) src/mitos_vel3.c -o mitos_vel3 $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
+$(PROGRAMS): % : src/%.c $(OBJECTS)
+	$(GCC) src/$@.c -o $@ $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS) $(LDFLAGS)
