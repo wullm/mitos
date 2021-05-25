@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     double *grids_h[3] = {deltah_vh_x, deltah_vh_y, deltah_vh_z};
     for (int i=0; i<3; i++) {
         /* Filename of momentum input grid */
-        char *read_fname = NULL;
+        char read_fname[50];
         sprintf(read_fname, "momentum_halo_%c.hdf5", letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     double *grids_m[3] = {vm_x, vm_y, vm_z};
     for (int i=0; i<3; i++) {
         /* Filename of velocity input grid */
-        char *read_fname = NULL;
+        char read_fname[50];
         sprintf(read_fname, "velocity_cdm_%c.hdf5", letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
