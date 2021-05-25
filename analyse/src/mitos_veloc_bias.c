@@ -164,59 +164,82 @@ int main(int argc, char *argv[]) {
         free(vm_i);
     }
     
-    // /* Compute the S_alpha power spectrum in each bin */
-    // for (int bin = 0; bin < 1; bin++) {
-    //     /* Specification of the bin */
-    //     double k_min = 1.0e-2;
-    //     double k_max = 2.0e-2;
-    //     double params[2] = {k_min, k_max};
-    // 
-    //     for (int dim = 0; dim < 3; dim++) {
-    //         /* Select the correct array */
-    //         double *vm_i = grids_m[dim];
-    // 
-    //         /* Allocate 3D complex arrays */
-    //         fftw_complex *f_ph_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    //         fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    // 
-    // 
-    //     /* Execute FFTs and normalize */
-    //     fft_execute(r2c_x);
-    //     fft_execute(r2c_y);
-    //     fft_execute(r2c_z);
-    //     fft_normalize_r2c(fbox_x, N, boxlen);
-    //     fft_normalize_r2c(fbox_y, N, boxlen);
-    //     fft_normalize_r2c(fbox_z, N, boxlen);
-    // 
-    //     /* Apply sharp k-space filter */
-    //     fft_apply_kernel(fbox_x, fbox_x, N, boxlen, kernel_tophat, params);
-    //     fft_apply_kernel(fbox_y, fbox_y, N, boxlen, kernel_tophat, params);
-    //     fft_apply_kernel(fbox_z, fbox_z, N, boxlen, kernel_tophat, params);
-    // 
-    //     /* Execute reverse FFTs and normalize */
-    //     fft_execute(c2r_x);
-    //     fft_execute(c2r_y);
-    //     fft_execute(c2r_z);
-    //     fft_normalize_c2r(v_alpha_x, N, boxlen);
-    //     fft_normalize_c2r(v_alpha_y, N, boxlen);
-    //     fft_normalize_c2r(v_alpha_z, N, boxlen);
-    // 
-    //     /* In real space, multiply by the halo overdensity grid */
-    //     for (int i=0; i<N*N*N; i++) {
-    //         v_alpha_x[i] *= delta_h[i];
-    //     }
-    // 
-    //     /* Execute FFTs and normalize */
-    //     fft_execute(r2c_x_2);
-    //     fft_execute(r2c_y_2);
-    //     fft_execute(r2c_z_2);
-    //     fft_normalize_r2c(fbox_x, N, boxlen);
-    //     fft_normalize_r2c(fbox_y, N, boxlen);
-    //     fft_normalize_r2c(fbox_z, N, boxlen);
-    // 
-    //     /* Compute power spectra and sum */
-    // 
-    // }
+    /* Compute the S_alpha power spectrum in each bin */
+    for (int bin = 0; bin < 1; bin++) {
+        /* Specification of the bin */
+        double k_min = 1.0e-2;
+        double k_max = 2.0e-2;
+        double params[2] = {k_min, k_max};
+    
+        for (int dim = 0; dim < 3; dim++) {
+            /* Allocate 3D real arrays */
+            double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+            
+            /* Copy the correct data */
+            memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+    
+            /* Allocate 3D complex arrays */
+            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            
+            /* Create FFT plans */
+            fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
+            fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
+            fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
+            
+            /* Execute FFT and normalize */
+            fft_execute(r2c_1);
+            fft_normalize_r2c(f_vm_i, N, boxlen);
+            fftw_destroy_plan(r2c_1);
+            
+            /* Apply k-space tophat filter */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_tophat, params);
+            
+            /* Copy over the data into the second complex array */
+            memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+            
+            /* Execute reverse FFT and normalize */
+            fft_execute(c2r_1);
+            fft_normalize_c2r(vm_i, N, boxlen);
+            fftw_destroy_plan(c2r_1);
+            
+            /* Multiply by the halo overdensity */
+            for (int j=0; j<N*N*N; j++) {
+                vm_i[j] *= delta_h[j];
+            }
+            
+            /* Execute FFT and normalize */
+            fft_execute(r2c_2);
+            fft_normalize_r2c(f_dhvm_i, N, boxlen);
+            fftw_destroy_plan(r2c_2);
+            
+            /* Allocate power spectrum arrays */
+            int bins = pars.PowerSpectrumBins;
+            double *k_in_bins = malloc(bins * sizeof(double));
+            double *power_in_bins_1 = malloc(bins * sizeof(double));
+            double *power_in_bins_2 = malloc(bins * sizeof(double));
+            int *obs_in_bins = calloc(bins, sizeof(int));
+            
+            /* Compute power spectra */
+            calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
+            calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
+            
+            printf("\n");
+            printf("k P_1 P_2 observations\n");
+            for (int i=0; i<bins; i++) {
+                if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+
+                /* The power we observe */
+                double k = k_in_bins[i];
+                double Pk_1 = power_in_bins_1[i];
+                double Pk_2 = power_in_bins_2[i];
+                int obs = obs_in_bins[i];
+
+                printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
+            }
+            printf("\n");
+        }
+    }
     
     // /* Allocate 3D complex arrays */
     // fftw_complex *fbox_x = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
