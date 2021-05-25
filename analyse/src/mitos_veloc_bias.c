@@ -183,9 +183,11 @@ int main(int argc, char *argv[]) {
     double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
     double *bootstrap_Pk_var = calloc(bins, sizeof(double));
     
+    printf("Computing bootstrapped errors in the empirical power spectrum.\n");
+    
     /* Bootstrap errors in the empirical power spectrum */
     for (int ITER = 0; ITER < num_samples; ITER++) {
-        printf("Doing %03d/%03d]\n", ITER, num_samples);
+        printf("Iteration %03d/%03d]\n", ITER, num_samples);
 
         /* Allocate grids */
         double *box_px = calloc(N*N*N, sizeof(double));
@@ -265,8 +267,6 @@ int main(int argc, char *argv[]) {
         /* Average weight */
         double avg_density = total_weight / (boxlen*boxlen*boxlen);
         
-        printf("Average density = %g\n", avg_density);
-
         /* Convert to halo momentum number density: (1+delta_h) v_h */
         for (int i=0; i<N*N*N; i++) {
              box_px[i] = box_px[i] / avg_density;
@@ -376,186 +376,163 @@ int main(int argc, char *argv[]) {
         printf("%e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i]);
     }
     
-
-    /* First, compute the empirical power spectrum <(1+delta_h)v_h, v_m> */
+        
+    /* Allocate a grid for the halo overdensity */
+    double *delta_h = calloc(N*N*N, sizeof(double));
     
-    // /* We will read the input into these arrays */
-    // double *deltah_vh_x = NULL; //halo x-momentum
-    // double *deltah_vh_y = NULL; //halo y-momentum
-    // double *deltah_vh_z = NULL; //halo z-momentum   
-    // 
-    // /* Read the halo momentum grids */
-    // double *grids_h[3] = {deltah_vh_x, deltah_vh_y, deltah_vh_z};
-    // for (int i=0; i<3; i++) {
-    //     /* Filename of momentum input grid */
-    //     char read_fname[50];
-    //     sprintf(read_fname, "momentum_halos_%c.hdf5", letters[i]);
-    //     printf("Reading input array '%s'.\n", read_fname);
-    // 
-    //     /* Read the grid */
-    //     readFieldFile(&grids_h[i], &N, &boxlen, read_fname);
-    // }
-    // 
-    // /* We will read the input into these arrays */
-    // double *vm_x = NULL; //matter x-velocity
-    // double *vm_y = NULL; //matter y-velocity
-    // double *vm_z = NULL; //matter z-velocity
-    // double *delta_h = NULL; //halo overdensity
-    // 
-    // /* Read the matter velocity grids */
-    // double *grids_m[3] = {vm_x, vm_y, vm_z};
-    // for (int i=0; i<3; i++) {
-    //     /* Filename of velocity input grid */
-    //     char read_fname[50];
-    //     sprintf(read_fname, "velocity_cdm_%c.hdf5", letters[i]);
-    //     printf("Reading input array '%s'.\n", read_fname);
-    // 
-    //     /* Read the grid */
-    //     readFieldFile(&grids_m[i], &N, &boxlen, read_fname);
-    // }
-    // 
-    // /* Read the halo overdensity grid */
-    // char read_fname[50] = "density_halos.hdf5";
-    // printf("Reading input array '%s'.\n", read_fname);
-    // 
-    // /* Read the grid */
-    // readFieldFile(&delta_h, &N, &boxlen, read_fname);
-    // 
-    // 
-    // /* Compute the empirical power spectrum along each dimension */
-    // for (int dim = 0; dim < 3; dim++) {
-    //     /* Allocate 3D real arrays */
-    //     double *ph_i = (double*) fftw_malloc(N*N*N*sizeof(double));
-    //     double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
-    // 
-    //     /* Copy the correct data */
-    //     memcpy(ph_i, grids_h[dim], N*N*N*sizeof(double));
-    //     memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
-    // 
-    //     /* Allocate 3D complex arrays */
-    //     fftw_complex *f_ph_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    //     fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    // 
-    //     /* Create FFT plans */
-    //     fftw_plan r2c_h = fftw_plan_dft_r2c_3d(N, N, N, ph_i, f_ph_i, FFTW_ESTIMATE);
-    //     fftw_plan r2c_m = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
-    // 
-    //     /* Execute FFTs and normalize */
-    //     fft_execute(r2c_h);
-    //     fft_execute(r2c_m);
-    //     fft_normalize_r2c(f_ph_i, N, boxlen);
-    //     fft_normalize_r2c(f_vm_i, N, boxlen);
-    //     fftw_destroy_plan(r2c_h);
-    //     fftw_destroy_plan(r2c_m);
-    // 
-    //     /* Allocate power spectrum arrays */
-    //     int bins = pars.PowerSpectrumBins;
-    //     double *k_in_bins = malloc(bins * sizeof(double));
-    //     double *power_in_bins = malloc(bins * sizeof(double));
-    //     int *obs_in_bins = calloc(bins, sizeof(int));
-    // 
-    //     /* Calculate the power spectrum */
-    //     calc_cross_powerspec(N, boxlen, f_ph_i, f_vm_i, bins, k_in_bins, power_in_bins, obs_in_bins);
-    // 
-    //     printf("\n");
-    //     printf("k P_measured(k) observations\n");
-    //     for (int i=0; i<bins; i++) {
-    //         if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
-    // 
-    //         /* The power we observe */
-    //         double k = k_in_bins[i];
-    //         double Pk = power_in_bins[i];
-    //         int obs = obs_in_bins[i];
-    // 
-    //         printf("%e %e %d\n", k, Pk, obs);
-    //     }
-    //     printf("\n");
-    // 
-    //     /* Clean up the grids */
-    //     free(f_ph_i);
-    //     free(f_vm_i);
-    //     free(ph_i);
-    //     free(vm_i);
-    // }
-    // 
-    // /* Compute the S_alpha power spectrum in each bin */
-    // for (int bin = 0; bin < 1; bin++) {
-    //     /* Specification of the bin */
-    //     double k_min = 1.0e-2;
-    //     double k_max = 2.0e-2;
-    //     double params[2] = {k_min, k_max};
-    // 
-    //     for (int dim = 0; dim < 3; dim++) {
-    //         /* Allocate 3D real arrays */
-    //         double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
-    // 
-    //         /* Copy the correct data */
-    //         memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
-    // 
-    //         /* Allocate 3D complex arrays */
-    //         fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    //         fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    // 
-    //         /* Create FFT plans */
-    //         fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
-    //         fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
-    //         fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
-    // 
-    //         /* Execute FFT and normalize */
-    //         fft_execute(r2c_1);
-    //         fft_normalize_r2c(f_vm_i, N, boxlen);
-    //         fftw_destroy_plan(r2c_1);
-    // 
-    //         /* Apply k-space tophat filter */
-    //         fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_tophat, params);
-    // 
-    //         /* Copy over the data into the second complex array */
-    //         memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
-    // 
-    //         /* Execute reverse FFT and normalize */
-    //         fft_execute(c2r_1);
-    //         fft_normalize_c2r(vm_i, N, boxlen);
-    //         fftw_destroy_plan(c2r_1);
-    // 
-    //         /* Multiply by the halo overdensity */
-    //         for (int j=0; j<N*N*N; j++) {
-    //             vm_i[j] *= delta_h[j];
-    //             printf("%e\n")
-    //         }
-    // 
-    //         /* Execute FFT and normalize */
-    //         fft_execute(r2c_2);
-    //         fft_normalize_r2c(f_dhvm_i, N, boxlen);
-    //         fftw_destroy_plan(r2c_2);
-    // 
-    //         /* Allocate power spectrum arrays */
-    //         int bins = pars.PowerSpectrumBins;
-    //         double *k_in_bins = malloc(bins * sizeof(double));
-    //         double *power_in_bins_1 = malloc(bins * sizeof(double));
-    //         double *power_in_bins_2 = malloc(bins * sizeof(double));
-    //         int *obs_in_bins = calloc(bins, sizeof(int));
-    // 
-    //         /* Compute power spectra */
-    //         calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
-    //         calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
-    // 
-    //         printf("\n");
-    //         printf("k P_1 P_2 observations\n");
-    //         for (int i=0; i<bins; i++) {
-    //             if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
-    // 
-    //             /* The power we observe */
-    //             double k = k_in_bins[i];
-    //             double Pk_1 = power_in_bins_1[i];
-    //             double Pk_2 = power_in_bins_2[i];
-    //             int obs = obs_in_bins[i];
-    // 
-    //             printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
-    //         }
-    //         printf("\n");
-    //     }
-    // }
-    // 
+    
+    /* Loop over the halos one more time for the halo number overdensity */
+    double total_mass = 0;
+    double total_weight = 0;
+    double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
+
+    /* Assign the halos to the grid with CIC */
+    for (int l=0; l<halo_num; l++) {
+        double X = halo_x[l] / (boxlen/N) * (1.0 + redshift);
+        double Y = halo_y[l] / (boxlen/N) * (1.0 + redshift);
+        double Z = halo_z[l] / (boxlen/N) * (1.0 + redshift);
+        double M = halo_M[l];
+
+        double W; //weight used in the CIC assignment
+        if (M > M_min && M < M_max) {
+            W = 1.0;
+        } else {
+            W = 0.0;
+        }
+
+        if (W == 0)
+        continue;
+        
+        /* Randomly select halos for the bootstrap */
+        if (rand()%num_samples > 0) continue;
+
+        total_mass += M;
+        total_weight += W;
+
+        int iX = (int) floor(X);
+        int iY = (int) floor(Y);
+        int iZ = (int) floor(Z);
+
+        double shift = 0;
+        
+        //The search window with respect to the top-left-upper corner
+        int lookLftX = (int) floor((X-iX) - 1.5 + shift);
+        int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
+        int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
+        int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
+        int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
+        int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
+
+        //Do the mass assignment
+        for (int x=lookLftX; x<=lookRgtX; x++) {
+            for (int y=lookLftY; y<=lookRgtY; y++) {
+                for (int z=lookLftZ; z<=lookRgtZ; z++) {
+                    double xx = fabs(X - (iX+x+shift));
+                    double yy = fabs(Y - (iY+y+shift));
+                    double zz = fabs(Z - (iZ+z+shift));
+
+                    double part_x = xx < 0.5 ? (0.75-xx*xx)
+                                            : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
+                    double part_y = yy < 0.5 ? (0.75-yy*yy)
+                                            : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
+                    double part_z = zz < 0.5 ? (0.75-zz*zz)
+                                            : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
+
+                    delta_h[row_major(iX+x, iY+y, iZ+z, N)] += W/grid_cell_vol * (part_x*part_y*part_z);
+                }
+            }
+        }
+    }
+    
+    /* Average weight */
+    double avg_density = total_weight / (boxlen*boxlen*boxlen);
+
+    printf("Average density = %g\n", avg_density);
+    
+    /* Convert to halo momentum number density: (1+delta_h) v_h */
+    for (int i=0; i<N*N*N; i++) {
+         delta_h[i] = delta_h[i] / avg_density;
+    }
+
+    /* Compute the S_alpha power spectrum in each bin */
+    for (int bin = 0; bin < 1; bin++) {
+        /* Specification of the bin */
+        double k_min = 1.0e-2;
+        double k_max = 2.0e-2;
+        double params[2] = {k_min, k_max};
+    
+        for (int dim = 0; dim < 3; dim++) {
+            /* Allocate 3D real arrays */
+            double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+    
+            /* Copy the correct data */
+            memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+    
+            /* Allocate 3D complex arrays */
+            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    
+            /* Create FFT plans */
+            fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
+            fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
+            fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
+    
+            /* Execute FFT and normalize */
+            fft_execute(r2c_1);
+            fft_normalize_r2c(f_vm_i, N, boxlen);
+            fftw_destroy_plan(r2c_1);
+    
+            /* Apply k-space tophat filter */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_tophat, params);
+    
+            /* Copy over the data into the second complex array */
+            memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+    
+            /* Execute reverse FFT and normalize */
+            fft_execute(c2r_1);
+            fft_normalize_c2r(vm_i, N, boxlen);
+            fftw_destroy_plan(c2r_1);
+    
+            /* Multiply by the halo overdensity */
+            for (int j=0; j<N*N*N; j++) {
+                vm_i[j] *= delta_h[j];
+            }
+    
+            /* Execute FFT and normalize */
+            fft_execute(r2c_2);
+            fft_normalize_r2c(f_dhvm_i, N, boxlen);
+            fftw_destroy_plan(r2c_2);
+    
+            /* Allocate power spectrum arrays */
+            double *k_in_bins = malloc(bins * sizeof(double));
+            double *power_in_bins_1 = malloc(bins * sizeof(double));
+            double *power_in_bins_2 = malloc(bins * sizeof(double));
+            int *obs_in_bins = calloc(bins, sizeof(int));
+    
+            /* Compute power spectra */
+            calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
+            calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
+    
+            printf("\n");
+            printf("k P_1 P_2 observations\n");
+            for (int i=0; i<bins; i++) {
+                if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+    
+                /* The power we observe */
+                double k = k_in_bins[i];
+                double Pk_1 = power_in_bins_1[i];
+                double Pk_2 = power_in_bins_2[i];
+                int obs = obs_in_bins[i];
+    
+                printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
+            }
+            printf("\n");
+        }
+    }
+    
+    
+    
+    
     // // /* Allocate 3D complex arrays */
     // // fftw_complex *fbox_x = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
     // // fftw_complex *fbox_y = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
