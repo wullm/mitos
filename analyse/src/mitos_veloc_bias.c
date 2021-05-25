@@ -602,7 +602,73 @@ int main(int argc, char *argv[]) {
     gsl_permutation_free(p);
     gsl_vector_free(b);
     
+    /* Compute the global S power spectrum */
+    double *global_reconstructed_Pks = calloc(bins, sizeof(double));
+    for (int dim = 0; dim < 3; dim++) {
+        /* Allocate 3D real arrays */
+        double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+
+        /* Copy the correct data */
+        memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+
+        /* Allocate 3D complex arrays */
+        fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+
+        /* Create FFT plans */
+        fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
+        fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
+        fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
+
+        /* Execute FFT and normalize */
+        fft_execute(r2c_1);
+        fft_normalize_r2c(f_vm_i, N, boxlen);
+        fftw_destroy_plan(r2c_1);
+
+        /* Copy over the data into the second complex array */
+        memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+
+        /* Execute reverse FFT and normalize */
+        fft_execute(c2r_1);
+        fft_normalize_c2r(vm_i, N, boxlen);
+        fftw_destroy_plan(c2r_1);
+
+        /* Multiply by the halo overdensity */
+        for (int j=0; j<N*N*N; j++) {
+            vm_i[j] *= delta_h[j];
+        }
+
+        /* Execute FFT and normalize */
+        fft_execute(r2c_2);
+        fft_normalize_r2c(f_dhvm_i, N, boxlen);
+        fftw_destroy_plan(r2c_2);
+
+        /* Allocate power spectrum arrays */
+        double *k_in_bins = malloc(bins * sizeof(double));
+        double *power_in_bins_1 = malloc(bins * sizeof(double));
+        double *power_in_bins_2 = malloc(bins * sizeof(double));
+        int *obs_in_bins = calloc(bins, sizeof(int));
+
+        /* Compute power spectra */
+        calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
+        calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
+
+        /* Add the data */
+        for (int i=0; i<bins; i++) {
+            double Pk = power_in_bins_1[i] + power_in_bins_2[i];
+            global_reconstructed_Pks[i] += Pk;
+        }
+    }
+    
+    printf("\n\n");
+    
+    /* Print the mean and error of the bootstrapped power spectrum */
+    for (int i=0; i<bins; i++) {
+        printf("%e %e %e %e %f\n", bootstrap_ks[i], global_reconstructed_Pks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i], bootstrap_Pk_mean[i]/global_reconstructed_Pks[i]);
+    }
+    
     free(reconstructed_Pks);
+    free(global_reconstructed_Pks);
     free(bootstrap_ks);
     
     // // /* Allocate 3D complex arrays */
