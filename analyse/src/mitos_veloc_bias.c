@@ -394,9 +394,6 @@ int main(int argc, char *argv[]) {
 
         if (W == 0)
         continue;
-        
-        /* Randomly select halos for the bootstrap */
-        if (rand()%num_samples > 0) continue;
 
         total_mass += M;
         total_weight += W;
@@ -530,21 +527,6 @@ int main(int argc, char *argv[]) {
                 double Pk = power_in_bins_1[i] + power_in_bins_2[i];
                 reconstructed_Pks[bins * bias_bin + i] += Pk;
             }
-            // 
-            // printf("\n");
-            // printf("k P_1 P_2 observations\n");
-            // for (int i=0; i<bins; i++) {
-            //     if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
-            // 
-            //     /* The power we observe */
-            //     double k = k_in_bins[i];
-            //     double Pk_1 = power_in_bins_1[i];
-            //     double Pk_2 = power_in_bins_2[i];
-            //     int obs = obs_in_bins[i];
-            // 
-            //     printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
-            // }
-            // printf("\n");
         }
     }
     
