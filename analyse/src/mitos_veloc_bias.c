@@ -532,6 +532,7 @@ int main(int argc, char *argv[]) {
     free(bias_mean);
     free(bias_var);
     free(bootstrap_ks);
+    free(bootstrap_obs);
 
     /* Clean up */
     cleanTypes(&pars, &types);
