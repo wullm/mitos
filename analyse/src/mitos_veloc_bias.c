@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<3; i++) {
         /* Filename of momentum input grid */
         char read_fname[50];
-        sprintf(read_fname, "momentum_halo_%c.hdf5", letters[i]);
+        sprintf(read_fname, "momentum_halos_%c.hdf5", letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
         /* Read the grid */
