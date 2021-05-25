@@ -423,17 +423,6 @@ int main(int argc, char *argv[]) {
     printf("Mean total weight: %e\n", mean_total_weight);
     printf("Mean total mass: %e\n", mean_total_mass);
     printf("\n");
-        
-    /* Print the bootstrapped power spectrum */
-    for (int i=0; i<bins; i++) {
-        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
-        
-        printf("%e ", bootstrap_ks[i]);    
-        for (int j=0; j<num_samples; j++) {
-            printf("%e ", bootstrap_Pks[j * bins + i]);
-        }
-        printf("\n");
-    }
     
     /* Allocate arrays for mean and variance of the power spectra */
     double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
@@ -500,29 +489,14 @@ int main(int argc, char *argv[]) {
     free(reconstructed_Pks);
     free(bootstrap_Pks);
     
-    printf("\n\n");
-    
     /* Print the mean and error of the bootstrapped power spectrum */
-    for (int i=0; i<bins; i++) {
-        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
-        printf("%e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i]);
-    }
-        
     printf("\n\n");
-    
-    /* Print the mean and error of the reconstructed power spectrum */
+    printf("k Pk_reconstruct_mean Pk_bootstrap_mean Pk_reconstruct_var Pk_bootstrap_var bias_mean bias_var\n");
     for (int i=0; i<bins; i++) {
         if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
-        printf("%e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], reconstructed_Pk_var[i]);
+        printf("%e %e %e %e %e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], bootstrap_Pk_mean[i], reconstructed_Pk_var[i], bootstrap_Pk_var[i], bias_mean[i], bias_var[i]);
     }
-        
-    printf("\n\n");
-    
-    /* Print the mean and error of the bootstrapped power spectrum */
-    for (int i=0; i<bins; i++) {
-        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
-        printf("%e %e %e %e %e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i], reconstructed_Pk_var[i], bias_mean[i], bias_var[i]);
-    }
+    printf("\n");
     
     /* Free remaining arrays */
     free(bootstrap_Pk_mean);
