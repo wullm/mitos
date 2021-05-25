@@ -353,7 +353,6 @@ int main(int argc, char *argv[]) {
     }
     
     /* Free the bootstrapped power spectrum */
-    free(bootstrap_ks);
     free(bootstrap_Pks);
     
     printf("\n\n");
@@ -462,8 +461,8 @@ int main(int argc, char *argv[]) {
     /* Compute the S_alpha power spectrum in each bin */
     for (int bias_bin = 0; bias_bin < num_bias_bins; bias_bin++) {
         /* Specification of the bin */
-        double k_min = bootstrap_ks[(int) delta * bias_bin] * 0.5;
-        double k_max = bootstrap_ks[(int) delta * bias_bin] * 2.0;
+        double k_min = bootstrap_ks[(int) (delta * bias_bin)];
+        double k_max = bootstrap_ks[(int) (delta * (bias_bin+1)];
         double params[2] = {k_min, k_max};
         
         printf("Bias bin covering: %f < k < %f\n", k_min, k_max);
@@ -554,6 +553,7 @@ int main(int argc, char *argv[]) {
     }
     
     free(reconstructed_Pks);
+    free(bootstrap_ks);
     
     // // /* Allocate 3D complex arrays */
     // // fftw_complex *fbox_x = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
