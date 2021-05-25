@@ -453,13 +453,20 @@ int main(int argc, char *argv[]) {
     /* Done with MPI parallelization */
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
+    
+    /* The number of bias bins (each covering multiple power spectrum bins) */
+    int num_bias_bins = 8;
+    double *reconstructed_Pks = calloc(bins * num_bias_bins, sizeof(double));
+    double delta = (1.0 / num_bias_bins) * bins;
 
     /* Compute the S_alpha power spectrum in each bin */
-    for (int bin = 0; bin < 1; bin++) {
+    for (int bias_bin = 0; bias_bin < num_bias_bins; bias_bin++) {
         /* Specification of the bin */
-        double k_min = 1.0e-2;
-        double k_max = 2.0e-2;
+        double k_min = bootstrap_ks[(int) delta * bias_bin] * 0.5;
+        double k_max = bootstrap_ks[(int) delta * bias_bin] * 2.0;
         double params[2] = {k_min, k_max};
+        
+        printf("Bias bin covering: %f < k < %f\n", k_min, k_max);
     
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
@@ -513,25 +520,40 @@ int main(int argc, char *argv[]) {
             calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
             calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
     
-            printf("\n");
-            printf("k P_1 P_2 observations\n");
+            /* Add the data */
             for (int i=0; i<bins; i++) {
-                if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
-    
-                /* The power we observe */
-                double k = k_in_bins[i];
-                double Pk_1 = power_in_bins_1[i];
-                double Pk_2 = power_in_bins_2[i];
-                int obs = obs_in_bins[i];
-    
-                printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
+                double Pk = power_in_bins_1[i] + power_in_bins_2[i];
+                reconstructed_Pks[bins * bias_bin + i] += Pk;
             }
-            printf("\n");
+            // 
+            // printf("\n");
+            // printf("k P_1 P_2 observations\n");
+            // for (int i=0; i<bins; i++) {
+            //     if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
+            // 
+            //     /* The power we observe */
+            //     double k = k_in_bins[i];
+            //     double Pk_1 = power_in_bins_1[i];
+            //     double Pk_2 = power_in_bins_2[i];
+            //     int obs = obs_in_bins[i];
+            // 
+            //     printf("%e %e %e %d\n", k, Pk_1, Pk_2, obs);
+            // }
+            // printf("\n");
         }
     }
     
+    /* Print the reconstructed Pks */
+    for (int i=0; i<bins; i++) {
+        printf("%e ", bootstrap_ks[i]);
+            
+        for (int j=0; j<num_bias_bins; j++) {
+            printf("%e ", reconstructed_Pks[j * bins + i]);
+        }
+        printf("\n");
+    }
     
-    
+    free(reconstructed_Pks);
     
     // // /* Allocate 3D complex arrays */
     // // fftw_complex *fbox_x = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
