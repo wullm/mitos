@@ -422,8 +422,7 @@ int main(int argc, char *argv[]) {
     printf("\n");
     printf("Mean total weight: %e\n", mean_total_weight);
     printf("Mean total mass: %e\n", mean_total_mass);
-    printf("\n");
-    
+
     /* Allocate arrays for mean and variance of the power spectra */
     double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
     double *bootstrap_Pk_var = calloc(bins, sizeof(double));
@@ -490,7 +489,7 @@ int main(int argc, char *argv[]) {
     free(bootstrap_Pks);
     
     /* Print the mean and error of the bootstrapped power spectrum */
-    printf("\n\n");
+    printf("\n");
     printf("k Pk_reconstruct_mean Pk_bootstrap_mean Pk_reconstruct_var Pk_bootstrap_var bias_mean bias_var\n");
     for (int i=0; i<bins; i++) {
         if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
