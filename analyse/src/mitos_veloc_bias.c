@@ -545,6 +545,7 @@ int main(int argc, char *argv[]) {
     
     for (int i = 0; i < num_bias_bins; i++) {
         for (int j = 0; j < num_bias_bins; j++) {
+            E_matrix[i * num_bias_bins + j] = 0.;
             for (int k = 0; k < bins; k++) {
                 double Pk_i = reconstructed_Pks[i * bins + k];
                 double Pk_j = reconstructed_Pks[j * bins + k];
@@ -559,6 +560,7 @@ int main(int argc, char *argv[]) {
     /* Construct the observations vector */
     double D_vec[num_bias_bins];
     for (int i = 0; i < num_bias_bins; i++) {
+        D_vec[i] = 0.;
         for (int k = 0; k < bins; k++) {
             double Pk_i = reconstructed_Pks[i * bins + k];
             double Pk_empirical = bootstrap_Pk_mean[k];
