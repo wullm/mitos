@@ -468,7 +468,7 @@ int main(int argc, char *argv[]) {
         double k_max = (bias_bin == num_bias_bins - 1) ? DBL_MAX : bootstrap_ks[(int) (delta * (bias_bin+1))] * 1.2;
         double params[2] = {k_min, k_max};
         
-        printf("Bias bin covering: %f < k < %f\n", k_min, k_max);
+        printf("Bias bin covering: %g < k < %g\n", k_min, k_max);
     
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
@@ -583,7 +583,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < num_bias_bins; i++) {
         printf("%e\n", D_vec[i]);
     }
-    
+    printf("\n");
     
     /* Linear algebra */
     gsl_matrix_view E = gsl_matrix_view_array(E_matrix, num_bias_bins, num_bias_bins);
