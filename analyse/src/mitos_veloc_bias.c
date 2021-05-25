@@ -25,6 +25,7 @@
 #include <float.h>
 #include <fftw3.h>
 #include <sys/time.h>
+#include <gsl/gsl_linalg.h>
 
 #include "../../include/mitos.h"
 
@@ -552,6 +553,48 @@ int main(int argc, char *argv[]) {
         }
         printf("\n");
     }
+    
+    /* Construct the covariance matrix between the empirical and reconstructed power spectra */
+    double E_matrix[num_bias_bins * num_bias_bins];
+    
+    for (int i = 0; i < num_bias_bins; i++) {
+        for (int j = 0; j < num_bias_bins; j++) {
+            for (int k = 0; k < bins; k++) {
+                double Pk_i = reconstructed_Pks[i * bins + k];
+                double Pk_j = reconstructed_Pks[j * bins + k];
+                double Pk_var_empirical = bootstrap_Pk_var[k];
+                E_matrix[i * num_bias_bins + j] += Pk_i * Pk_j / Pk_var_empirical;
+            }
+        }
+    }
+    
+    /* Construct the observations vector */
+    double D_vec[num_bias_bins];
+    for (int i = 0; i < num_bias_bins; i++) {
+        for (int k = 0; k < bins; k++) {
+            double Pk_i = reconstructed_Pks[i * bins + k];
+            double Pk_empirical = bootstrap_Pk_mean[k];
+            double Pk_var_empirical = bootstrap_Pk_var[k];
+            D_vec[i] += Pk_i * Pk_empirical / Pk_var_empirical;
+        }
+    }
+    
+    /* Linear algebra */
+    gsl_matrix_view E = gsl_matrix_view_array(E_matrix, num_bias_bins, num_bias_bins);
+    gsl_vector_view D = gsl_vector_view_array(D_vec, num_bias_bins);
+    gsl_vector *b = gsl_vector_alloc(num_bias_bins);
+    
+    /* Solve the linear system */
+    int s;
+    gsl_permutation *p = gsl_permutation_alloc(num_bias_bins);
+    gsl_linalg_LU_decomp(&E.matrix, p, &s);
+    gsl_linalg_LU_solve(&E.matrix, p, &D.vector, b);
+    
+    printf ("bias = \n");
+    gsl_vector_fprintf (stdout, b, "%g");
+    
+    gsl_permutation_free(p);
+    gsl_vector_free(b);
     
     free(reconstructed_Pks);
     free(bootstrap_ks);
