@@ -179,21 +179,13 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }   
-    
-    /* Unit conversions */
-    for (int i=0; i<N*N*N; i++) {
-        vm_x[i] *= 978.46194238;
-        vm_y[i] *= 978.46194238;
-        vm_z[i] *= 978.46194238;
-    }
-    
+        
     /* Allocate power spectrum arrays for the bootstrap errors */
     int bins = pars.PowerSpectrumBins;
     int num_samples = 2;
     double *bootstrap_ks = calloc(bins, sizeof(double));
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
-    double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
-    double *bootstrap_Pk_var = calloc(bins, sizeof(double));
+    double *reconstructed_Pks = calloc(bins * num_samples, sizeof(double));
     
     printf("\n");
     printf("Computing bootstrapped errors in the empirical power spectrum.\n");
@@ -202,16 +194,19 @@ int main(int argc, char *argv[]) {
     for (int ITER = 0; ITER < num_samples; ITER++) {
         printf("Iteration %03d/%03d]\n", ITER, num_samples);
 
-        /* Allocate grids */
+        /* Allocate halo momentum grids */
         double *box_px = calloc(N*N*N, sizeof(double));
         double *box_py = calloc(N*N*N, sizeof(double));
         double *box_pz = calloc(N*N*N, sizeof(double));
-
+        
+        /* Allocate a grid for the halo overdensity */
+        double *delta_h = calloc(N*N*N, sizeof(double));
+        
+        /* Counters for halo masses and weights (1 or 0) */
         double total_mass = 0;
         double total_weight = 0;
 
         double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
-
 
         /* Assign the halos to the grid with CIC */
         for (int l=0; l<halo_num; l++) {
@@ -268,7 +263,8 @@ int main(int argc, char *argv[]) {
                                                 : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
         				double part_z = zz < 0.5 ? (0.75-zz*zz)
                                                 : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
-
+                                                
+                        delta_h[row_major(iX+x, iY+y, iZ+z, N)] += W/grid_cell_vol * (part_x*part_y*part_z);
                         box_px[row_major(iX+x, iY+y, iZ+z, N)] += V_X*W/grid_cell_vol * (part_x*part_y*part_z);
                         box_py[row_major(iX+x, iY+y, iZ+z, N)] += V_Y*W/grid_cell_vol * (part_x*part_y*part_z);
                         box_pz[row_major(iX+x, iY+y, iZ+z, N)] += V_Z*W/grid_cell_vol * (part_x*part_y*part_z);
@@ -280,6 +276,10 @@ int main(int argc, char *argv[]) {
         /* Average weight */
         double avg_density = total_weight / (boxlen*boxlen*boxlen);
         
+        /* Convert to halo number overdensity: delta_h */
+        for (int i=0; i<N*N*N; i++) {
+             delta_h[i] = (delta_h[i] - avg_density) / avg_density;
+        }
         /* Convert to halo momentum number density: (1+delta_h) v_h */
         for (int i=0; i<N*N*N; i++) {
              box_px[i] = box_px[i] / avg_density;
@@ -335,9 +335,71 @@ int main(int argc, char *argv[]) {
             free(vm_i);
         }
         
+        /* Free the halo momentum boxes */
         free(box_px);
         free(box_py);
         free(box_pz);
+        
+        /* Compute the global S power spectrum */
+        for (int dim = 0; dim < 3; dim++) {
+            /* Allocate 3D real arrays */
+            double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+
+            /* Copy the correct data */
+            memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+
+            /* Allocate 3D complex arrays */
+            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+
+            /* Create FFT plans */
+            fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
+            fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
+            fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
+
+            /* Execute FFT and normalize */
+            fft_execute(r2c_1);
+            fft_normalize_r2c(f_vm_i, N, boxlen);
+            fftw_destroy_plan(r2c_1);
+
+            /* Copy over the data into the second complex array */
+            memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+
+            /* Execute reverse FFT and normalize */
+            fft_execute(c2r_1);
+            fft_normalize_c2r(vm_i, N, boxlen);
+            fftw_destroy_plan(c2r_1);
+
+            /* Multiply by the halo overdensity */
+            for (int j=0; j<N*N*N; j++) {
+                vm_i[j] *= delta_h[j];
+            }
+
+            /* Execute FFT and normalize */
+            fft_execute(r2c_2);
+            fft_normalize_r2c(f_dhvm_i, N, boxlen);
+            fftw_destroy_plan(r2c_2);
+
+            /* Allocate power spectrum arrays */
+            double *k_in_bins = malloc(bins * sizeof(double));
+            double *power_in_bins_1 = malloc(bins * sizeof(double));
+            double *power_in_bins_2 = malloc(bins * sizeof(double));
+            int *obs_in_bins = calloc(bins, sizeof(int));
+
+            /* Compute power spectra */
+            calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
+            calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
+
+            /* Add the data */
+            for (int i=0; i<bins; i++) {
+                double Pk = power_in_bins_1[i] + power_in_bins_2[i];
+                reconstructed_Pks[ITER * bins + i] += Pk;
+            }
+        }
+        
+        /* Free the halo overdensity grid */
+        free(delta_h);
+        
     }
         
     /* Print the bootstrapped power spectrum */
@@ -349,6 +411,14 @@ int main(int argc, char *argv[]) {
         }
         printf("\n");
     }
+    
+    /* Allocate arrays for mean and variance of the power spectra */
+    double *bootstrap_Pk_mean = calloc(bins, sizeof(double));
+    double *bootstrap_Pk_var = calloc(bins, sizeof(double));
+    double *reconstructed_Pk_mean = calloc(bins, sizeof(double));
+    double *reconstructed_Pk_var = calloc(bins, sizeof(double));
+    double *bias_mean = calloc(bins, sizeof(double));
+    double *bias_var = calloc(bins, sizeof(double));
     
     /* Compute the mean bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {    
@@ -365,7 +435,40 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    /* Free the bootstrapped power spectrum */
+    /* Compute the mean reconstructed power spectrum */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            reconstructed_Pk_mean[i] += reconstructed_Pks[j * bins + i] / num_samples;
+        }
+    }
+    
+    /* Compute the variance of the bootstrapped power spectrum */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            double dPk = (reconstructed_Pks[j * bins + i] - reconstructed_Pk_mean[i]);
+            reconstructed_Pk_var[i] += (dPk * dPk) / (num_samples - 1.0);
+        }
+    }
+    
+    /* Compute the mean bias */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            double b = bootstrap_Pks[j * bins + i] / reconstructed_Pks[j * bins + i];
+            bias_mean[i] += b / num_samples;
+        }
+    }
+    
+    /* Compute the variance of the bias */
+    for (int i=0; i<bins; i++) {    
+        for (int j=0; j<num_samples; j++) {
+            double b = bootstrap_Pks[j * bins + i] / reconstructed_Pks[j * bins + i];
+            double db = b - bias_mean[i];
+            bias_var[i] += (db * db) / (num_samples - 1.0);
+        }
+    }
+    
+    /* Free the full power spectrum arrays */
+    free(reconstructed_Pks);
     free(bootstrap_Pks);
     
     printf("\n\n");
@@ -374,161 +477,28 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<bins; i++) {
         printf("%e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i]);
     }
-    
         
-    /* Allocate a grid for the halo overdensity */
-    double *delta_h = calloc(N*N*N, sizeof(double));
+    printf("\n\n");
     
-    
-    /* Loop over the halos one more time for the halo number overdensity */
-    double total_mass = 0;
-    double total_weight = 0;
-    double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
-
-    /* Assign the halos to the grid with CIC */
-    for (int l=0; l<halo_num; l++) {
-        double X = halo_x[l] / (boxlen/N) * (1.0 + redshift);
-        double Y = halo_y[l] / (boxlen/N) * (1.0 + redshift);
-        double Z = halo_z[l] / (boxlen/N) * (1.0 + redshift);
-        double M = halo_M[l];
-
-        double W; //weight used in the CIC assignment
-        if (M > M_min && M < M_max) {
-            W = 1.0;
-        } else {
-            W = 0.0;
-        }
-
-        if (W == 0)
-        continue;
-
-        total_mass += M;
-        total_weight += W;
-
-        int iX = (int) floor(X);
-        int iY = (int) floor(Y);
-        int iZ = (int) floor(Z);
-
-        double shift = 0;
+    /* Print the mean and error of the reconstructed power spectrum */
+    for (int i=0; i<bins; i++) {
+        printf("%e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], reconstructed_Pk_var[i]);
+    }
         
-        //The search window with respect to the top-left-upper corner
-        int lookLftX = (int) floor((X-iX) - 1.5 + shift);
-        int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
-        int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
-        int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
-        int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
-        int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
-
-        //Do the mass assignment
-        for (int x=lookLftX; x<=lookRgtX; x++) {
-            for (int y=lookLftY; y<=lookRgtY; y++) {
-                for (int z=lookLftZ; z<=lookRgtZ; z++) {
-                    double xx = fabs(X - (iX+x+shift));
-                    double yy = fabs(Y - (iY+y+shift));
-                    double zz = fabs(Z - (iZ+z+shift));
-
-                    double part_x = xx < 0.5 ? (0.75-xx*xx)
-                                            : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
-                    double part_y = yy < 0.5 ? (0.75-yy*yy)
-                                            : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
-                    double part_z = zz < 0.5 ? (0.75-zz*zz)
-                                            : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
-
-                    delta_h[row_major(iX+x, iY+y, iZ+z, N)] += W/grid_cell_vol * (part_x*part_y*part_z);
-                }
-            }
-        }
-    }
-    
-    /* Average weight */
-    double avg_density = total_weight / (boxlen*boxlen*boxlen);
-
-    printf("Average density = %g\n", avg_density);
-    
-    /* Convert to halo number overdensity: delta_h */
-    for (int i=0; i<N*N*N; i++) {
-         delta_h[i] = (delta_h[i] - avg_density) / avg_density;
-    }
-    
-    /* Free memory for the halo stats */
-    free(halo_M);
-    free(halo_x);
-    free(halo_y);
-    free(halo_z);
-    free(halo_vx);
-    free(halo_vy);
-    free(halo_vz);
-    
-    /* Done with MPI parallelization */
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
-
-    /* Compute the global S power spectrum */
-    double *global_reconstructed_Pks = calloc(bins, sizeof(double));
-    for (int dim = 0; dim < 3; dim++) {
-        /* Allocate 3D real arrays */
-        double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
-
-        /* Copy the correct data */
-        memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
-
-        /* Allocate 3D complex arrays */
-        fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-        fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-
-        /* Create FFT plans */
-        fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
-        fftw_plan c2r_1 = fftw_plan_dft_c2r_3d(N, N, N, f_dhvm_i, vm_i, FFTW_ESTIMATE);
-        fftw_plan r2c_2 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_dhvm_i, FFTW_ESTIMATE);
-
-        /* Execute FFT and normalize */
-        fft_execute(r2c_1);
-        fft_normalize_r2c(f_vm_i, N, boxlen);
-        fftw_destroy_plan(r2c_1);
-
-        /* Copy over the data into the second complex array */
-        memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
-
-        /* Execute reverse FFT and normalize */
-        fft_execute(c2r_1);
-        fft_normalize_c2r(vm_i, N, boxlen);
-        fftw_destroy_plan(c2r_1);
-
-        /* Multiply by the halo overdensity */
-        for (int j=0; j<N*N*N; j++) {
-            vm_i[j] *= delta_h[j];
-        }
-
-        /* Execute FFT and normalize */
-        fft_execute(r2c_2);
-        fft_normalize_r2c(f_dhvm_i, N, boxlen);
-        fftw_destroy_plan(r2c_2);
-
-        /* Allocate power spectrum arrays */
-        double *k_in_bins = malloc(bins * sizeof(double));
-        double *power_in_bins_1 = malloc(bins * sizeof(double));
-        double *power_in_bins_2 = malloc(bins * sizeof(double));
-        int *obs_in_bins = calloc(bins, sizeof(int));
-
-        /* Compute power spectra */
-        calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins_1, obs_in_bins);
-        calc_cross_powerspec(N, boxlen, f_dhvm_i, f_vm_i, bins, k_in_bins, power_in_bins_2, obs_in_bins);
-
-        /* Add the data */
-        for (int i=0; i<bins; i++) {
-            double Pk = power_in_bins_1[i] + power_in_bins_2[i];
-            global_reconstructed_Pks[i] += Pk;
-        }
-    }
-    
     printf("\n\n");
     
     /* Print the mean and error of the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
-        printf("%e %e %e %e %f\n", bootstrap_ks[i], global_reconstructed_Pks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i], bootstrap_Pk_mean[i]/global_reconstructed_Pks[i]);
+        printf("%e %e %e %e %e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i], reconstructed_Pk_var[i], bias_mean[i], bias_var[i]);
     }
     
-    free(global_reconstructed_Pks);
+    /* Free remaining arrays */
+    free(bootstrap_Pk_mean);
+    free(bootstrap_Pk_var);
+    free(reconstructed_Pk_mean);
+    free(reconstructed_Pk_var);
+    free(bias_mean);
+    free(bias_var);
     free(bootstrap_ks);
 
     /* Clean up */
