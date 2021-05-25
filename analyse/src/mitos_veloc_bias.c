@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
         /* Read the grid */
         readFieldFile(&grids_m[i], &read_N, &read_boxlen, read_fname);
         
-        if (read_N != N || read_boxlen !=boxlen) {
+        if (read_N != N || fabs(read_boxlen - boxlen)/boxlen > 1e-5) {
             printf("Error: input dimensions (N,boxlen) do not match parameter.\n");
             exit(1);
         }
