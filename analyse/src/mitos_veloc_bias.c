@@ -189,6 +189,7 @@ int main(int argc, char *argv[]) {
     int num_samples = 8;
     double *bootstrap_ks = calloc(bins, sizeof(double));
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
+    double *bootstrap_obs = calloc(bins, sizeof(double));
     double *reconstructed_Pks = calloc(bins * num_samples, sizeof(double));
     double mean_total_weight = 0;
     double mean_total_mass = 0;
@@ -335,6 +336,7 @@ int main(int argc, char *argv[]) {
             /* Add the data (note that we add x + y + z) */
             for (int i=0; i<bins; i++) {
                 bootstrap_ks[i] = k_in_bins[i]; //the same everytime
+                bootstrap_obs[i] = obs_in_bins[i]; //the same everytime
                 bootstrap_Pks[ITER * bins + i] += power_in_bins[i];
             }
 
@@ -424,8 +426,9 @@ int main(int argc, char *argv[]) {
         
     /* Print the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
-        printf("%e ", bootstrap_ks[i]);
-            
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
+        
+        printf("%e ", bootstrap_ks[i]);    
         for (int j=0; j<num_samples; j++) {
             printf("%e ", bootstrap_Pks[j * bins + i]);
         }
@@ -442,6 +445,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the mean bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             bootstrap_Pk_mean[i] += bootstrap_Pks[j * bins + i] / num_samples;
         }
@@ -449,6 +453,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the variance of the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             double dPk = (bootstrap_Pks[j * bins + i] - bootstrap_Pk_mean[i]);
             bootstrap_Pk_var[i] += (dPk * dPk) / (num_samples - 1.0);
@@ -457,6 +462,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the mean reconstructed power spectrum */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             reconstructed_Pk_mean[i] += reconstructed_Pks[j * bins + i] / num_samples;
         }
@@ -464,6 +470,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the variance of the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             double dPk = (reconstructed_Pks[j * bins + i] - reconstructed_Pk_mean[i]);
             reconstructed_Pk_var[i] += (dPk * dPk) / (num_samples - 1.0);
@@ -472,6 +479,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the mean bias */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             double b = bootstrap_Pks[j * bins + i] / reconstructed_Pks[j * bins + i];
             bias_mean[i] += b / num_samples;
@@ -480,6 +488,7 @@ int main(int argc, char *argv[]) {
     
     /* Compute the variance of the bias */
     for (int i=0; i<bins; i++) {    
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             double b = bootstrap_Pks[j * bins + i] / reconstructed_Pks[j * bins + i];
             double db = b - bias_mean[i];
@@ -495,6 +504,7 @@ int main(int argc, char *argv[]) {
     
     /* Print the mean and error of the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         printf("%e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i]);
     }
         
@@ -502,6 +512,7 @@ int main(int argc, char *argv[]) {
     
     /* Print the mean and error of the reconstructed power spectrum */
     for (int i=0; i<bins; i++) {
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         printf("%e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], reconstructed_Pk_var[i]);
     }
         
@@ -509,6 +520,7 @@ int main(int argc, char *argv[]) {
     
     /* Print the mean and error of the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         printf("%e %e %e %e %e %e %e\n", bootstrap_ks[i], reconstructed_Pk_mean[i], bootstrap_Pk_mean[i], bootstrap_Pk_var[i], reconstructed_Pk_var[i], bias_mean[i], bias_var[i]);
     }
     
