@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<bins; i++) {
         printf("%e", bootstrap_ks[i]);
             
-        for (int j=0; i<num_samples; j++) {
+        for (int j=0; j<num_samples; j++) {
             printf("%e ", bootstrap_Pks[j * bins + i]);
         }
         printf("\n");
