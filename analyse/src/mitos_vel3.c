@@ -370,9 +370,9 @@ int main(int argc, char *argv[]) {
                     int id = row_major(x, y, z, N);
                     box_dens[id] = (box_dens[id] - avg_density)/avg_density;
 
-                    box_vx[id] = box_vx[id] / avg_density / (1+w);
-                    box_vy[id] = box_vy[id] / avg_density / (1+w);
-                    box_vz[id] = box_vz[id] / avg_density / (1+w);
+                    box_vx[id] = box_vx[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
+                    box_vy[id] = box_vy[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
+                    box_vz[id] = box_vz[id] / avg_density / (1. + w) / (1.0 + box_dens[id]);
                 }
             }
         }
@@ -421,55 +421,46 @@ int main(int argc, char *argv[]) {
     if (rank == 0) {
 
         printf("\n");
-    }
 
-    printf("Doing ffts\n");
+        printf("Doing ffts\n");
 
-    /* Transform to momentum space */
-    fftw_complex *fbox_x = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_plan r2c_x = fftw_plan_dft_r2c_3d(N, N, N, box_vx, fbox_x, FFTW_ESTIMATE);
-    fft_execute(r2c_x);
-    fft_normalize_r2c(fbox_x,N,boxlen[0]);
+        /* Transform to momentum space */
+        fftw_complex *fbox_x = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c_x = fftw_plan_dft_r2c_3d(N, N, N, box_vx, fbox_x, FFTW_ESTIMATE);
+        fft_execute(r2c_x);
+        fft_normalize_r2c(fbox_x,N,boxlen[0]);
 
-    fftw_complex *fbox_y = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_plan r2c_y = fftw_plan_dft_r2c_3d(N, N, N, box_vy, fbox_y, FFTW_ESTIMATE);
-    fft_execute(r2c_y);
-    fft_normalize_r2c(fbox_y,N,boxlen[0]);
+        fftw_complex *fbox_y = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c_y = fftw_plan_dft_r2c_3d(N, N, N, box_vy, fbox_y, FFTW_ESTIMATE);
+        fft_execute(r2c_y);
+        fft_normalize_r2c(fbox_y,N,boxlen[0]);
 
-    fftw_complex *fbox_z = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_plan r2c_z = fftw_plan_dft_r2c_3d(N, N, N, box_vz, fbox_z, FFTW_ESTIMATE);
-    fft_execute(r2c_z);
-    fft_normalize_r2c(fbox_z,N,boxlen[0]);
+        fftw_complex *fbox_z = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c_z = fftw_plan_dft_r2c_3d(N, N, N, box_vz, fbox_z, FFTW_ESTIMATE);
+        fft_execute(r2c_z);
+        fft_normalize_r2c(fbox_z,N,boxlen[0]);
 
-    //printf("Undoing window function\n");
+        //printf("Undoing window function\n");
 
-    /* Undo the TSC window function */
-    //undoTSCWindow(fbox_x, N, boxlen[0]);
-    //undoTSCWindow(fbox_y, N, boxlen[0]);
-    //undoTSCWindow(fbox_z, N, boxlen[0]);
+        /* Undo the TSC window function */
+        //undoTSCWindow(fbox_x, N, boxlen[0]);
+        //undoTSCWindow(fbox_y, N, boxlen[0]);
+        //undoTSCWindow(fbox_z, N, boxlen[0]);
 
-    printf("Computing derivatives\n");
+        printf("Computing derivatives\n");
 
-    fft_apply_kernel(fbox_x, fbox_x, N, boxlen[0], kernel_dx, NULL);
-    fft_apply_kernel(fbox_y, fbox_y, N, boxlen[0], kernel_dy, NULL);
-    fft_apply_kernel(fbox_z, fbox_z, N, boxlen[0], kernel_dz, NULL);
+        fft_apply_kernel(fbox_x, fbox_x, N, boxlen[0], kernel_dx, NULL);
+        fft_apply_kernel(fbox_y, fbox_y, N, boxlen[0], kernel_dy, NULL);
+        fft_apply_kernel(fbox_z, fbox_z, N, boxlen[0], kernel_dz, NULL);
 
-    printf("Computing power spectrum of theta\n");
+        printf("Computing power spectrum of theta\n");
 
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
 
-    for (int k=0; k<N*N*(N/2+1); k++) {
-      fbox[k][0] = fbox_x[k][0] + fbox_y[k][0] + fbox_z[k][0];
-      fbox[k][1] = fbox_x[k][1] + fbox_y[k][1] + fbox_z[k][1];
-    }
-
-
-
-    //
-    //
-    // if (strcmp(tp.Identifier, "ncdm") == 0) {
-    //     /* Calculate the cross spectrum */
-    //     printf("Doing the (c,nu) cross spectrum.\n");
+        for (int k=0; k<N*N*(N/2+1); k++) {
+          fbox[k][0] = fbox_x[k][0] + fbox_y[k][0] + fbox_z[k][0];
+          fbox[k][1] = fbox_x[k][1] + fbox_y[k][1] + fbox_z[k][1];
+        }
 
         int bins = 50;
         double *k_in_bins = malloc(bins * sizeof(double));
@@ -502,38 +493,34 @@ int main(int argc, char *argv[]) {
 
          printf("\n");
 
-    //     free(k_in_bins);
-    //     free(power_in_bins);
-    //     free(obs_in_bins);
-    // }
+        /* Transform back */
+        double *box = fftw_alloc_real(N * N * N);
+        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+        fft_execute(c2r);
+        fft_normalize_c2r(box,N,boxlen[0]);
 
 
-    /* Transform back */
-    double *box = fftw_alloc_real(N * N * N);
-    fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
-    fft_execute(c2r);
-    fft_normalize_c2r(box,N,boxlen[0]);
-
-
-    // /* Transform back */
-    // fft_execute(c2r);
-	// fft_normalize_c2r(box,N,boxlen[0]);
-    //
-    /* Export the density box for testing purposes */
-    char box_fname[40];
-    sprintf(box_fname, "theta_%s.hdf5", "ncdm");
-    writeFieldFile(box, N, boxlen[0], box_fname);
-    printf("Flux density grid exported to %s.\n", box_fname);
-
-    fftw_free(box);
+        // /* Transform back */
+        // fft_execute(c2r);
+    	// fft_normalize_c2r(box,N,boxlen[0]);
+        //
+        /* Export the density box for testing purposes */
+        char box_fname[40];
+        sprintf(box_fname, "theta_%s.hdf5", "ncdm");
+        writeFieldFile(box, N, boxlen[0], box_fname);
+        printf("Flux density grid exported to %s.\n", box_fname);
+        
+        free(fbox_x);
+        free(fbox_y);
+        free(fbox_z);
+        free(fbox);
+        fftw_free(box);
+    }
+    
     fftw_free(box_vx);
     fftw_free(box_vy);
     fftw_free(box_vz);
     fftw_free(box_dens);
-    free(fbox_x);
-    free(fbox_y);
-    free(fbox_z);
-    free(fbox);
     // free(rho_interlaced_box);
     // fftw_free(fbox);
     // }
