@@ -326,19 +326,6 @@ int main(int argc, char *argv[]) {
         free(box_py);
         free(box_pz);
     }
-    
-    /* Free memory for the halo stats */
-    free(halo_M);
-    free(halo_x);
-    free(halo_y);
-    free(halo_z);
-    free(halo_vx);
-    free(halo_vy);
-    free(halo_vz);
-    
-    /* Done with MPI parallelization */
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
         
     /* Print the bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {
@@ -453,6 +440,19 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<N*N*N; i++) {
          delta_h[i] = delta_h[i] / avg_density;
     }
+    
+    /* Free memory for the halo stats */
+    free(halo_M);
+    free(halo_x);
+    free(halo_y);
+    free(halo_z);
+    free(halo_vx);
+    free(halo_vy);
+    free(halo_vz);
+    
+    /* Done with MPI parallelization */
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
 
     /* Compute the S_alpha power spectrum in each bin */
     for (int bin = 0; bin < 1; bin++) {
