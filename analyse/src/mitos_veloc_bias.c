@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
         
     /* Allocate power spectrum arrays for the bootstrap errors */
     int bins = pars.PowerSpectrumBins;
-    int num_samples = 2;
+    int num_samples = 8;
     double *bootstrap_ks = calloc(bins, sizeof(double));
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
     double *reconstructed_Pks = calloc(bins * num_samples, sizeof(double));
