@@ -61,6 +61,8 @@ int main(int argc, char *argv[]) {
     struct units us;
     struct particle_type *types = NULL;
     struct cosmology cosmo;
+    struct perturb_data ptdat;
+    struct perturb_spline spline;
 
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
@@ -68,6 +70,32 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
+    /* Read the perturbation data file */
+    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
+
+    /* Initialize the interpolation spline for the perturbation data */
+    initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
+
+    /* Determine the starting conformal time */
+    cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+
+    /* Find the interpolation index along the time dimension */
+    double log_tau = cosmo.log_tau_ini; //log of conformal time
+    int tau_index; //greatest lower bound bin index
+    double u_tau; //spacing between subsequent bins
+    perturbSplineFindTau(&spline, log_tau, &tau_index, &u_tau);
+
+    /* Fetch the cdm & ncdm transfer function indices */
+    int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
+    int index_ncdm = findTitle(ptdat.titles, "d_ncdm[0]", ptdat.n_functions);
+
+    /* Package the spline parameters */
+    struct spline_params sp_cdm = {&spline, index_cdm, tau_index, u_tau};
+    struct spline_params sp_ncdm = {&spline, index_ncdm, tau_index, u_tau};
+
+    printheader("Settings");
+    printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+    printf("\n");
 
     /* Open the Halos file */
     message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
@@ -142,7 +170,7 @@ int main(int argc, char *argv[]) {
     const double boxlen = pars.BoxLen;
     
     /* Hard coded unit conversions from velociraptor (todo...) */
-    const double redshift = 0.0;
+    const double redshift = cosmo.z_ini;
     const double vel_conversion_factor = 9.7846194238e2; // km/s to Mpc/Gyr
     
     printf("\n");
@@ -325,6 +353,11 @@ int main(int argc, char *argv[]) {
             fftw_destroy_plan(r2c_h);
             fftw_destroy_plan(r2c_m);
             
+            /* Apply the ncdm transfer function to the matter field */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_ncdm);
+            /* And undo the matter transfer function */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_cdm);
+            
             /* Allocate power spectrum arrays */
             double *k_in_bins = malloc(bins * sizeof(double));
             double *power_in_bins = malloc(bins * sizeof(double));
@@ -376,6 +409,11 @@ int main(int argc, char *argv[]) {
 
             /* Copy over the data into the second complex array */
             memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+            
+            /* Apply the ncdm transfer function to the matter field */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_ncdm);
+            /* And undo the matter transfer function */
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_cdm);
 
             /* Execute reverse FFT and normalize */
             fft_execute(c2r_1);
