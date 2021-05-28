@@ -191,6 +191,8 @@ int main(int argc, char *argv[]) {
     double *bootstrap_Pks = calloc(bins * num_samples, sizeof(double));
     double *bootstrap_obs = calloc(bins, sizeof(double));
     double *reconstructed_Pks = calloc(bins * num_samples, sizeof(double));
+    double *matter_self_Pks = calloc(bins * num_samples, sizeof(double));
+    double *halo_self_Pks = calloc(bins * num_samples, sizeof(double));
     double mean_total_weight = 0;
     double mean_total_mass = 0;
     
@@ -339,6 +341,22 @@ int main(int argc, char *argv[]) {
                 bootstrap_obs[i] = obs_in_bins[i]; //the same everytime
                 bootstrap_Pks[ITER * bins + i] += power_in_bins[i];
             }
+            
+            /* Calculate the halo autopower spectrum */
+            calc_cross_powerspec(N, boxlen, f_ph_i, f_ph_i, bins, k_in_bins, power_in_bins, obs_in_bins);
+            
+            /* Add the data (note that we add x + y + z) */
+            for (int i=0; i<bins; i++) {
+                halo_self_Pks[ITER * bins + i] += power_in_bins[i];
+            }
+            
+            /* Calculate the matter autopower spectrum */
+            calc_cross_powerspec(N, boxlen, f_vm_i, f_vm_i, bins, k_in_bins, power_in_bins, obs_in_bins);
+            
+            /* Add the data (note that we add x + y + z) */
+            for (int i=0; i<bins; i++) {
+                matter_self_Pks[ITER * bins + i] += power_in_bins[i];
+            }
 
             /* Clean up the grids */
             free(f_ph_i);
@@ -346,12 +364,7 @@ int main(int argc, char *argv[]) {
             free(ph_i);
             free(vm_i);
         }
-        
-        /* Free the halo momentum boxes */
-        free(box_px);
-        free(box_py);
-        free(box_pz);
-        
+                
         /* Compute the global S power spectrum */
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
@@ -417,6 +430,10 @@ int main(int argc, char *argv[]) {
         /* Free the halo overdensity grid */
         free(delta_h);
         
+        /* Free the halo momentum boxes */
+        free(box_px);
+        free(box_py);
+        free(box_pz);
     }
     
     printf("\n");
@@ -430,12 +447,19 @@ int main(int argc, char *argv[]) {
     double *reconstructed_Pk_var = calloc(bins, sizeof(double));
     double *bias_mean = calloc(bins, sizeof(double));
     double *bias_var = calloc(bins, sizeof(double));
+    double *halo_self_Pk_mean = calloc(bins, sizeof(double));
+    double *matter_self_Pk_mean = calloc(bins, sizeof(double));
+    double *correlation_mean = calloc(bins, sizeof(double));
+    double *correlation_var = calloc(bins, sizeof(double));
     
     /* Compute the mean bootstrapped power spectrum */
     for (int i=0; i<bins; i++) {    
         if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
         for (int j=0; j<num_samples; j++) {
             bootstrap_Pk_mean[i] += bootstrap_Pks[j * bins + i] / num_samples;
+            halo_self_Pk_mean[i] += halo_self_Pks[j * bins + i] / num_samples;
+            matter_self_Pk_mean[i] += matter_self_Pks[j * bins + i] / num_samples;
+            correlation_mean[i] += bootstrap_Pks[j * bins + i] / sqrt(halo_self_Pks[j * bins + i] * matter_self_Pks[j * bins + i]) / num_samples;
         }
     }
     
@@ -445,6 +469,8 @@ int main(int argc, char *argv[]) {
         for (int j=0; j<num_samples; j++) {
             double dPk = (bootstrap_Pks[j * bins + i] - bootstrap_Pk_mean[i]);
             bootstrap_Pk_var[i] += (dPk * dPk) / (num_samples - 1.0);
+            double dr = bootstrap_Pks[j * bins + i] / sqrt(halo_self_Pks[j * bins + i] * matter_self_Pks[j * bins + i]) - correlation_mean[i];
+            correlation_var[i] += (dr * dr) / (num_samples - 1.0);
         }
     }
     
@@ -487,6 +513,17 @@ int main(int argc, char *argv[]) {
     /* Free the full power spectrum arrays */
     free(reconstructed_Pks);
     free(bootstrap_Pks);
+    free(halo_self_Pks);
+    free(matter_self_Pks);
+    
+    /* Print the mean of the bootstrapped and self power spectra and the cross-correlation coefficient */
+    printf("\n");
+    printf("k Pk_cross_mean Pk_halo_mean Pk_matter_mean correlation_mean correlation_var\n");
+    for (int i=0; i<bins; i++) {
+        if (bootstrap_obs[i] <= 1) continue; //skip (nearly) empty bins
+        printf("%e %e %e %e %e %e\n", bootstrap_ks[i], bootstrap_Pk_mean[i], halo_self_Pk_mean[i], matter_self_Pk_mean[i], correlation_mean[i], correlation_var[i]);
+    }
+    printf("\n");
     
     /* Print the mean and error of the bootstrapped power spectrum */
     printf("\n");
@@ -502,10 +539,14 @@ int main(int argc, char *argv[]) {
     free(bootstrap_Pk_var);
     free(reconstructed_Pk_mean);
     free(reconstructed_Pk_var);
+    free(halo_self_Pk_mean);
+    free(matter_self_Pk_mean);
     free(bias_mean);
     free(bias_var);
     free(bootstrap_ks);
     free(bootstrap_obs);
+    free(correlation_mean);
+    free(correlation_var);
 
     /* Clean up */
     cleanTypes(&pars, &types);
