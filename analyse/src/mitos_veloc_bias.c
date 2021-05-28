@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
         
         /* Filename of velocity input grid */
         char read_fname[50];
-        sprintf(read_fname, "velocity_cdm_%c.hdf5", letters[i]);
+        sprintf(read_fname, "%s_%c.hdf5", pars.InputFilename2, letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
         /* Read the grid */
