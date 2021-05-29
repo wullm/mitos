@@ -85,6 +85,55 @@ int main(int argc, char *argv[]) {
     double u_tau; //spacing between subsequent bins
     perturbSplineFindTau(&spline, log_tau, &tau_index, &u_tau);
     
+    /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
+    if (pars.MergeDarkMatterBaryons) {
+        header(rank, "Merging cdm & baryon transfer functions, replacing cdm.");
+
+        /* The indices of the density transfer functions */
+        int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
+        int index_b = findTitle(ptdat.titles, "d_b", ptdat.n_functions);
+
+        /* Find the present-day background densities */
+        int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+        double Omega_cdm = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
+        double Omega_b = ptdat.Omega[ptdat.tau_size * index_b + today_index];
+
+        /* Use the present-day densities as weights */
+        double weight_cdm = Omega_cdm / (Omega_cdm + Omega_b);
+        double weight_b = Omega_b / (Omega_cdm + Omega_b);
+
+        message(rank, "Using weights [w_cdm, w_b] = [%f, %f]\n", weight_cdm, weight_b);
+
+        /* Merge the density & velocity transfer runctions, replacing cdm */
+        mergeTransferFunctions(&ptdat, "d_cdm", "d_b", weight_cdm, weight_b);
+        mergeTransferFunctions(&ptdat, "t_cdm", "t_b", weight_cdm, weight_b);
+        /* Merge the background densities, replacing cdm */
+        mergeBackgroundDensities(&ptdat, "d_cdm", "d_b", 1.0, 1.0); //replace with sum
+    }
+    
+    header(rank, "Merging cb & neutrino transfer functions, replacing cdm.");
+
+    /* The indices of the density transfer functions */
+    int index_cb = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
+    int index_ncdm = findTitle(ptdat.titles, "d_ncdm[0]", ptdat.n_functions);
+
+    /* Find the present-day background densities */
+    int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+    double Omega_cb = ptdat.Omega[ptdat.tau_size * index_cb + today_index];
+    double Omega_ncdm = ptdat.Omega[ptdat.tau_size * index_ncdm + today_index];
+
+    /* Use the present-day densities as weights */
+    double weight_cb = Omega_cb / (Omega_cb + Omega_ncdm);
+    double weight_ncdm = Omega_ncdm / (Omega_cb + Omega_ncdm);
+
+    message(rank, "Using weights [w_cb, w_ncdm] = [%f, %f]\n", weight_cb, weight_ncdm);
+
+    /* Merge the density & velocity transfer runctions, replacing cdm */
+    mergeTransferFunctions(&ptdat, "d_cdm", "d_ncdm[0]", weight_cb, weight_ncdm);
+    mergeTransferFunctions(&ptdat, "t_cdm", "t_ncdm[0]", weight_cb, weight_ncdm);
+    /* Merge the background densities, replacing cdm */
+    mergeBackgroundDensities(&ptdat, "d_cdm", "d_ncdm[0]", 1.0, 1.0); //replace with sum
+    
     /* What transfer function should we apply? */
     int index_theta = findTitle(ptdat.titles, "t_cdm", ptdat.n_functions);
     int index_delta = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
