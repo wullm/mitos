@@ -61,86 +61,13 @@ int main(int argc, char *argv[]) {
     struct units us;
     struct particle_type *types = NULL;
     struct cosmology cosmo;
-    struct perturb_data ptdat;
-    struct perturb_spline spline;
 
     /* Read parameter file for parameters, units, and cosmological values */
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
-    
-    /* Read the perturbation data file */
-    readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
 
-    /* Initialize the interpolation spline for the perturbation data */
-    initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
-
-    /* Determine the starting conformal time */
-    cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
-    
-    /* Find the interpolation index along the time dimension */
-    double log_tau = cosmo.log_tau_ini; //log of conformal time
-    int tau_index; //greatest lower bound bin index
-    double u_tau; //spacing between subsequent bins
-    perturbSplineFindTau(&spline, log_tau, &tau_index, &u_tau);
-    
-    /* Merge cdm & baryons into one set of transfer functions (replacing cdm) */
-    if (pars.MergeDarkMatterBaryons) {
-        header(rank, "Merging cdm & baryon transfer functions, replacing cdm.");
-
-        /* The indices of the density transfer functions */
-        int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
-        int index_b = findTitle(ptdat.titles, "d_b", ptdat.n_functions);
-
-        /* Find the present-day background densities */
-        int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-        double Omega_cdm = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
-        double Omega_b = ptdat.Omega[ptdat.tau_size * index_b + today_index];
-
-        /* Use the present-day densities as weights */
-        double weight_cdm = Omega_cdm / (Omega_cdm + Omega_b);
-        double weight_b = Omega_b / (Omega_cdm + Omega_b);
-
-        message(rank, "Using weights [w_cdm, w_b] = [%f, %f]\n", weight_cdm, weight_b);
-
-        /* Merge the density & velocity transfer runctions, replacing cdm */
-        mergeTransferFunctions(&ptdat, "d_cdm", "d_b", weight_cdm, weight_b);
-        mergeTransferFunctions(&ptdat, "t_cdm", "t_b", weight_cdm, weight_b);
-        /* Merge the background densities, replacing cdm */
-        mergeBackgroundDensities(&ptdat, "d_cdm", "d_b", 1.0, 1.0); //replace with sum
-    }
-    
-    header(rank, "Merging cb & neutrino transfer functions, replacing cdm.");
-
-    /* The indices of the density transfer functions */
-    int index_cb = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
-    int index_ncdm = findTitle(ptdat.titles, "d_ncdm[0]", ptdat.n_functions);
-
-    /* Find the present-day background densities */
-    int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-    double Omega_cb = ptdat.Omega[ptdat.tau_size * index_cb + today_index];
-    double Omega_ncdm = ptdat.Omega[ptdat.tau_size * index_ncdm + today_index];
-
-    /* Use the present-day densities as weights */
-    double weight_cb = Omega_cb / (Omega_cb + Omega_ncdm);
-    double weight_ncdm = Omega_ncdm / (Omega_cb + Omega_ncdm);
-
-    message(rank, "Using weights [w_cb, w_ncdm] = [%f, %f]\n", weight_cb, weight_ncdm);
-
-    /* Merge the density & velocity transfer runctions, replacing cdm */
-    mergeTransferFunctions(&ptdat, "d_cdm", "d_ncdm[0]", weight_cb, weight_ncdm);
-    mergeTransferFunctions(&ptdat, "t_cdm", "t_ncdm[0]", weight_cb, weight_ncdm);
-    /* Merge the background densities, replacing cdm */
-    mergeBackgroundDensities(&ptdat, "d_cdm", "d_ncdm[0]", 1.0, 1.0); //replace with sum
-    
-    /* What transfer function should we apply? */
-    int index_theta = findTitle(ptdat.titles, "t_cdm", ptdat.n_functions);
-    int index_delta = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
-    
-    /* Package the spline parameters */
-    struct spline_params sp_theta = {&spline, index_theta, tau_index, u_tau};
-    struct spline_params sp_delta = {&spline, index_delta, tau_index, u_tau};
 
     /* Open the Halos file */
     message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
@@ -245,7 +172,7 @@ int main(int argc, char *argv[]) {
         
         /* Filename of velocity input grid */
         char read_fname[50];
-        sprintf(read_fname, "%s.hdf5", pars.InputFilename2, letters[i]);
+        sprintf(read_fname, "%s_%c.hdf5", pars.InputFilename2, letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
         /* Read the grid */
@@ -375,7 +302,6 @@ int main(int argc, char *argv[]) {
         
         /* Compute the empirical power spectrum along each dimension */
         double *grids_h[3] = {box_px, box_py, box_pz};
-        const kernel_func derivatives[] = {kernel_dx, kernel_dy, kernel_dz};
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
             double *ph_i = (double*) fftw_malloc(N*N*N*sizeof(double));
@@ -400,12 +326,6 @@ int main(int argc, char *argv[]) {
             fft_normalize_r2c(f_vm_i, N, boxlen);
             fftw_destroy_plan(r2c_h);
             fftw_destroy_plan(r2c_m);
-            
-            /* Apply the transfer function ratio to the matter field */
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_poisson, NULL);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, derivatives[dim], NULL);
             
             /* Allocate power spectrum arrays */
             double *k_in_bins = malloc(bins * sizeof(double));
@@ -466,12 +386,6 @@ int main(int argc, char *argv[]) {
             fft_execute(r2c_1);
             fft_normalize_r2c(f_vm_i, N, boxlen);
             fftw_destroy_plan(r2c_1);
-            
-            /* Apply the transfer function ratio to the matter field */
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_poisson, NULL);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, derivatives[dim], NULL);
 
             /* Copy over the data into the second complex array */
             memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
@@ -637,11 +551,7 @@ int main(int argc, char *argv[]) {
     /* Clean up */
     cleanTypes(&pars, &types);
     cleanParams(&pars);
-    cleanPerturb(&ptdat);
 
-    /* Release the interpolation splines */
-    cleanPerturbSpline(&spline);
-    
     /* Timer */
     gettimeofday(&stop, NULL);
     long unsigned microsec = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
