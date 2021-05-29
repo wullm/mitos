@@ -86,12 +86,12 @@ int main(int argc, char *argv[]) {
     perturbSplineFindTau(&spline, log_tau, &tau_index, &u_tau);
     
     /* What transfer function should we apply? */
-    int index_ncdm = findTitle(ptdat.titles, "t_ncdm[0]", ptdat.n_functions);
-    int index_cdm = findTitle(ptdat.titles, "t_cdm", ptdat.n_functions);
+    int index_theta = findTitle(ptdat.titles, "t_cdm", ptdat.n_functions);
+    int index_delta = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
     
     /* Package the spline parameters */
-    struct spline_params sp_ncdm = {&spline, index_ncdm, tau_index, u_tau};
-    struct spline_params sp_cdm = {&spline, index_cdm, tau_index, u_tau};
+    struct spline_params sp_theta = {&spline, index_theta, tau_index, u_tau};
+    struct spline_params sp_delta = {&spline, index_delta, tau_index, u_tau};
 
     /* Open the Halos file */
     message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
         
         /* Filename of velocity input grid */
         char read_fname[50];
-        sprintf(read_fname, "%s_%c.hdf5", pars.InputFilename2, letters[i]);
+        sprintf(read_fname, "%s.hdf5", pars.InputFilename2, letters[i]);
         printf("Reading input array '%s'.\n", read_fname);
         
         /* Read the grid */
@@ -352,8 +352,8 @@ int main(int argc, char *argv[]) {
             fftw_destroy_plan(r2c_m);
             
             /* Apply the transfer function ratio to the matter field */
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_ncdm);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_cdm);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
             
             /* Allocate power spectrum arrays */
             double *k_in_bins = malloc(bins * sizeof(double));
@@ -416,8 +416,8 @@ int main(int argc, char *argv[]) {
             fftw_destroy_plan(r2c_1);
             
             /* Apply the transfer function ratio to the matter field */
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_ncdm);
-            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_cdm);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
 
             /* Copy over the data into the second complex array */
             memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
