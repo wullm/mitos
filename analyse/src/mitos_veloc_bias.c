@@ -326,6 +326,7 @@ int main(int argc, char *argv[]) {
         
         /* Compute the empirical power spectrum along each dimension */
         double *grids_h[3] = {box_px, box_py, box_pz};
+        const kernel_func derivatives[] = {kernel_dx, kernel_dy, kernel_dz};
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
             double *ph_i = (double*) fftw_malloc(N*N*N*sizeof(double));
@@ -354,6 +355,8 @@ int main(int argc, char *argv[]) {
             /* Apply the transfer function ratio to the matter field */
             fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
             fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_poisson, NULL);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, derivatives[dim], NULL);
             
             /* Allocate power spectrum arrays */
             double *k_in_bins = malloc(bins * sizeof(double));
@@ -418,6 +421,8 @@ int main(int argc, char *argv[]) {
             /* Apply the transfer function ratio to the matter field */
             fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_transfer_function, &sp_theta);
             fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_transfer_function, &sp_delta);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, kernel_inv_poisson, NULL);
+            fft_apply_kernel(f_vm_i, f_vm_i, N, boxlen, derivatives[dim], NULL);
 
             /* Copy over the data into the second complex array */
             memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
