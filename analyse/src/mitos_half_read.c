@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
 
     /* The indices of the density transfer functions */
     int index = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
+    int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
 
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
@@ -82,9 +83,11 @@ int main(int argc, char *argv[]) {
     printf("\n");
 
     /* Find the present-day background densities */
-    // int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-    // double Omega = ptdat.Omega[ptdat.tau_size * index + today_index];
-    double Omega = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index);
+    int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+    double Omega_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index);
+    double Omega_cdm_z0 = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
+    double Omega_cdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index_cdm);
+    double scaled_Omega = Omega_z / Omega_cdm_z * Omega_cdm_z0;
 
     /* Critical density */
     double H_unit = 0.1022012156719; //100 km/s/Mpc in 1/Gyr
@@ -92,8 +95,8 @@ int main(int argc, char *argv[]) {
     double G_newt = 4.49233855e-05; //Mpc^3/(1e10 M_sol)/Gyr^2 (my Mpc,Gyr,M_sol)
     double rho_crit = 3. * H * H / (8. * M_PI * G_newt);
 
-    message(rank, "Omega = %g\n", Omega);
-    message(rank, "density = %g\n", rho_crit * Omega);
+    message(rank, "Omega = %g\n", scaled_Omega);
+    message(rank, "density = %g\n", rho_crit * scaled_Omega);
 
 
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
@@ -390,7 +393,7 @@ int main(int argc, char *argv[]) {
         message(rank, "Average density %f\n", avg_density);
 
         /* Reset the density */
-        avg_density = Omega * rho_crit;
+        avg_density = scaled_Omega * rho_crit;
         message(rank, "Density reset to %f\n", avg_density);
 
 
