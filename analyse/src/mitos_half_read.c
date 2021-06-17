@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
         printf("No parameter file specified.\n");
         return 0;
     }
-    
+
     /* Seed by the time */
     time_t seconds = time(NULL);
     srand(seconds);
@@ -56,34 +56,45 @@ int main(int argc, char *argv[]) {
     struct cosmology cosmo;
     struct perturb_data ptdat;
     struct perturb_params ptpars;
+    struct perturb_spline spline;
 
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
-    
+
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
     readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
-    
+
+    /* Initialize the interpolation spline for the perturbation data */
+    initPerturbSpline(&spline, DEFAULT_K_ACC_TABLE_SIZE, &ptdat);
+
     /* Retrieve the physical density at z = 0 */
-    
+
     /* The indices of the density transfer functions */
     int index = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
 
+    /* Determine the starting conformal time */
+    cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
+
+    printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+    printf("\n");
+
     /* Find the present-day background densities */
-    int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-    double Omega = ptdat.Omega[ptdat.tau_size * index + today_index];
-    
+    // int today_index = ptdat.tau_size - 1; // today corresponds to the last index
+    // double Omega = ptdat.Omega[ptdat.tau_size * index + today_index];
+    double Omega = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index);
+
     /* Critical density */
     double H_unit = 0.1022012156719; //100 km/s/Mpc in 1/Gyr
     double H = H_unit * ptpars.h;
     double G_newt = 4.49233855e-05; //Mpc^3/(1e10 M_sol)/Gyr^2 (my Mpc,Gyr,M_sol)
     double rho_crit = 3. * H * H / (8. * M_PI * G_newt);
-    
+
     message(rank, "Omega = %g\n", Omega);
     message(rank, "density = %g\n", rho_crit * Omega);
-    
+
 
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
@@ -312,7 +323,7 @@ int main(int argc, char *argv[]) {
     		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
     		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
     		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
-            
+
             int grid = rand() % 2;
 
             //Do the mass assignment
@@ -353,7 +364,7 @@ int main(int argc, char *argv[]) {
     } else {
         MPI_Reduce(box1, box1, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
-    
+
     /* Reduce the second grid */
     if (rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, box2, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -377,12 +388,12 @@ int main(int argc, char *argv[]) {
         double avg_density = total_mass / (boxlen[0]*boxlen[1]*boxlen[2]);
 
         message(rank, "Average density %f\n", avg_density);
-        
+
         /* Reset the density */
         avg_density = Omega * rho_crit;
         message(rank, "Density reset to %f\n", avg_density);
-        
-        
+
+
 
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
@@ -391,7 +402,7 @@ int main(int argc, char *argv[]) {
                     int id = row_major(x, y, z, N);
                     box1[id] = 2. * box1[id] / avg_density;
                     box2[id] = 2. * box2[id] / avg_density;
-                    
+
                     box[id] = 0.5 * (box1[id] + box2[id]);
                 }
             }
@@ -465,7 +476,7 @@ int main(int argc, char *argv[]) {
 
         printf("\n");
     }
-    
+
     fftw_free(box);
     fftw_free(box1);
     fftw_free(box2);
@@ -480,4 +491,7 @@ int main(int argc, char *argv[]) {
     /* Clean up */
     cleanTypes(&pars, &types);
     cleanParams(&pars);
+
+    /* Release the interpolation splines */
+    cleanPerturbSpline(&spline);
 }
