@@ -61,10 +61,27 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
+    /* Option to override the input filename by specifying command line option */
+    if (argc > 2) {
+        const char *input_filename = argv[2];
+        strcpy(pars.HaloInputFilename, input_filename);
+    }
+    message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
+
+    /* Option to disable output writing */
+    int disable_write = 0;
+    if (argc > 3) {
+        disable_write = 1;
+        message(rank, "Not writing output. Only computing power spectrum.\n");
+    }
+
+    /* Be verbose about the use of lossy output filters */
+    if (pars.LossyScaleDigits > 0) {
+        message(rank, "Using lossy output filter (keeping %d decimals).\n",
+                pars.LossyScaleDigits);
+    }
 
     /* Open the Halos file */
-    message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
     hid_t h_halo_file = openFile_MPI(MPI_COMM_WORLD, pars.HaloInputFilename);
 
     /* Open the halo masses dataset */
@@ -239,10 +256,16 @@ int main(int argc, char *argv[]) {
          box_pz[i] = box_pz[i] / avg_density;
     }
 
-    writeFieldFile(box_px, N, boxlen, "momentum_halos_x.hdf5");
-    writeFieldFile(box_py, N, boxlen, "momentum_halos_y.hdf5");
-    writeFieldFile(box_pz, N, boxlen, "momentum_halos_z.hdf5");
-    writeFieldFile(box, N, boxlen, "density_halos.hdf5"); 
+    if (disable_write == 0) {
+        writeFieldFileCompressed(box_px, N, boxlen, "momentum_halos_x.hdf5", pars.LossyScaleDigits);
+        message(rank, "Halo momentum grid exported to %s.\n", "momentum_halos_x.hdf5");
+        writeFieldFileCompressed(box_py, N, boxlen, "momentum_halos_y.hdf5", pars.LossyScaleDigits);
+        message(rank, "Halo momentum grid exported to %s.\n", "momentum_halos_y.hdf5");
+        writeFieldFileCompressed(box_pz, N, boxlen, "momentum_halos_z.hdf5", pars.LossyScaleDigits);
+        message(rank, "Halo momentum grid exported to %s.\n", "momentum_halos_z.hdf5");
+        writeFieldFileCompressed(box, N, boxlen, "density_halos.hdf5", pars.LossyScaleDigits);
+        message(rank, "Halo density grid exported to %s.\n", "density_halos.hdf5");
+    }
 
     message(rank, "Total mass = %e\n", total_mass);
     message(rank, "Total weight = %e\n", total_weight);

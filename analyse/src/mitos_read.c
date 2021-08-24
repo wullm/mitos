@@ -61,8 +61,20 @@ int main(int argc, char *argv[]) {
         const char *input_filename = argv[2];
         strcpy(pars.InputFilename, input_filename);
     }
+    message(rank, "Reading simulation snapshot from: \"%s\".\n", pars.InputFilename);
 
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.InputFilename);
+    /* Option to disable output writing */
+    int disable_write = 0;
+    if (argc > 3) {
+        disable_write = 1;
+        message(rank, "Not writing output. Only computing power spectrum.\n");
+    }
+
+    /* Be verbose about the use of lossy output filters */
+    if (pars.LossyScaleDigits > 0) {
+        message(rank, "Using lossy output filter (keeping %d decimals).\n",
+                pars.LossyScaleDigits);
+    }
 
     /* Open the file */
     // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
@@ -79,6 +91,7 @@ int main(int argc, char *argv[]) {
     assert(h_err >= 0);
 
     boxlen[1] = boxlen[2] = boxlen[0];
+    message(rank, "Reading particle type '%s'.\n", pars.ImportName);
     message(rank, "BoxSize is %g\n", boxlen[0]);
 
     /* Read the numbers of particles of each type */
@@ -121,8 +134,6 @@ int main(int argc, char *argv[]) {
 
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
-    
-    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -152,6 +163,8 @@ int main(int argc, char *argv[]) {
     double total_mass = 0; //for this particle type
 
     int slab_counter = 0;
+
+    message(rank, "\n");
 
     for (int k=rank; k<slabs+1; k+=MPI_Rank_Count) {
         /* All slabs have the same number of particles, except possibly the last */
@@ -347,11 +360,6 @@ int main(int argc, char *argv[]) {
 
         message(rank, "Average density %f\n", avg_density);
 
-        // if (strcmp(tp.Identifier, "ncdm") == 0) {
-        //     avg_density = 0.179075;
-        //     printf("Reset avg_density to %f\n", avg_density);
-        // }
-
         /* Turn the density field into an overdensity field */
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
@@ -375,14 +383,16 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        char box_fname[40];
-        if (!found) {
-            sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
-        } else {
-            sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+        if (disable_write == 0) {
+            char box_fname[40];
+            if (!found) {
+                sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
+            } else {
+                sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+            }
+            writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+            message(rank, "Density grid exported to %s.\n", box_fname);
         }
-        writeFieldFile(box, N, boxlen[0], box_fname);
-        message(rank, "Density grid exported to %s.\n", box_fname);
     }
 
     if (rank == 0) {
@@ -400,11 +410,6 @@ int main(int argc, char *argv[]) {
 
         /* Undo the TSC window function */
         undoTSCWindow(fbox, N, boxlen[0]);
-
-    // if (strcmp(tp.Identifier, "cdm") == 0) {
-    //     fbox_c = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    //     memcpy(fbox_c, fbox, N*N*(N/2+1)*sizeof(fftw_complex));
-    // }
 
         calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
 
@@ -429,57 +434,7 @@ int main(int argc, char *argv[]) {
 
         printf("\n");
     }
-    //
-    //
-    // if (strcmp(tp.Identifier, "ncdm") == 0) {
-    //     /* Calculate the cross spectrum */
-    //     printf("Doing the (c,nu) cross spectrum.\n");
-    //
-    //     /* Reset the bins */
-    //     for (int i=0; i<bins; i++) {
-    //         k_in_bins[i] = 0;
-    //         power_in_bins[i] = 0;
-    //         obs_in_bins[i] = 0;
-    //     }
-    //
-    //     /* Cross spectrum of cdm and ncdm */
-    //     calc_cross_powerspec(N, boxlen[0], fbox_c, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
-    //
-    //     /* Print the results */
-    //     printf("k P_measured(k) observations\n");
-    //     for (int i=0; i<bins; i++) {
-    //         if (obs_in_bins[i] == 0) continue; //skip empty bins
-    //
-    //         /* The power we observe */
-    //         double k = k_in_bins[i];
-    //         double Pk = power_in_bins[i];
-    //         int obs = obs_in_bins[i];
-    //
-    //         printf("%f %e %d\n", k, Pk, obs);
-    //     }
-    //
-    //     printf("\n");
-    //
-    //     free(k_in_bins);
-    //     free(power_in_bins);
-    //     free(obs_in_bins);
-    // }
-
-
-    // /* Transform back */
-    // fft_execute(c2r);
-	// fft_normalize_c2r(box,N,boxlen[0]);
-    //
-    // /* Export the density box for testing purposes */
-    // char box_fname[40];
-    // sprintf(box_fname, "density_%s.hdf5", tp.Identifier);
-    // writeFieldFile(box, N, boxlen[0], box_fname);
-    // printf("Density grid exported to %s.\n", box_fname);
-    //
     fftw_free(box);
-    // free(rho_interlaced_box);
-    // fftw_free(fbox);
-    // }
 
     /* Close the HDF5 file */
     H5Fclose(h_file);

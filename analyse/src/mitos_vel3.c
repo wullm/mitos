@@ -61,8 +61,20 @@ int main(int argc, char *argv[]) {
         const char *input_filename = argv[2];
         strcpy(pars.InputFilename, input_filename);
     }
+    message(rank, "Reading simulation snapshot from: \"%s\".\n", pars.InputFilename);
     
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.InputFilename);
+    /* Option to disable output writing */
+    int disable_write = 0;
+    if (argc > 3) {
+        disable_write = 1;
+        message(rank, "Not writing output. Only computing power spectrum.\n");
+    }
+
+    /* Be verbose about the use of lossy output filters */
+    if (pars.LossyScaleDigits > 0) {
+        message(rank, "Using lossy output filter (keeping %d decimals).\n",
+                pars.LossyScaleDigits);
+    }
 
     /* Open the file */
     // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
@@ -79,6 +91,7 @@ int main(int argc, char *argv[]) {
     assert(h_err >= 0);
 
     boxlen[1] = boxlen[2] = boxlen[0];
+    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
     message(rank, "BoxSize is %g\n", boxlen[0]);
 
     /* Read the numbers of particles of each type */
@@ -131,8 +144,6 @@ int main(int argc, char *argv[]) {
       box_vz[i] = 0;
       box_dens[i] = 0;
     }
-    
-    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -405,32 +416,34 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        char dirs[3] = "xyz";
-	    for (int dir=0; dir<3; dir++) {
+        if (disable_write == 0) {
+            char dirs[3] = "xyz";
+            for (int dir=0; dir<3; dir++) {
+                char box_fname[40];
+                if (!found) {
+                    sprintf(box_fname, "velocity_%s_%c.hdf5", pars.ImportName, dirs[dir]);
+                } else {
+                    sprintf(box_fname, "velocity_%s_%c.hdf5", tp->Identifier, dirs[dir]);
+                }
+                if (dir==0)
+                    writeFieldFileCompressed(box_vx, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+                else if (dir==1)
+                    writeFieldFileCompressed(box_vy, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+                else
+                    writeFieldFileCompressed(box_vz, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+
+                message(rank, "Velocity grid exported to %s.\n", box_fname);
+            }
+
           char box_fname[40];
           if (!found) {
-              sprintf(box_fname, "velocity_%s_%c.hdf5", pars.ImportName, dirs[dir]);
+            sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
           } else {
-              sprintf(box_fname, "velocity_%s_%c.hdf5", tp->Identifier, dirs[dir]);
+            sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
           }
-          if (dir==0)
-          writeFieldFile(box_vx, N, boxlen[0], box_fname);
-          else if (dir==1)
-          writeFieldFile(box_vy, N, boxlen[0], box_fname);
-          else
-          writeFieldFile(box_vz, N, boxlen[0], box_fname);
-
-          message(rank, "Velocity grid exported to %s.\n", box_fname);
-        }
-
-      char box_fname[40];
-      if (!found) {
-        sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
-      } else {
-        sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+          writeFieldFileCompressed(box_dens, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+          message(rank, "Density grid exported to %s.\n", box_fname);
       }
-      writeFieldFile(box_dens, N, boxlen[0], box_fname);
-      message(rank, "Density grid exported to %s.\n", box_fname);
     }
 
     if (rank == 0) {
@@ -514,16 +527,31 @@ int main(int argc, char *argv[]) {
         fft_execute(c2r);
         fft_normalize_c2r(box,N,boxlen[0]);
 
-
-        // /* Transform back */
-        // fft_execute(c2r);
-    	// fft_normalize_c2r(box,N,boxlen[0]);
-        //
         /* Export the density box for testing purposes */
-        char box_fname[40];
-        sprintf(box_fname, "theta_%s.hdf5", "ncdm");
-        writeFieldFile(box, N, boxlen[0], box_fname);
-        printf("Flux density grid exported to %s.\n", box_fname);
+        if (disable_write == 0) {
+            /* Find a particle type with a matching ExportName */
+            struct particle_type *tp;
+            char found = 0;
+            for (int pti = 0; pti < pars.NumParticleTypes; pti++) {
+                struct particle_type *ptype = types + pti;
+                const char *ExportName = ptype->ExportName;
+
+                if (strcmp(ExportName, pars.ImportName) == 0) {
+                    tp = ptype;
+                    found = 1;
+                }
+            }
+
+            char box_fname[40];
+            if (!found) {
+              sprintf(box_fname, "theta_%s.hdf5", pars.ImportName);
+            } else {
+              sprintf(box_fname, "theta_%s.hdf5", tp->Identifier);
+            }
+
+            writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+            printf("Flux density grid exported to %s.\n", box_fname);
+        }
         
         free(fbox_x);
         free(fbox_y);
@@ -536,9 +564,6 @@ int main(int argc, char *argv[]) {
     fftw_free(box_vy);
     fftw_free(box_vz);
     fftw_free(box_dens);
-    // free(rho_interlaced_box);
-    // fftw_free(fbox);
-    // }
 
     /* Close the HDF5 file */
     H5Fclose(h_file);

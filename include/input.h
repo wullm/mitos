@@ -65,6 +65,7 @@ struct params {
     char *OutputDirectory;
     char *OutputFilename;
     char *SwiftParamFilename;
+    int LossyScaleDigits;
 
     /* Input parameters */
     char *InputFilename;

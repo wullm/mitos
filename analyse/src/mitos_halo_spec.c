@@ -61,13 +61,27 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
+    /* Option to override the input filename by specifying command line option */
+    if (argc > 2) {
+        const char *input_filename = argv[2];
+        strcpy(pars.HaloInputFilename, input_filename);
+    }
+    message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
 
-    /* Seed the random number generator */
-    rng_state seed = rand_uint64_init(pars.Seed + rank);
+    /* Option to disable output writing */
+    int disable_write = 0;
+    if (argc > 3) {
+        disable_write = 1;
+        message(rank, "Not writing output. Only computing power spectrum.\n");
+    }
+
+    /* Be verbose about the use of lossy output filters */
+    if (pars.LossyScaleDigits > 0) {
+        message(rank, "Using lossy output filter (keeping %d decimals).\n",
+                pars.LossyScaleDigits);
+    }
 
     /* Open the Halos file */
-    message(rank, "Reading halos from '%s'.\n", pars.HaloInputFilename);
     hid_t h_halo_file = openFile_MPI(MPI_COMM_WORLD, pars.HaloInputFilename);
 
     /* Open the halo masses dataset */
@@ -192,23 +206,12 @@ int main(int argc, char *argv[]) {
         box[i] = (box[i] - avg_weight)/avg_weight;
     }
 
-    char box_fname[40];
-    sprintf(box_fname, "density_halos.hdf5");
-    writeFieldFile(box, N, boxlen, box_fname);
-
-    // /* Reduce the grid */
-    // if (rank == 0) {
-    //     MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    // } else {
-    //     MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    // }
-    //
-    // /* Reduce the total mass */
-    // if (rank == 0) {
-    //     MPI_Reduce(MPI_IN_PLACE, &total_mass, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    // } else {
-    //     MPI_Reduce(&total_mass, &total_mass, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    // }
+    if (disable_write == 0) {
+        char box_fname[40];
+        sprintf(box_fname, "density_halos.hdf5");
+        writeFieldFileCompressed(box, N, boxlen, box_fname, pars.LossyScaleDigits);
+        message(rank, "Halo density grid exported to %s.\n", box_fname);
+    }
 
     message(rank, "Total mass = %e\n", total_mass);
     message(rank, "Total weight = %e\n", total_weight);

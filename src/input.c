@@ -44,6 +44,7 @@ int readParams(struct params *pars, const char *fname) {
      pars->HaloMinMass = ini_getd("Read", "HaloMinMass", 2.75e4, fname);
      pars->HaloMaxMass = ini_getd("Read", "HaloMaxMass", 2.75e5, fname);
      pars->PowerSpectrumBins = ini_getl("Read", "PowerSpectrumBins", 50, fname);
+     pars->LossyScaleDigits = ini_getl("Output", "LossyScaleDigits", 0, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;

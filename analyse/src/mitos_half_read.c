@@ -69,8 +69,20 @@ int main(int argc, char *argv[]) {
         const char *input_filename = argv[2];
         strcpy(pars.InputFilename, input_filename);
     }
-    
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.InputFilename);
+    message(rank, "Reading simulation snapshot from: \"%s\".\n", pars.InputFilename);
+
+    /* Option to disable output writing */
+    int disable_write = 0;
+    if (argc > 3) {
+        disable_write = 1;
+        message(rank, "Not writing output. Only computing power spectrum.\n");
+    }
+
+    /* Be verbose about the use of lossy output filters */
+    if (pars.LossyScaleDigits > 0) {
+        message(rank, "Using lossy output filter (keeping %d decimals).\n",
+                pars.LossyScaleDigits);
+    }
 
     /* Store the MPI rank */
     pars.rank = rank;
@@ -124,6 +136,10 @@ int main(int argc, char *argv[]) {
     H5Aclose(h_attr);
     assert(h_err >= 0);
 
+    /* Always read PartType6, i.e. neutrinos */
+    pars.ImportName = "PartType6";
+    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
+
     boxlen[1] = boxlen[2] = boxlen[0];
     message(rank, "BoxSize is %g\n", boxlen[0]);
 
@@ -170,10 +186,6 @@ int main(int argc, char *argv[]) {
     double *box2 = fftw_alloc_real(N * N * N);
     double *box = fftw_alloc_real(N * N * N); //sum of box1 and box2
 
-    /* Always read PartType6, i.e. neutrinos */
-    pars.ImportName = "PartType6";
-    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
-
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
 
@@ -202,6 +214,8 @@ int main(int argc, char *argv[]) {
     double total_mass = 0; //for this particle type
 
     int slab_counter = 0;
+
+    message(rank, "\n");
 
     for (int k=rank; k<slabs+1; k+=MPI_Rank_Count) {
         /* All slabs have the same number of particles, except possibly the last */
@@ -441,18 +455,20 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        char box_fname[40];
-        if (!found) {
-            sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
-        } else {
-            sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+        if (disable_write == 0) {
+            char box_fname[40];
+            if (!found) {
+                sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
+            } else {
+                sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
+            }
+            writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+            message(rank, "Density grid exported to %s.\n", box_fname);
+            // writeFieldFileCompressed(box1, N, boxlen[0], "half1.hdf5", pars.LossyScaleDigits);
+            // message(rank, "Density grid exported to %s.\n", "half1.hdf5");
+            // writeFieldFileCompressed(box2, N, boxlen[0], "half2.hdf5", pars.LossyScaleDigits);
+            // message(rank, "Density grid exported to %s.\n", "half2.hdf5");
         }
-        writeFieldFile(box, N, boxlen[0], box_fname);
-        message(rank, "Density grid exported to %s.\n", box_fname);
-        // writeFieldFile(box1, N, boxlen[0], "half1.hdf5");
-        // message(rank, "Density grid exported to %s.\n", "half1.hdf5");
-        // writeFieldFile(box2, N, boxlen[0], "half2.hdf5");
-        // message(rank, "Density grid exported to %s.\n", "half2.hdf5");
     }
 
     if (rank == 0) {
