@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
     /* Open the file */
-    hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
+    // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
+    hid_t h_file = H5Fopen(pars.InputFilename, H5F_ACC_RDONLY, H5P_DEFAULT);
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
@@ -69,6 +70,9 @@ int main(int argc, char *argv[]) {
     hid_t h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, boxlen);
     H5Aclose(h_attr);
     assert(h_err >= 0);
+
+    boxlen[1] = boxlen[2] = boxlen[0];
+    message(rank, "BoxSize is %g\n", boxlen[0]);
 
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;

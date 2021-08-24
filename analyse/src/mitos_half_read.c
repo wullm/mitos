@@ -63,6 +63,9 @@ int main(int argc, char *argv[]) {
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
 
+    /* Store the MPI rank */
+    pars.rank = rank;
+
     /* Read the perturbation data file */
     readPerturb(&pars, &us, &ptdat, pars.PerturbFile);
     readPerturbParams(&pars, &us, &ptpars, pars.PerturbFile);
@@ -79,8 +82,8 @@ int main(int argc, char *argv[]) {
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
 
-    printf("Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
-    printf("\n");
+    message(rank, "Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+    message(rank, "\n");
 
     /* Find the present-day background densities */
     int today_index = ptdat.tau_size - 1; // today corresponds to the last index
@@ -102,7 +105,8 @@ int main(int argc, char *argv[]) {
     message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
 
     /* Open the file */
-    hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
+    // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
+    hid_t h_file = H5Fopen(pars.InputFilename, H5F_ACC_RDONLY, H5P_DEFAULT);
 
     /* Open the Header group */
     hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
@@ -113,6 +117,9 @@ int main(int argc, char *argv[]) {
     hid_t h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, boxlen);
     H5Aclose(h_attr);
     assert(h_err >= 0);
+
+    boxlen[1] = boxlen[2] = boxlen[0];
+    message(rank, "BoxSize is %g\n", boxlen[0]);
 
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;
@@ -156,6 +163,9 @@ int main(int argc, char *argv[]) {
     double *box1 = fftw_alloc_real(N * N * N);
     double *box2 = fftw_alloc_real(N * N * N);
     double *box = fftw_alloc_real(N * N * N); //sum of box1 and box2
+
+    /* Always read PartType6, i.e. neutrinos */
+    pars.ImportName = "PartType6";
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -432,6 +442,10 @@ int main(int argc, char *argv[]) {
         }
         writeFieldFile(box, N, boxlen[0], box_fname);
         message(rank, "Density grid exported to %s.\n", box_fname);
+        // writeFieldFile(box1, N, boxlen[0], "half1.hdf5");
+        // message(rank, "Density grid exported to %s.\n", "half1.hdf5");
+        // writeFieldFile(box2, N, boxlen[0], "half2.hdf5");
+        // message(rank, "Density grid exported to %s.\n", "half2.hdf5");
     }
 
     if (rank == 0) {
