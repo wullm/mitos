@@ -50,12 +50,19 @@ int main(int argc, char *argv[]) {
     struct particle_type *types = NULL;
     struct cosmology cosmo;
 
+    /* Read parameter file */
     readParams(&pars, fname);
     readUnits(&us, fname);
     readCosmology(&cosmo, &us, fname);
     readTypes(&pars, &types, fname);
+    
+    /* Option to override the input filename by specifying command line option */
+    if (argc > 2) {
+        const char *input_filename = argv[2];
+        strcpy(pars.InputFilename, input_filename);
+    }
 
-    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.Name);
+    message(rank, "Reading simulation snapshot for: \"%s\".\n", pars.InputFilename);
 
     /* Open the file */
     // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
@@ -114,6 +121,8 @@ int main(int argc, char *argv[]) {
 
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
+    
+    message(rank, "Reading particle type '%s'.\n\n", pars.ImportName);
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
