@@ -158,18 +158,7 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<bins; i++) {
         if (bin_volume[i] == 0.0) continue; //skip empty bins
 
-        printf("%.10g %.10g %.10g %g %g\n", k1_in_bins[i], k2_in_bins[i], k3_in_bins[i], bispectrum[i], bin_volume[i]);
-    }
-
-    printf(" ============ \n");
-
-    /* Print another copy of the bispectrum, skipping negative values */
-    printf("k1 k2 k3 Bk bin_vol\n");
-    for (int i=0; i<bins; i++) {
-        if (bin_volume[i] == 0.0) continue; //skip (virtually) empty bins
-        if (bispectrum[i] <= 0.0) continue; //skip negative values
-
-        printf("%.10g %.10g %.10g %g %g\n", k1_in_bins[i], k2_in_bins[i], k3_in_bins[i], bispectrum[i], bin_volume[i]);
+        printf("%.10g %.10g %.10g %.10g %.10g\n", k1_in_bins[i], k2_in_bins[i], k3_in_bins[i], bispectrum[i], bin_volume[i]);
     }
 
     /* Free the grids */
