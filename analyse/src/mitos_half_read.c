@@ -534,4 +534,6 @@ int main(int argc, char *argv[]) {
 
     /* Release the interpolation splines */
     cleanPerturbSpline(&spline);
+    cleanPerturb(&ptdat);
+    cleanPerturbParams(&ptpars);
 }

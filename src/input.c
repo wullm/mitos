@@ -45,6 +45,13 @@ int readParams(struct params *pars, const char *fname) {
      pars->HaloMaxMass = ini_getd("Read", "HaloMaxMass", 2.75e5, fname);
      pars->PowerSpectrumBins = ini_getl("Read", "PowerSpectrumBins", 50, fname);
      pars->LossyScaleDigits = ini_getl("Output", "LossyScaleDigits", 0, fname);
+     pars->MitosDerivScaling = ini_getd("Read", "MitosDerivScaling", 1e-7, fname);
+
+     /* Bispectrum parameters (default = equilateral mode) */
+     pars->BispectrumType = ini_getl("Read", "BispectrumType", 0, fname);
+     pars->BispectrumAngle = ini_getd("Read", "BispectrumAngle", M_PI * (4./3.), fname);
+     pars->BispectrumMode = ini_getd("Read", "BispectrumAngle", 0.01, fname);
+     pars->BispectrumSecondBins = ini_getl("Read", "BispectrumSecondBins", 0, fname);
 
      /* Read strings */
      int len = DEFAULT_STRING_LENGTH;

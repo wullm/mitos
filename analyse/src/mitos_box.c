@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
 
     if (rank == 0) {
-        int bins = 50;
+        int bins = pars.PowerSpectrumBins;
         double *k_in_bins = malloc(bins * sizeof(double));
         double *power_in_bins = malloc(bins * sizeof(double));
         int *obs_in_bins = calloc(bins, sizeof(int));

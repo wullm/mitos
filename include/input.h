@@ -78,6 +78,14 @@ struct params {
     double HaloMinMass;
     double HaloMaxMass;
     int PowerSpectrumBins;
+    double MitosDerivScaling;
+
+    /* Bispectrum parameters */
+    int BispectrumType; //type = 0 or 1, see calc_powerspec.c
+    double BispectrumAngle; //used for type = 0
+    double BispectrumMode; //used for type = 1
+    /* Number of bins for k3 (k1/k2 use PowerSpectrumBins). Leave 0 for the same */
+    double BispectrumSecondBins;
 
     /* Parameters for the Firebolt Boltzmann solver */
     int MaxMultipole;
