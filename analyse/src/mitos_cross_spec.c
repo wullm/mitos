@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
     readFieldFile(&box2, &N2, &boxlen2, pars.InputFilename2);
 
     assert(N == N2);
-    assert(boxlen == boxlen2);
+    assert((boxlen - boxlen2)/boxlen < 1e-5);
 
     /* Allocate 3D complex arrays */
     fftw_complex *fbox1 = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
