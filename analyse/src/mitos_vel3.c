@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
     double *box_vz = malloc((long long int) N * N * N * sizeof(double));
     double *box_dens = malloc((long long int) N * N * N * sizeof(double));
 
-    for (int i=0; i<N*N*N; i++) {
+    for (int i=0; i<(long long)N*N*N; i++) {
       box_vx[i] = 0;
       box_vy[i] = 0;
       box_vz[i] = 0;
@@ -453,17 +453,17 @@ int main(int argc, char *argv[]) {
         printf("Doing ffts\n");
 
         /* Transform to momentum space */
-        fftw_complex *fbox_x = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *fbox_x = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
         fftw_plan r2c_x = fftw_plan_dft_r2c_3d(N, N, N, box_vx, fbox_x, FFTW_ESTIMATE);
         fft_execute(r2c_x);
         fft_normalize_r2c(fbox_x,N,boxlen[0]);
 
-        fftw_complex *fbox_y = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *fbox_y = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
         fftw_plan r2c_y = fftw_plan_dft_r2c_3d(N, N, N, box_vy, fbox_y, FFTW_ESTIMATE);
         fft_execute(r2c_y);
         fft_normalize_r2c(fbox_y,N,boxlen[0]);
 
-        fftw_complex *fbox_z = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *fbox_z = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
         fftw_plan r2c_z = fftw_plan_dft_r2c_3d(N, N, N, box_vz, fbox_z, FFTW_ESTIMATE);
         fft_execute(r2c_z);
         fft_normalize_r2c(fbox_z,N,boxlen[0]);
@@ -483,9 +483,9 @@ int main(int argc, char *argv[]) {
 
         printf("Computing power spectrum of theta\n");
 
-        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
-        for (int k=0; k<N*N*(N/2+1); k++) {
+        for (int k=0; k<(long long)N*N*(N/2+1); k++) {
           fbox[k][0] = fbox_x[k][0] + fbox_y[k][0] + fbox_z[k][0];
           fbox[k][1] = fbox_x[k][1] + fbox_y[k][1] + fbox_z[k][1];
         }

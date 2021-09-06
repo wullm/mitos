@@ -249,16 +249,16 @@ void calc_bispectrum(int N, double boxlen, const fftw_complex *fbox,
     int second_box_required = 0;
 
     /* Allocate intermediate masked boxes */
-    double *masked1 = (double*) malloc(N*N*N*sizeof(double));
+    double *masked1 = (double*) malloc((long long)N*N*N*sizeof(double));
     double *masked2;
-    double *masked3 = (double*) malloc(N*N*N*sizeof(double));
-    fftw_complex *fbox1 = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    double *masked3 = (double*) malloc((long long)N*N*N*sizeof(double));
+    fftw_complex *fbox1 = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
     fftw_complex *fbox2;
-    fftw_complex *fbox3 = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox3 = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
     if (second_box_required) {
-        masked2 = (double*) malloc(N*N*N*sizeof(double));
-        fbox2 = (fftw_complex*) malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        masked2 = (double*) malloc((long long)N*N*N*sizeof(double));
+        fbox2 = (fftw_complex*) malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
     }
 
     /* Mask the boxes and then Fourier transform to real space */

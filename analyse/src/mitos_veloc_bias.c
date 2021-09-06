@@ -204,12 +204,12 @@ int main(int argc, char *argv[]) {
         printf("Iteration %03d/%03d]\n", ITER, num_samples);
 
         /* Allocate halo momentum grids */
-        double *box_px = calloc(N*N*N, sizeof(double));
-        double *box_py = calloc(N*N*N, sizeof(double));
-        double *box_pz = calloc(N*N*N, sizeof(double));
+        double *box_px = calloc((long long)N*N*N, sizeof(double));
+        double *box_py = calloc((long long)N*N*N, sizeof(double));
+        double *box_pz = calloc((long long)N*N*N, sizeof(double));
         
         /* Allocate a grid for the halo overdensity */
-        double *delta_h = calloc(N*N*N, sizeof(double));
+        double *delta_h = calloc((long long)N*N*N, sizeof(double));
         
         /* Counters for halo masses and weights (1 or 0) */
         double total_mass = 0;
@@ -290,11 +290,11 @@ int main(int argc, char *argv[]) {
         mean_total_mass += total_mass / num_samples;
         
         /* Convert to halo number overdensity: delta_h */
-        for (int i=0; i<N*N*N; i++) {
+        for (int i=0; i<(long long)N*N*N; i++) {
              delta_h[i] = (delta_h[i] - avg_density) / avg_density;
         }
         /* Convert to halo momentum number density: (1+delta_h) v_h */
-        for (int i=0; i<N*N*N; i++) {
+        for (int i=0; i<(long long)N*N*N; i++) {
              box_px[i] = box_px[i] / avg_density;
              box_py[i] = box_py[i] / avg_density;
              box_pz[i] = box_pz[i] / avg_density;
@@ -304,16 +304,16 @@ int main(int argc, char *argv[]) {
         double *grids_h[3] = {box_px, box_py, box_pz};
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
-            double *ph_i = (double*) fftw_malloc(N*N*N*sizeof(double));
-            double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+            double *ph_i = (double*) fftw_malloc((long long)N*N*N*sizeof(double));
+            double *vm_i = (double*) fftw_malloc((long long)N*N*N*sizeof(double));
             
             /* Copy the correct data */
-            memcpy(ph_i, grids_h[dim], N*N*N*sizeof(double));
-            memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+            memcpy(ph_i, grids_h[dim], (long long)N*N*N*sizeof(double));
+            memcpy(vm_i, grids_m[dim], (long long)N*N*N*sizeof(double));
             
             /* Allocate 3D complex arrays */
-            fftw_complex *f_ph_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_ph_i = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
             
             /* Create FFT plans */
             fftw_plan r2c_h = fftw_plan_dft_r2c_3d(N, N, N, ph_i, f_ph_i, FFTW_ESTIMATE);
@@ -368,14 +368,14 @@ int main(int argc, char *argv[]) {
         /* Compute the global S power spectrum */
         for (int dim = 0; dim < 3; dim++) {
             /* Allocate 3D real arrays */
-            double *vm_i = (double*) fftw_malloc(N*N*N*sizeof(double));
+            double *vm_i = (double*) fftw_malloc((long long)N*N*N*sizeof(double));
 
             /* Copy the correct data */
-            memcpy(vm_i, grids_m[dim], N*N*N*sizeof(double));
+            memcpy(vm_i, grids_m[dim], (long long)N*N*N*sizeof(double));
 
             /* Allocate 3D complex arrays */
-            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-            fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_vm_i = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
+            fftw_complex *f_dhvm_i = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
             /* Create FFT plans */
             fftw_plan r2c_1 = fftw_plan_dft_r2c_3d(N, N, N, vm_i, f_vm_i, FFTW_ESTIMATE);
@@ -388,7 +388,7 @@ int main(int argc, char *argv[]) {
             fftw_destroy_plan(r2c_1);
 
             /* Copy over the data into the second complex array */
-            memcpy(f_dhvm_i, f_vm_i, N*N*(N/2+1)*sizeof(fftw_complex));
+            memcpy(f_dhvm_i, f_vm_i, (long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
             /* Execute reverse FFT and normalize */
             fft_execute(c2r_1);
@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
             fftw_destroy_plan(c2r_1);
 
             /* Multiply by the halo overdensity */
-            for (int j=0; j<N*N*N; j++) {
+            for (int j=0; j<(long long)N*N*N; j++) {
                 vm_i[j] *= delta_h[j];
             }
 

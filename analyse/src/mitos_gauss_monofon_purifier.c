@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     readFieldFile(&rho, &N, &boxlen, pars.InputFilename);
 
     /* Allocate 3D complex array */
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Create FFT plans */
     fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, rho, fbox, FFTW_ESTIMATE);

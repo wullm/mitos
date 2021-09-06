@@ -478,8 +478,8 @@ int main(int argc, char *argv[]) {
         int *obs_in_bins = calloc(bins, sizeof(int));
 
         /* Transform to momentum space */
-        fftwf_complex *fbox1 = (fftwf_complex*) fftwf_malloc(N*N*(N/2+1)*sizeof(fftwf_complex));
-        fftwf_complex *fbox2 = (fftwf_complex*) fftwf_malloc(N*N*(N/2+1)*sizeof(fftwf_complex));
+        fftwf_complex *fbox1 = (fftwf_complex*) fftwf_malloc((long long)N*N*(N/2+1)*sizeof(fftwf_complex));
+        fftwf_complex *fbox2 = (fftwf_complex*) fftwf_malloc((long long)N*N*(N/2+1)*sizeof(fftwf_complex));
         fftwf_plan r2c1 = fftwf_plan_dft_r2c_3d(N, N, N, box1, fbox1, FFTW_ESTIMATE);
         fftwf_plan r2c2 = fftwf_plan_dft_r2c_3d(N, N, N, box2, fbox2, FFTW_ESTIMATE);
         fftwf_execute(r2c1);

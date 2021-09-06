@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     printf("N = %d.\n", N);
     printf("\n");
 
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
     fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
     fft_execute(r2c);
 

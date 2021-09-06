@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
     assert(boxlen == boxlen2);
 
     /* Allocate 3D complex arrays */
-    fftw_complex *fbox1 = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-    fftw_complex *fbox2 = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox1 = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox2 = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Create FFT plans */
     fftw_plan r2c1 = fftw_plan_dft_r2c_3d(N, N, N, box1, fbox1, FFTW_ESTIMATE);
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
 
         /* Compute the weighted average of the two grids, replacing the first */
         /* Also compute the difference fbox2 - fbox1, replacing the second */
-        for (int i=0; i<N*N*(N/2+1); i++) {
+        for (int i=0; i<(long long)N*N*(N/2+1); i++) {
             double d1 = fbox1[i];
             double d2 = fbox2[i];
             
