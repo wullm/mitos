@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    float *box = malloc((long long int) N * N * N * sizeof(float));
+    float *box = calloc((long long int) N * N * N, sizeof(float));
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);

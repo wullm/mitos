@@ -133,10 +133,10 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    double *box_vx = malloc((long long int) N * N * N * sizeof(double));
-    double *box_vy = malloc((long long int) N * N * N * sizeof(double));
-    double *box_vz = malloc((long long int) N * N * N * sizeof(double));
-    double *box_dens = malloc((long long int) N * N * N * sizeof(double));
+    double *box_vx = calloc((long long int) N * N * N, sizeof(double));
+    double *box_vy = calloc((long long int) N * N * N, sizeof(double));
+    double *box_vz = calloc((long long int) N * N * N, sizeof(double));
+    double *box_dens = calloc((long long int) N * N * N, sizeof(double));
 
     for (int i=0; i<(long long)N*N*N; i++) {
       box_vx[i] = 0;

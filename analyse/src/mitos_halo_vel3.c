@@ -163,10 +163,10 @@ int main(int argc, char *argv[]) {
 
 
     /* Allocate grids */
-    double *box = malloc((long long int) N * N * N * sizeof(double));
-    double *box_px = malloc((long long int) N * N * N * sizeof(double));
-    double *box_py = malloc((long long int) N * N * N * sizeof(double));
-    double *box_pz = malloc((long long int) N * N * N * sizeof(double));
+    double *box = calloc((long long int) N * N * N, sizeof(double));
+    double *box_px = calloc((long long int) N * N * N, sizeof(double));
+    double *box_py = calloc((long long int) N * N * N, sizeof(double));
+    double *box_pz = calloc((long long int) N * N * N, sizeof(double));
 
     double total_mass = 0;
     double total_weight = 0;

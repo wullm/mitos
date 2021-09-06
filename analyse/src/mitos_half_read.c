@@ -182,9 +182,9 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    float *box1 = malloc((long long int) N * N * N * sizeof(float));
-    float *box2 = malloc((long long int) N * N * N * sizeof(float));
-    float *box = malloc((long long int) N * N * N * sizeof(float)); //sum of box1 and box2
+    float *box1 = calloc((long long int) N * N * N, sizeof(float));
+    float *box2 = calloc((long long int) N * N * N, sizeof(float));
+    float *box = calloc((long long int) N * N * N, sizeof(float)); //sum of box1 and box2
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
