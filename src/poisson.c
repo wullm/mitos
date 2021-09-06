@@ -29,7 +29,7 @@
 int solvePoisson(double *phi, double *f, int N, double boxlen) {
 
     /* Create 3D arrays for the source function and its Fourier transform */
-    fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+    fftw_complex *fbox = (fftw_complex*) fftw_malloc((long long)N*N*(N/2+1)*sizeof(fftw_complex));
 
     /* Create FFT plans */
     fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, f, fbox, FFTW_ESTIMATE);

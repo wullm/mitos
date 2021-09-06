@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     double total_mass = 0;
     double total_weight = 0;
 
-    double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
+    double grid_cell_vol = boxlen*boxlen*boxlen / ((long long)N*N*N);
 
     /* Assign the halos to the grid with CIC */
     for (int l=0; l<halo_num; l++) {
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
 
     /* Demean the grid */
     double avg_weight = total_weight / (N * N * N);
-    for (int i=0; i<N*N*N; i++) {
+    for (int i=0; i<(long long)N*N*N; i++) {
         box[i] = (box[i] - avg_weight)/avg_weight;
     }
 

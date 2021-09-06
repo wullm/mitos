@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
     double total_mass = 0;
     double total_weight = 0;
 
-    double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
+    double grid_cell_vol = boxlen*boxlen*boxlen / ((long long)N*N*N);
 
     //double redz = 1.274318;
     double redz = 0.0;
@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
     printf("Average density = %g\n", avg_density);
 
     /* Convert to halo momentum number density: (1+delta_h) v_h */
-    for (int i=0; i<N*N*N; i++) {
+    for (int i=0; i<(long long)N*N*N; i++) {
          box_px[i] = box_px[i] / avg_density;
          box_py[i] = box_py[i] / avg_density;
          box_pz[i] = box_pz[i] / avg_density;

@@ -174,7 +174,7 @@ int solveMongeAmpere(struct distributed_grid *potential,
 
         /* Compute the root mean square residual, normalized by the source grid */
         if (rank == 0) {
-            double rms_eps = sqrt((eps_norm[0] / eps_norm[1]) / (N*N*N));
+            double rms_eps = sqrt((eps_norm[0] / eps_norm[1]) / ((long long)N*N*N));
             message(rank, "%03d] Finished MA cycle: eps = %e\n", ITER, rms_eps);
         }
     }

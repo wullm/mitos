@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
         double total_mass = 0;
         double total_weight = 0;
 
-        double grid_cell_vol = boxlen*boxlen*boxlen / (N*N*N);
+        double grid_cell_vol = boxlen*boxlen*boxlen / ((long long)N*N*N);
 
         /* Assign the halos to the grid with CIC */
         for (int l=0; l<halo_num; l++) {

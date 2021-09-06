@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
         // /* Close the dataset */
         // H5Dclose(h_dat);
 
-        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
+        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / ((long long)N*N*N);
 
         /* Assign the particles to the grid with CIC */
         for (int l=0; l<slab_size; l++) {

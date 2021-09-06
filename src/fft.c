@@ -40,7 +40,7 @@ int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen) {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
+                arr[row_major_half(x, y, z, N)] *= boxvol/((long long)N*N*N);
             }
         }
     }
@@ -68,7 +68,7 @@ int fft_normalize_r2c_float(fftwf_complex *arr, int N, double boxlen) {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
+                arr[row_major_half(x, y, z, N)] *= boxvol/((long long)N*N*N);
             }
         }
     }
@@ -88,7 +88,7 @@ int fft_normalize_r2c_dg(struct distributed_grid *dg) {
     for (int x=X0; x<X0 + NX; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                dg->fbox[row_major_half_dg(x, y, z, dg)] *= boxvol/(N*N*N);
+                dg->fbox[row_major_half_dg(x, y, z, dg)] *= boxvol/((long long)N*N*N);
             }
         }
     }
