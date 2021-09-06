@@ -38,14 +38,14 @@ struct kernel {
     const void *params;
 };
 
-static inline long long int row_major(int i, int j, int k, int N) {
+static inline long long int row_major(long long i, long long j, long long k, long long N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N);
     return (long long int) i*N*N + j*N + k;
 }
 
-static inline long long int row_major_half(int i, int j, int k, int N) {
+static inline long long int row_major_half(long long i, long long j, long long k, long long N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N/2+1);
@@ -54,7 +54,7 @@ static inline long long int row_major_half(int i, int j, int k, int N) {
 
 /* Distributed grids are padded, which is bug prone, so we should find an
  * good solution. */
-static inline long long int row_major_padded(int i, int j, int k, int N) {
+static inline long long int row_major_padded(long long i, long long j, long long k, long long N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N+2);
