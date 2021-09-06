@@ -82,11 +82,15 @@ void fft_execute(fftw_plan plan);
 
 /* Functions for ordinary contiguous arrays */
 int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
+int fft_normalize_r2c_float(fftwf_complex *arr, int N, double boxlen);
 int fft_normalize_c2r(double *arr, int N, double boxlen);
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                      double boxlen, void (*compute)(struct kernel* the_kernel),
                      const void *params);
-
+int fft_apply_kernel_float(fftwf_complex *write, const fftwf_complex *read, int N,
+                           double boxlen, void (*compute)(struct kernel* the_kernel),
+                           const void *params);
+                                          
 /* Functions for distributed grids */
 int fft_r2c_dg(struct distributed_grid *dg);
 int fft_c2r_dg(struct distributed_grid *dg);

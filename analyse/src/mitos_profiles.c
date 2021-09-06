@@ -202,8 +202,8 @@ int main(int argc, char *argv[]) {
 
     /* Allocate grids */
     struct id_link *halo_links = malloc(halo_num * sizeof(struct id_link));
-    struct id_link **halo_grid = malloc(N * N * N * sizeof(struct id_link*));
-    int *halos_in_cell = calloc(N * N * N, sizeof(int));
+    struct id_link **halo_grid = malloc((long long int) N * N * N * sizeof(struct id_link*));
+    int *halos_in_cell = calloc((long long int) N * N * N, sizeof(int));
 
     /* Insert the halos */
     for (int i=0; i<halo_num; i++) {
@@ -404,9 +404,9 @@ int main(int argc, char *argv[]) {
 
     /* Reduce the grid */
     // if (rank == 0) {
-    //     MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    //     MPI_Reduce(MPI_IN_PLACE, box, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     // } else {
-    //     MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    //     MPI_Reduce(box, box, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     // }
 
     /* Reduce the total mass */

@@ -62,6 +62,20 @@ int fft_normalize_c2r(double *arr, int N, double boxlen) {
     return 0;
 }
 
+/* Normalize the complex array after transforming to momentum space */
+int fft_normalize_r2c_float(fftwf_complex *arr, int N, double boxlen) {
+    const double boxvol = boxlen*boxlen*boxlen;
+    for (int x=0; x<N; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<=N/2; z++) {
+                arr[row_major_half(x, y, z, N)] *= boxvol/(N*N*N);
+            }
+        }
+    }
+
+    return 0;
+}
+
 
 /* (Distributed grid version) Normalize the complex array after transforming
  * to momentum space */
@@ -111,6 +125,34 @@ void fft_execute(fftw_plan plan) {
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                      double boxlen, void (*compute)(struct kernel* the_kernel),
                      const void *params) {
+    const double dk = 2 * M_PI / boxlen;
+
+    #pragma omp parallel for
+    for (int x=0; x<N; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<=N/2; z++) {
+                /* Calculate the wavevector */
+                double kx,ky,kz,k;
+                fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
+
+                /* Compute the kernel */
+                struct kernel the_kernel = {kx, ky, kz, k, 0.f, params};
+                compute(&the_kernel);
+
+                /* Apply the kernel */
+                const long long int id = row_major_half(x,y,z,N);
+                write[id] = read[id] * the_kernel.kern;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/* Apply a kernel to a 3D array after transforming to momentum space */
+int fft_apply_kernel_float(fftwf_complex *write, const fftwf_complex *read, int N,
+                           double boxlen, void (*compute)(struct kernel* the_kernel),
+                           const void *params) {
     const double dk = 2 * M_PI / boxlen;
 
     #pragma omp parallel for

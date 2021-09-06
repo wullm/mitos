@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    double *box = fftw_alloc_real(N * N * N);
+    float *box = malloc((long long int) N * N * N * sizeof(float));
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -338,9 +338,9 @@ int main(int argc, char *argv[]) {
 
     /* Reduce the grid */
     if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(MPI_IN_PLACE, box, (long long) N * N * N, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
-        MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(box, box, (long long) N * N * N, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     /* Reduce the total mass */
@@ -390,7 +390,7 @@ int main(int argc, char *argv[]) {
             } else {
                 sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
             }
-            writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+            writeFieldFileCompressedFloat(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
             message(rank, "Density grid exported to %s.\n", box_fname);
         }
     }
@@ -402,16 +402,16 @@ int main(int argc, char *argv[]) {
         int *obs_in_bins = calloc(bins, sizeof(int));
 
         /* Transform to momentum space */
-        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
-        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
-        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
-        fft_execute(r2c);
-    	fft_normalize_r2c(fbox,N,boxlen[0]);
+        fftwf_complex *fbox = (fftwf_complex*) fftwf_malloc(N*N*(N/2+1)*sizeof(fftwf_complex));
+        fftwf_plan r2c = fftwf_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+        fftwf_plan c2r = fftwf_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+        fftwf_execute(r2c);
+    	fft_normalize_r2c_float(fbox,N,boxlen[0]);
 
         /* Undo the TSC window function */
-        undoTSCWindow(fbox, N, boxlen[0]);
+        undoTSCWindowFloat(fbox, N, boxlen[0]);
 
-        calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+        calc_cross_powerspec_float(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
 
         /* Check that it is right */
         printf("\n");
@@ -428,13 +428,13 @@ int main(int argc, char *argv[]) {
             printf("%f %e %d\n", k, Pk, obs);
         }
 
-        fftw_destroy_plan(r2c);
-        fftw_destroy_plan(c2r);
-        fftw_free(fbox);
+        fftwf_destroy_plan(r2c);
+        fftwf_destroy_plan(c2r);
+        fftwf_free(fbox);
 
         printf("\n");
     }
-    fftw_free(box);
+    free(box);
 
     /* Close the HDF5 file */
     H5Fclose(h_file);

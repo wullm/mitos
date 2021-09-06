@@ -32,5 +32,6 @@ int writeFieldFile(const double *box, int N, double box_len, const char *fname);
 int writeFieldData(const double *box, hid_t h_file);
 int writeFieldFileCompressed(const double *box, int N, double box_len,
                              const char *fname, int digits);
-
+int writeFieldFileCompressedFloat(const float *box, int N, double box_len,
+                                  const char *fname, int digits);
 #endif

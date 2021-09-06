@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 
 
     /* Allocate grids */
-    double *box = fftw_alloc_real(N * N * N);
+    double *box = malloc((long long int) N * N * N * sizeof(double));
 
     double total_mass = 0;
     double total_weight = 0;

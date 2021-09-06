@@ -42,4 +42,10 @@ int undoCICWindow(fftw_complex *farr, int N, double boxlen);
 int undoTSCWindow(fftw_complex *farr, int N, double boxlen);
 int undoPCSWindow(fftw_complex *farr, int N, double boxlen);
 
+/* Apply Fourier kernels to undo the window functions */
+int undoNGPWindowFloat(fftwf_complex *farr, int N, double boxlen);
+int undoCICWindowFloat(fftwf_complex *farr, int N, double boxlen);
+int undoTSCWindowFloat(fftwf_complex *farr, int N, double boxlen);
+int undoPCSWindowFloat(fftwf_complex *farr, int N, double boxlen);
+
 #endif

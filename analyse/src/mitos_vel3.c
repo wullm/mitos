@@ -133,10 +133,10 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    double *box_vx = fftw_alloc_real(N * N * N);
-    double *box_vy = fftw_alloc_real(N * N * N);
-    double *box_vz = fftw_alloc_real(N * N * N);
-    double *box_dens = fftw_alloc_real(N * N * N);
+    double *box_vx = malloc((long long int) N * N * N * sizeof(double));
+    double *box_vy = malloc((long long int) N * N * N * sizeof(double));
+    double *box_vz = malloc((long long int) N * N * N * sizeof(double));
+    double *box_dens = malloc((long long int) N * N * N * sizeof(double));
 
     for (int i=0; i<N*N*N; i++) {
       box_vx[i] = 0;
@@ -344,27 +344,27 @@ int main(int argc, char *argv[]) {
 
     /* Reduce the grids */
     if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box_vx, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(MPI_IN_PLACE, box_vx, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
-        MPI_Reduce(box_vx, box_vx, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(box_vx, box_vx, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box_vy, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(MPI_IN_PLACE, box_vy, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
-        MPI_Reduce(box_vy, box_vy, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(box_vy, box_vy, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box_vz, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(MPI_IN_PLACE, box_vz, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
-        MPI_Reduce(box_vz, box_vz, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(box_vz, box_vz, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box_dens, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(MPI_IN_PLACE, box_dens, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
-        MPI_Reduce(box_dens, box_dens, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(box_dens, box_dens, (long long) N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     /* Reduce the total mass */
@@ -522,7 +522,7 @@ int main(int argc, char *argv[]) {
          printf("\n");
 
         /* Transform back */
-        double *box = fftw_alloc_real(N * N * N);
+        double *box = malloc((long long int) N * N * N * sizeof(double));
         fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
         fft_execute(c2r);
         fft_normalize_c2r(box,N,boxlen[0]);

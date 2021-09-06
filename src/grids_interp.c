@@ -411,3 +411,59 @@ int undoPCSWindow(fftw_complex *farr, int N, double boxlen) {
 
     return 0;
 }
+
+/* Undo the Nearest grid point interpolation window function */
+int undoNGPWindowFloat(fftwf_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 1; //NGP
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel_float(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
+/* Undo the Cloud in cell interpolation window function */
+int undoCICWindowFloat(fftwf_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 2; //CIC
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel_float(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
+/* Undo the triangular shaped cloud interpolation window function */
+int undoTSCWindowFloat(fftwf_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 3; //TSC
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel_float(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
+
+/* Undo the piecewise cubic spline interpolation window function */
+int undoPCSWindowFloat(fftwf_complex *farr, int N, double boxlen) {
+    /* Package the kernel parameter */
+    struct Hermite_kern_params Hkp;
+    Hkp.order = 4; //PCS
+    Hkp.N = N;
+    Hkp.boxlen = boxlen;
+
+    /* Apply the kernel */
+    fft_apply_kernel_float(farr, farr, N, boxlen, kernel_undo_Hermite_window, &Hkp);
+
+    return 0;
+}
