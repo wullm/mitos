@@ -76,7 +76,7 @@ int free_local_grid(struct distributed_grid *dg);
 int free_local_real_grid(struct distributed_grid *dg);
 int free_local_complex_grid(struct distributed_grid *dg);
 
-static inline int row_major_dg(int i, int j, int k, const struct distributed_grid *dg) {
+static inline long long int row_major_dg(int i, int j, int k, const struct distributed_grid *dg) {
     /* Wrap global coordinates */
     i = wrap(i,dg->N);
     j = wrap(j,dg->N);
@@ -84,10 +84,10 @@ static inline int row_major_dg(int i, int j, int k, const struct distributed_gri
 
     /* Map to local slice (no out of bounds handling) */
     i = i - dg->X0;
-    return i*dg->N*(dg->N+2) + j*(dg->N+2) + k;
+    return (long long int) i*dg->N*(dg->N+2) + j*(dg->N+2) + k;
 }
 
-static inline int row_major_half_dg(int i, int j, int k, const struct distributed_grid *dg) {
+static inline long long int row_major_half_dg(int i, int j, int k, const struct distributed_grid *dg) {
     /* Wrap global coordinates */
     i = wrap(i,dg->N);
     j = wrap(j,dg->N);
@@ -95,7 +95,7 @@ static inline int row_major_half_dg(int i, int j, int k, const struct distribute
 
     /* Map to local slice (no out of bounds handling) */
     i = i - dg->X0;
-    return i*(dg->N/2+1)*dg->N + j*(dg->N/2+1) + k;
+    return (long long int) i*(dg->N/2+1)*dg->N + j*(dg->N/2+1) + k;
 }
 
 #endif

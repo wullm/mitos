@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
-                    int id = row_major(x, y, z, N);
+                    long long int id = row_major(x, y, z, N);
                     box1[id] = 2. * box1[id] / avg_density;
                     box2[id] = 2. * box2[id] / avg_density;
 

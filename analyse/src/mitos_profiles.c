@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
         int iZ = (int) floor(Z);
 
         /* ID of the grid cell */
-        int id = row_major(iX, iY, iZ, N);
+        long long int id = row_major(iX, iY, iZ, N);
 
         /* If it is the first halo in this cell */
         if (halos_in_cell[id] == 0) {
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
                 for (int dy=-1; dy<=1; dy++) {
                     for (int dz=-1; dz<=1; dz++) {
                         /* Grid cell ID */
-                        int grid_id = row_major(iX + dx, iY + dy, iZ + dz, N);
+                        long long int grid_id = row_major(iX + dx, iY + dy, iZ + dz, N);
                         /* Number of halos in this cell */
                         int h_max = halos_in_cell[grid_id];
 

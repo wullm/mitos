@@ -105,7 +105,7 @@ int enforce_hermiticity(struct distributed_grid *dg) {
         /* Fill our local slice of the plane */
         for (int x=X0; x<X0 + NX; x++) {
             for (int y=0; y<N; y++) {
-                int id = row_major_half_dg(x, y, z, dg);
+                long long int id = row_major_half_dg(x, y, z, dg);
                 our_slice[(x-X0)*N + y] = dg->fbox[id];
             }
         }
@@ -124,7 +124,7 @@ int enforce_hermiticity(struct distributed_grid *dg) {
                 int invy = (y > 0) ? N - y : 0;
                 int invz = (z > 0) ? N - z : 0; //maps 0->0 and (N/2)->(N/2)
 
-                int id = row_major_half_dg(x,y,z,dg);
+                long long int id = row_major_half_dg(x,y,z,dg);
 
                 /* If the point maps to itself, throw away the imaginary part */
                 if (invx == x && invy == y && invz == z) {

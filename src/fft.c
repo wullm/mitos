@@ -126,7 +126,7 @@ int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                 compute(&the_kernel);
 
                 /* Apply the kernel */
-                const int id = row_major_half(x,y,z,N);
+                const long long int id = row_major_half(x,y,z,N);
                 write[id] = read[id] * the_kernel.kern;
             }
         }
@@ -209,7 +209,7 @@ int fft_apply_kernel_dg(struct distributed_grid *dg_write,
                 compute(&the_kernel);
 
                 /* Apply the kernel */
-                const int id = row_major_half_dg(x, y, z, dg_write);
+                const long long int id = row_major_half_dg(x, y, z, dg_write);
                 dg_write->fbox[id] = dg_read->fbox[id] * the_kernel.kern;
             }
         }

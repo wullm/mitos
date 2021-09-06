@@ -57,7 +57,7 @@ int spt_convolve2(int N, double boxlen, fftw_complex *out_box,
                 fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                 /* The id of the output cell */
-                const int id = row_major_half(x, y, z, N);
+                const long long int id = row_major_half(x, y, z, N);
                 out_box[id] = 0.d;
 
                 if (k==0) continue; //skip the DC mode
@@ -87,8 +87,8 @@ int spt_convolve2(int N, double boxlen, fftw_complex *out_box,
                             // printf("%f %f %f %f\n", k1, k2, k1k2, K);
 
                             /* The id of the inout cell */
-                            const int in_id1 = row_major_half(x1, y1, z1, N);
-                            const int in_id2 = row_major_half(x2, y2, z2, N);
+                            const long long int in_id1 = row_major_half(x1, y1, z1, N);
+                            const long long int in_id2 = row_major_half(x2, y2, z2, N);
 
                             /* Add the result */
                             out_box[id] += K * in_box1[in_id1] * in_box2[in_id2] / boxvol;

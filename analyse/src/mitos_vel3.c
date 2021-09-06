@@ -391,7 +391,7 @@ int main(int argc, char *argv[]) {
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
-                    int id = row_major(x, y, z, N);
+                    long long int id = row_major(x, y, z, N);
                     /* Overdensity */
                     box_dens[id] = (box_dens[id] - avg_density)/avg_density;
 

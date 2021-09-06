@@ -38,27 +38,27 @@ struct kernel {
     const void *params;
 };
 
-static inline int row_major(int i, int j, int k, int N) {
+static inline long long int row_major(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N);
-    return i*N*N + j*N + k;
+    return (long long int) i*N*N + j*N + k;
 }
 
-static inline int row_major_half(int i, int j, int k, int N) {
+static inline long long int row_major_half(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N/2+1);
-    return i*(N/2+1)*N + j*(N/2+1) + k;
+    return (long long int) i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
 /* Distributed grids are padded, which is bug prone, so we should find an
  * good solution. */
-static inline int row_major_padded(int i, int j, int k, int N) {
+static inline long long int row_major_padded(int i, int j, int k, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
     k = wrap(k,N+2);
-    return i*N*(N+2) + j*(N+2) + k;
+    return (long long int) i*N*(N+2) + j*(N+2) + k;
 }
 
 static inline void inverse_row_major(long long int id, int *x, int *y, int *z, int N) {

@@ -115,7 +115,7 @@ int main() {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<N; z++) {
-                int id = row_major_half(x, y, z, N);
+                long long int id = row_major_half(x, y, z, N);
                 assert(fabs(d_dx[id] - psi_x[id]) < 1e-3);
                 assert(fabs(d_dy[id] - psi_y[id]) < 1e-3);
                 assert(fabs(d_dz[id] - psi_z[id]) < 1e-3);
@@ -153,7 +153,7 @@ int main() {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                int id = row_major_half(x, y, z, N);
+                long long int id = row_major_half(x, y, z, N);
                 assert(fabs(d_dx[id] - psi_x[id]) < 1e-4);
                 assert(fabs(d_dy[id] - psi_y[id]) < 1e-4);
                 assert(fabs(d_dz[id] - psi_z[id]) < 1e-4);
@@ -173,7 +173,7 @@ int main() {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<N; z++) {
-                int id = row_major(x,y,z,N);
+                long long int id = row_major(x,y,z,N);
                 box[id] = psi_x[id] + psi_y[id] + psi_z[id];
             }
         }
@@ -183,7 +183,7 @@ int main() {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<N; z++) {
-                int id = row_major_half(x, y, z, N);
+                long long int id = row_major_half(x, y, z, N);
                 assert(fabs(compare[id] - box[id]) < 1e-10);
             }
         }

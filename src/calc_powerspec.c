@@ -61,7 +61,7 @@ void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
                 /* Compute the bin */
                 const float u = (log(k) - log_min_k) / (log_max_k - log_min_k);
                 const int bin = floor((bins - 1) * u);
-                const int id = row_major_half(x, y, z, N);
+                const long long int id = row_major_half(x, y, z, N);
 
                 assert(bin >= 0 && bin < bins);
 
@@ -246,7 +246,7 @@ void calc_bispectrum(int N, double boxlen, const fftw_complex *fbox,
                     fft_wavevector(x, y, z, N, dk, &kx, &ky, &kz, &k);
 
                     /* The grid cell id */
-                    const int id = row_major_half(x, y, z, N);
+                    const long long int id = row_major_half(x, y, z, N);
 
                     /* Skip the DC mode */
                     if (k==0) {
@@ -342,7 +342,7 @@ void calc_bispectrum(int N, double boxlen, const fftw_complex *fbox,
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
-                    const int id = row_major(x, y, z, N);
+                    const long long int id = row_major(x, y, z, N);
 
                     double delta_1 = masked1[id];
                     double delta_2;

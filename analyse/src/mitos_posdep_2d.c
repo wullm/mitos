@@ -28,7 +28,7 @@
 #include "../../include/mitos.h"
 
 
-static inline int row_major_2d(int i, int j, int N) {
+static inline long long int row_major_2d(int i, int j, int N) {
     i = wrap(i,N);
     j = wrap(j,N);
     return i*N + j;

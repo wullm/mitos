@@ -64,7 +64,7 @@ int main() {
     for (int x=0; x<N; x++) {
         for (int y=0; y<N; y++) {
             for (int z=0; z<=N/2; z++) {
-                int idx = row_major_half(x, y, z, N);
+                long long int idx = row_major_half(x, y, z, N);
 
                 assert(fabs(fbox[idx] - comp[idx]) < 1e-10);
             }
