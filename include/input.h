@@ -149,6 +149,7 @@ int cleanParams(struct params *parser);
 int readFieldFile(double **box, int *N, double *box_len, const char *fname);
 int readFieldFileInPlace(double *box, const char *fname);
 int readFieldDimensions(int *N, double *box_len, const char *fname);
+int readFieldFile2D(double **box, int *N, double *box_len, const char *fname);
 
 static inline void generateFieldFilename(const struct params *pars, char *fname,
                                          const char *Identifier, const char *title,

@@ -271,6 +271,98 @@ int readFieldFile(double **box, int *N, double *box_len, const char *fname) {
     return 0;
 }
 
+/* Read 2D box from disk, allocating memory and storing the grid dimensions */
+int readFieldFile2D(double **box, int *N, double *box_len, const char *fname) {
+    /* Create the hdf5 file */
+    hid_t h_file = H5Fopen(fname, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    /* Create the Header group */
+    hid_t h_grp = H5Gopen(h_file, "Header", H5P_DEFAULT);
+
+    /* Read the size of the field */
+    hid_t h_attr, h_err;
+    double boxsize[2];
+
+    /* Open and read out the attribute */
+    h_attr = H5Aopen(h_grp, "BoxSize", H5P_DEFAULT);
+    h_err = H5Aread(h_attr, H5T_NATIVE_DOUBLE, &boxsize);
+    if (h_err < 0) {
+        printf("Error reading hdf5 attribute '%s'.\n", "BoxSize");
+        return 1;
+    }
+
+    /* It should be a square */
+    assert(boxsize[0] == boxsize[1]);
+    *box_len = boxsize[0];
+
+    /* Close the attribute, and the Header group */
+    H5Aclose(h_attr);
+    H5Gclose(h_grp);
+
+    /* Open the Field group */
+    h_grp = H5Gopen(h_file, "Field", H5P_DEFAULT);
+
+    /* Open the Field dataset */
+    hid_t h_data = H5Dopen2(h_grp, "Field", H5P_DEFAULT);
+
+    /* Open the dataspace and fetch the grid dimensions */
+    hid_t h_space = H5Dget_space(h_data);
+    int ndims = H5Sget_simple_extent_ndims(h_space);
+    hsize_t *dims = malloc(ndims * sizeof(hsize_t));
+    H5Sget_simple_extent_dims(h_space, dims, NULL);
+    int read_N = dims[0];
+
+    /* We should be in 2D */
+    if (ndims != 2) {
+        printf("Number of dimensions %d != 2.\n", ndims);
+        return 2;
+    }
+    /* It should be a square */
+    if (read_N != dims[1]) {
+        printf("Non-cubic grid size (%lld, %lld).\n", dims[0], dims[1]);
+        return 2;
+    }
+    /* Store the grid size */
+    *N = read_N;
+
+    /* Allocate the array (without padding) */
+    *box = malloc(read_N * read_N * sizeof(double));
+
+    /* The hyperslab that should be read (needed in case of padding) */
+    const hsize_t space_rank = 2;
+    const hsize_t space_dims[2] = {read_N, read_N}; //2D space
+
+    /* Offset of the hyperslab */
+    const hsize_t space_offset[2] = {0, 0};
+
+    /* Create memory space for the chunk */
+    hid_t h_memspace = H5Screate_simple(space_rank, space_dims, NULL);
+    H5Sselect_hyperslab(h_space, H5S_SELECT_SET, space_offset, NULL, space_dims, NULL);
+
+    /* Read out the data */
+    h_err = H5Dread(h_data, H5T_NATIVE_DOUBLE, h_memspace, h_space, H5P_DEFAULT, *box);
+    if (h_err < 0) {
+        printf("Error reading hdf5 file '%s'.\n", fname);
+        return 1;
+    }
+
+    /* Close the dataspaces and dataset */
+    H5Sclose(h_memspace);
+    H5Sclose(h_space);
+    H5Dclose(h_data);
+
+    /* Close the Field group */
+    H5Gclose(h_grp);
+
+    /* Close the file */
+    H5Fclose(h_file);
+
+    /* Free memory */
+    free(dims);
+
+    return 0;
+}
+
 /* Read the box without any checks, assuming we have sufficient memory
  * allocated. */
 int readFieldFileInPlace(double *box, const char *fname) {
