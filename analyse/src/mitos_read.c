@@ -337,10 +337,18 @@ int main(int argc, char *argv[]) {
 
 
     /* Reduce the grid */
-    if (rank == 0) {
-        MPI_Reduce(MPI_IN_PLACE, box, (long long) N * N * N, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-    } else {
-        MPI_Reduce(box, box, (long long) N * N * N, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    long long max_reduce = 2 << 29;
+    long long size = (long long) N * N * N;
+    long long steps = size / max_reduce;
+    for (long long i = 0; i < steps; i++) {
+        long long reduce_start = i * max_reduce;
+        long long reduce_end = (i < steps - 1) ? (i + 1) * max_reduce : size;
+        long long reduce_step = reduce_end - reduce_start;
+        if (rank == 0) {
+            MPI_Reduce(MPI_IN_PLACE, box + reduce_start, (int) reduce_step, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        } else {
+            MPI_Reduce(box + reduce_start, box + reduce_start, (int) reduce_step, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        }
     }
 
     /* Reduce the total mass */
