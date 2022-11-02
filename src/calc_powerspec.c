@@ -61,7 +61,7 @@ void calc_cross_powerspec(int N, double boxlen, const fftw_complex *box1,
                 /* Compute the bin */
                 const float u = (log(k) - log_min_k) / (log_max_k - log_min_k);
                 const int bin = floor((bins - 1) * u);
-                const long long int id = row_major_half_mpi(x, y, z, N, X0);
+                const long long int id = row_major_half(x, y, z, N);
 
                 assert(bin >= 0 && bin < bins);
 
