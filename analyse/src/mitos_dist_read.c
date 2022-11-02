@@ -359,14 +359,14 @@ int main(int argc, char *argv[]) {
 
             double val = m * inv_grid_cell_vol;
 
-            long long store_x = wrap_ll(iX,N) - X0;
+            long long store_x = wrap(iX,N) - X0;
             if (!(store_x < 0 || store_x >= NX)) {
                 box[row_major_padded2(store_x, iY, iZ, N)] += val * tx * ty * tz;
                 box[row_major_padded2(store_x, iY+1, iZ, N)] += val * tx * dy * tz;
                 box[row_major_padded2(store_x, iY, iZ+1, N)] += val * tx * ty * dz;
                 box[row_major_padded2(store_x, iY+1, iZ+1, N)] += val * tx * dy * dz;
             }
-            long long store_x_p = wrap_ll(iX+1,N) - X0;
+            long long store_x_p = wrap(iX+1,N) - X0;
             if (!(store_x_p < 0 || store_x_p >= NX)) {
                 box[row_major_padded2(store_x_p, iY, iZ, N)] += val * dx * ty * tz;
                 box[row_major_padded2(store_x_p, iY+1, iZ, N)] += val * dx * dy * tz;
