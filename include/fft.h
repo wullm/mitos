@@ -57,7 +57,7 @@ static inline long long int row_major_half(long long i, long long j, long long k
 static inline long long int row_major_padded(long long i, long long j, long long k, long long N) {
     i = wrap(i,N);
     j = wrap(j,N);
-    k = wrap(k,N+2);
+    k = wrap(k,N+2); // this is probably not what you want, but rather wrap(k,N)!
     return (long long int) i*N*(N+2) + j*(N+2) + k;
 }
 
@@ -69,6 +69,17 @@ static inline void inverse_row_major(long long int id, int *x, int *y, int *z, i
     *z = i;
     *y = j;
     *x = k;
+}
+
+static inline long long int row_major_half_mpi(long int i, long int j, long int k, long int N, long int X0) {
+    /* Wrap global coordinates */
+    i = wrap(i,N);
+    j = wrap(j,N);
+    k = wrap(k,N/2 + 1);
+
+    /* Map to local slice (no out of bounds handling) */
+    i = i - X0;
+    return (long long int) i*(N/2+1)*N + j*(N/2+1) + k;
 }
 
 static inline double hypot3(double x, double y, double z) {
@@ -83,6 +94,7 @@ void fft_execute(fftw_plan plan);
 /* Functions for ordinary contiguous arrays */
 int fft_normalize_r2c(fftw_complex *arr, int N, double boxlen);
 int fft_normalize_r2c_float(fftwf_complex *arr, int N, double boxlen);
+int fft_normalize_r2c_float_mpi(fftwf_complex *farr, long int N, long int local_size, double boxlen);
 int fft_normalize_c2r(double *arr, int N, double boxlen);
 int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
                      double boxlen, void (*compute)(struct kernel* the_kernel),
@@ -90,7 +102,11 @@ int fft_apply_kernel(fftw_complex *write, const fftw_complex *read, int N,
 int fft_apply_kernel_float(fftwf_complex *write, const fftwf_complex *read, int N,
                            double boxlen, void (*compute)(struct kernel* the_kernel),
                            const void *params);
-                                          
+int fft_apply_kernel_float_mpi(fftwf_complex *write, const fftwf_complex *read,
+                               long int N, long int X0, long int NX, double boxlen,
+                               void (*compute)(struct kernel* the_kernel),
+                               const void *params);
+
 /* Functions for distributed grids */
 int fft_r2c_dg(struct distributed_grid *dg);
 int fft_c2r_dg(struct distributed_grid *dg);
