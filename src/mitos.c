@@ -27,7 +27,7 @@
 #include "../include/mitos.h"
 #include "../include/grf_ngeniclike.h"
 
-#define COMPILED_WITH_FIREBOLT 1
+#define COMPILED_WITH_FIREBOLT 0
 #define FIREBOLT_EXPLICIT_CHECKS 1000
 
 #if(COMPILED_WITH_FIREBOLT)

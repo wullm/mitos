@@ -16,9 +16,9 @@ HDF5_LIBRARIES +=
 HDF5_INCLUDES += -I/cosma/local/gcc/7.3.0/include -I/cosma/local/parallel-hdf5/intel_2018_intel_mpi_2018/1.10.3/include
 HDF5_LIBRARIES += -L/cosma/local/parmetis/intel_2018_intel_mpi_2018/4.0.3/lib -L/cosma/local/gcc/7.3.0/lib64/ -Wl,-rpath=/cosma/local/gcc/7.3.0/lib64/   -lm
 
-FIREBOLT_PATH = /cosma5/data/durham/dc-elbe1/firebolt/firebolt/
-FIREBOLT_INCLUDES += -I$(FIREBOLT_PATH)/include
-FIREBOLT_LIBRARIES += -L$(FIREBOLT_PATH) -lfirebolt -Wl,-rpath=$(FIREBOLT_PATH)
+#FIREBOLT_PATH = /cosma5/data/durham/dc-elbe1/firebolt/firebolt/
+#FIREBOLT_INCLUDES += -I$(FIREBOLT_PATH)/include
+#FIREBOLT_LIBRARIES += -L$(FIREBOLT_PATH) -lfirebolt -Wl,-rpath=$(FIREBOLT_PATH)
 
 #Putting it together
 INCLUDES = $(HDF5_INCLUDES) $(GSL_INCLUDES) $(FIREBOLT_INCLUDES)
@@ -60,7 +60,7 @@ all:
 	$(GCC) src/perturb_data.c -c -o lib/perturb_data.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/perturb_spline.c -c -o lib/perturb_spline.o $(INCLUDES) $(CFLAGS)
 
-	$(GCC) src/firebolt_interface.c -c -o lib/firebolt_interface.o $(INCLUDES) $(CFLAGS)
+	#$(GCC) src/firebolt_interface.c -c -o lib/firebolt_interface.o $(INCLUDES) $(CFLAGS)
 
 	$(GCC) src/grids_interp.c -c -o lib/grids_interp.o $(INCLUDES) $(CFLAGS)
 	$(GCC) src/mitos.c -o mitos $(INCLUDES) $(OBJECTS) $(LIBRARIES) $(CFLAGS)
