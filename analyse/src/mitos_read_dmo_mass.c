@@ -143,8 +143,6 @@ int main(int argc, char *argv[]) {
     message(rank, "Reading particle type '%s'.\n", pars.ImportName);
     message(rank, "BoxSize is %g\n", boxlen[0]);
 
-    double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
-
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;
     h_attr = H5Aopen(h_grp, "NumPart_Total", H5P_DEFAULT);
@@ -182,6 +180,8 @@ int main(int argc, char *argv[]) {
 
     /* The size of the density grid that we will create */
     const int N = pars.GridSize;
+    
+    double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
 
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
