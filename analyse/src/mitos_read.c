@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
             double Z = z / (boxlen[2]/N);
 
             if (fabs(X) < 0.01 && fabs(Y) < 0.01 && fabs(Z) < 0.01) {
-              printf("%lld %g %g %g\n", l, X, Y, Z);
+              printf("%d %g %g %g\n", l, X, Y, Z);
             }
 
             // double V_X = velocities_data[l][0];
