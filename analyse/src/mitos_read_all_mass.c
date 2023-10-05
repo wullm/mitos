@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     /* Retrieve the physical density at z = 0 */
 
     /* The indices of the density transfer functions */
-    int index = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
+    int index_ncdm = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
     int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
     int index_b = findTitle(ptdat.titles, "d_b", ptdat.n_functions);
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 
     /* Find the present-day background densities */
     int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-    double Omega_ncdm_z0 = ptdat.Omega[ptdat.tau_size * index + today_index];
+    double Omega_ncdm_z0 = ptdat.Omega[ptdat.tau_size * index_ncdm + today_index];
     double Omega_ncdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index);
     double Omega_cdm_z0 = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
     double Omega_cdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index_cdm);
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     double G_newt = 4.49233855e-05; //Mpc^3/(1e10 M_sol)/Gyr^2 (my Mpc,Gyr,M_sol)
     double rho_crit = 3. * H * H / (8. * M_PI * G_newt);
 
-    message(rank, "%d %d %g\n", index, index_cdm, Omega_z);
+    message(rank, "%d %d %g\n", index_ncdm, index_cdm, Omega_z);
     message(rank, "Omega_ncdm = %g\n", Omega_ncdm_z0);
     message(rank, "Omega_tot = %g\n", Omega_tot_z0);
     message(rank, "Omega_cb = %g\n", Omega_cb_z0);
