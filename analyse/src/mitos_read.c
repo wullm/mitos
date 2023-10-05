@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     const int N = pars.GridSize;
 
     /* Allocate grids */
-    float *box = calloc((long long int) N * N * N, sizeof(float));
+    double *box = fftw_alloc_real(N * N * N);
 
     /* Open the corresponding group */
     h_grp = H5Gopen(h_file, pars.ImportName, H5P_DEFAULT);
@@ -273,13 +273,21 @@ int main(int argc, char *argv[]) {
         // /* Close the dataset */
         // H5Dclose(h_dat);
 
-        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / ((long long)N*N*N);
+        double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
 
         /* Assign the particles to the grid with CIC */
         for (int l=0; l<slab_size; l++) {
-            double X = data[l][0] / (boxlen[0]/N);
-            double Y = data[l][1] / (boxlen[1]/N);
-            double Z = data[l][2] / (boxlen[2]/N);
+            double x = fwrap(data[l][0], boxlen[0]);
+            double y = fwrap(data[l][1], boxlen[0]);
+            double z = fwrap(data[l][2], boxlen[0]);
+
+            double X = x / (boxlen[0]/N);
+            double Y = y / (boxlen[1]/N);
+            double Z = z / (boxlen[2]/N);
+
+            if (fabs(X) < 0.01 && fabs(Y) < 0.01 && fabs(Z) < 0.01) {
+              printf("%lld %g %g %g\n", l, X, Y, Z);
+            }
 
             // double V_X = velocities_data[l][0];
             // double V_Y = velocities_data[l][1];
@@ -297,35 +305,26 @@ int main(int argc, char *argv[]) {
             int iY = (int) floor(Y);
             int iZ = (int) floor(Z);
 
-            double shift = 0;
+	        /* Displacements from grid corner */
+            double dx = X - iX;
+            double dy = Y - iY;
+            double dz = Z - iZ;
+            double tx = 1.0 - dx;
+            double ty = 1.0 - dy;
+            double tz = 1.0 - dz;
 
-            //The search window with respect to the top-left-upper corner
-    		int lookLftX = (int) floor((X-iX) - 1.5 + shift);
-    		int lookRgtX = (int) floor((X-iX) + 1.5 + shift);
-    		int lookLftY = (int) floor((Y-iY) - 1.5 + shift);
-    		int lookRgtY = (int) floor((Y-iY) + 1.5 + shift);
-    		int lookLftZ = (int) floor((Z-iZ) - 1.5 + shift);
-    		int lookRgtZ = (int) floor((Z-iZ) + 1.5 + shift);
+            double val = M / grid_cell_vol;
 
-            //Do the mass assignment
-    		for (int x=lookLftX; x<=lookRgtX; x++) {
-    			for (int y=lookLftY; y<=lookRgtY; y++) {
-    				for (int z=lookLftZ; z<=lookRgtZ; z++) {
-                        double xx = fabs(X - (iX+x+shift));
-                        double yy = fabs(Y - (iY+y+shift));
-                        double zz = fabs(Z - (iZ+z+shift));
+            /* Deposit the mass over the nearest 8 cells */
+            box[row_major(iX, iY, iZ, N)] += val * tx * ty * tz;
+            box[row_major(iX+1, iY, iZ, N)] += val * dx * ty * tz;
+            box[row_major(iX, iY+1, iZ, N)] += val * tx * dy * tz;
+            box[row_major(iX, iY, iZ+1, N)] += val * tx * ty * dz;
+            box[row_major(iX+1, iY+1, iZ, N)] += val * dx * dy * tz;
+            box[row_major(iX+1, iY, iZ+1, N)] += val * dx * ty * dz;
+            box[row_major(iX, iY+1, iZ+1, N)] += val * tx * dy * dz;
+            box[row_major(iX+1, iY+1, iZ+1, N)] += val * dx * dy * dz;
 
-                        double part_x = xx < 0.5 ? (0.75-xx*xx)
-                                                : (xx < 1.5 ? 0.5*(1.5-xx)*(1.5-xx) : 0);
-        				double part_y = yy < 0.5 ? (0.75-yy*yy)
-                                                : (yy < 1.5 ? 0.5*(1.5-yy)*(1.5-yy) : 0);
-        				double part_z = zz < 0.5 ? (0.75-zz*zz)
-                                                : (zz < 1.5 ? 0.5*(1.5-zz)*(1.5-zz) : 0);
-
-                        box[row_major(iX+x, iY+y, iZ+z, N)] += M/grid_cell_vol * (part_x*part_y*part_z);
-    				}
-    			}
-    		}
         }
 
         printf("(%03d,%03d) Read %ld particles\n", rank, k, slab_size);
@@ -337,18 +336,10 @@ int main(int argc, char *argv[]) {
 
 
     /* Reduce the grid */
-    long long max_reduce = 2 << 29;
-    long long size = (long long) N * N * N;
-    long long steps = size / max_reduce;
-    for (long long i = 0; i < steps; i++) {
-        long long reduce_start = i * max_reduce;
-        long long reduce_end = (i < steps - 1) ? (i + 1) * max_reduce : size;
-        long long reduce_step = reduce_end - reduce_start;
-        if (rank == 0) {
-            MPI_Reduce(MPI_IN_PLACE, box + reduce_start, (int) reduce_step, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-        } else {
-            MPI_Reduce(box + reduce_start, box + reduce_start, (int) reduce_step, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-        }
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     /* Reduce the total mass */
@@ -372,7 +363,7 @@ int main(int argc, char *argv[]) {
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
-                    long long int id = row_major(x, y, z, N);
+                    int id = row_major(x, y, z, N);
                     box[id] = (box[id] - avg_density)/avg_density;
                 }
             }
@@ -398,7 +389,7 @@ int main(int argc, char *argv[]) {
             } else {
                 sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
             }
-            writeFieldFileCompressedFloat(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
+            writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
             message(rank, "Density grid exported to %s.\n", box_fname);
         }
     }
@@ -410,20 +401,20 @@ int main(int argc, char *argv[]) {
         int *obs_in_bins = calloc(bins, sizeof(int));
 
         /* Transform to momentum space */
-        fftwf_complex *fbox = (fftwf_complex*) fftwf_malloc((long long)N*N*(N/2+1)*sizeof(fftwf_complex));
-        fftwf_plan r2c = fftwf_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
-        fftwf_plan c2r = fftwf_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
-        fftwf_execute(r2c);
-    	fft_normalize_r2c_float(fbox,N,boxlen[0]);
+        fftw_complex *fbox = (fftw_complex*) fftw_malloc(N*N*(N/2+1)*sizeof(fftw_complex));
+        fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
+        fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
+        fft_execute(r2c);
+        fft_normalize_r2c(fbox,N,boxlen[0]);
 
-        /* Undo the TSC window function */
-        undoTSCWindowFloat(fbox, N, boxlen[0]);
+        /* Undo the CIC window function */
+        undoCICWindow(fbox, N, boxlen[0]);
 
-        calc_cross_powerspec_float(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
+        calc_cross_powerspec(N, boxlen[0], fbox, fbox, bins, k_in_bins, power_in_bins, obs_in_bins);
 
         /* Check that it is right */
         printf("\n");
-        printf("Example power spectrum:\n");
+        printf("Power spectrum:\n");
         printf("k P_measured(k) observations\n");
         for (int i=0; i<bins; i++) {
             if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
@@ -436,13 +427,13 @@ int main(int argc, char *argv[]) {
             printf("%f %e %d\n", k, Pk, obs);
         }
 
-        fftwf_destroy_plan(r2c);
-        fftwf_destroy_plan(c2r);
-        fftwf_free(fbox);
+        fftw_destroy_plan(r2c);
+        fftw_destroy_plan(c2r);
+        fftw_free(fbox);
 
         printf("\n");
     }
-    free(box);
+    fftw_free(box);
 
     /* Close the HDF5 file */
     H5Fclose(h_file);
