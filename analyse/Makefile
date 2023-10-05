@@ -21,7 +21,7 @@ LDFLAGS =
 
 OBJECTS = ../lib/input.o ../lib/output.o ../lib/input_mpi.o ../lib/output_mpi.o ../lib/fft.o ../lib/calc_powerspec.o ../lib/grids_interp.o ../lib/particle_types.o ../lib/titles.o ../lib/distributed_grid.o ../lib/random.o ../lib/perturb_data.o ../lib/perturb_spline.o ../lib/primordial.o
 
-PROGRAMS = mitos_read mitos_half_read mitos_box mitos_cross_spec mitos_profiles mitos_mesh_profiles mitos_render mitos_gauss_purifier mitos_vel3 mitos_veloc_bias mitos_halo_vel3 mitos_halo_spec mitos_gauss_monofon_purifier mitos_box_bispec mitos_dist_read
+PROGRAMS = mitos_read mitos_half_read mitos_box mitos_cross_spec mitos_profiles mitos_mesh_profiles mitos_render mitos_gauss_purifier mitos_vel3 mitos_veloc_bias mitos_halo_vel3 mitos_halo_spec mitos_gauss_monofon_purifier mitos_box_bispec mitos_dist_read mitos_read_dmo_mass mitos_read_all_mass
 
 all: $(PROGRAMS)
 
