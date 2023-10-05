@@ -101,16 +101,13 @@ int main(int argc, char *argv[]) {
 
     /* Find the present-day background densities */
     int today_index = ptdat.tau_size - 1; // today corresponds to the last index
-    double Omega_ncdm_z0 = ptdat.Omega[ptdat.tau_size * index_ncdm + today_index];
-    double Omega_ncdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index);
+    double Omega_ncdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index_ncdm);
     double Omega_cdm_z0 = ptdat.Omega[ptdat.tau_size * index_cdm + today_index];
     double Omega_cdm_z = perturbDensityAtLogTau(&spline, cosmo.log_tau_ini, index_cdm);
     double Omega_b_z0 = ptdat.Omega[ptdat.tau_size * index_b + today_index];
+    double Omega_cb_z0 = Omega_cdm_z0 + Omega_b_z0;
     double scaled_Omega_ncdm = Omega_ncdm_z / Omega_cdm_z * Omega_cdm_z0;
     double scaled_Omega_tot = scaled_Omega_ncdm + Omega_cdm_z0 + Omega_b_z0;
-    
-    double density_tot = rho_crit * scaled_Omega_tot;
-    double density_nu_bg = rho_crit * scaled_Omega_ncdm;
 
     /* Critical density */
     double H_unit = 0.1022012156719; //100 km/s/Mpc in 1/Gyr
@@ -118,9 +115,11 @@ int main(int argc, char *argv[]) {
     double G_newt = 4.49233855e-05; //Mpc^3/(1e10 M_sol)/Gyr^2 (my Mpc,Gyr,M_sol)
     double rho_crit = 3. * H * H / (8. * M_PI * G_newt);
 
-    message(rank, "%d %d %g\n", index_ncdm, index_cdm, Omega_z);
-    message(rank, "Omega_ncdm = %g\n", Omega_ncdm_z0);
-    message(rank, "Omega_tot = %g\n", Omega_tot_z0);
+    double density_tot = rho_crit * scaled_Omega_tot;
+    double density_nu_bg = rho_crit * scaled_Omega_ncdm;
+
+    message(rank, "%d %d %d\n", index_ncdm, index_cdm, index_b);
+    message(rank, "Omega_ncdm = %g\n", scaled_Omega_ncdm);
     message(rank, "Omega_cb = %g\n", Omega_cb_z0);
     message(rank, "density_cdm = %g\n", rho_crit * Omega_cdm_z0);
     message(rank, "density_b = %g\n", rho_crit * Omega_b_z0);
@@ -359,7 +358,7 @@ int main(int argc, char *argv[]) {
                 H5Dclose(h_dat);
             }
             
-            double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
+            // double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
 
             /* Assign the particles to the grid with CIC */
             for (int l=0; l<slab_size; l++) {
