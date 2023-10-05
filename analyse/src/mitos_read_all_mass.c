@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     /* Determine the starting conformal time */
     cosmo.log_tau_ini = perturbLogTauAtRedshift(&spline, cosmo.z_ini);
 
-    message(rank, "Starting time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
+    message(rank, "Assumed time\t\t [z, tau] = [%.2f, %.2f U_T]\n", cosmo.z_ini, exp(cosmo.log_tau_ini));
     message(rank, "\n");
 
     /* Find the present-day background densities */
@@ -118,13 +118,12 @@ int main(int argc, char *argv[]) {
     double density_tot = rho_crit * scaled_Omega_tot;
     double density_nu_bg = rho_crit * scaled_Omega_ncdm;
 
-    message(rank, "%d %d %d\n", index_ncdm, index_cdm, index_b);
     message(rank, "Omega_ncdm = %g\n", scaled_Omega_ncdm);
     message(rank, "Omega_cb = %g\n", Omega_cb_z0);
     message(rank, "density_cdm = %g\n", rho_crit * Omega_cdm_z0);
     message(rank, "density_b = %g\n", rho_crit * Omega_b_z0);
     message(rank, "density_tot = %g\n", density_tot);
-    message(rank, "density_ncdm = %g\n", density_nu_bg);
+    message(rank, "density_ncdm = %g\n\n", density_nu_bg);
 
     /* Open the file */
     // hid_t h_file = openFile_MPI(MPI_COMM_WORLD, pars.InputFilename);
@@ -478,11 +477,7 @@ int main(int argc, char *argv[]) {
 
         if (disable_write == 0) {
             char box_fname[40];
-            if (!found) {
-                sprintf(box_fname, "density_%s.hdf5", pars.ImportName);
-            } else {
-                sprintf(box_fname, "density_%s.hdf5", tp->Identifier);
-            }
+            sprintf(box_fname, "density_tot.hdf5");
             writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
             message(rank, "Density grid exported to %s.\n", box_fname);
         }
