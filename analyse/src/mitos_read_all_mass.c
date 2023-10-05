@@ -447,7 +447,7 @@ int main(int argc, char *argv[]) {
 
         /* Reset the density */
         //avg_density = Omega_tot_z0 * rho_crit;
-        message(rank, "Density expected from perturb file: %g\n", (density_tot - density_nu_bg));
+        message(rank, "Density expected from perturb file: %g\n", density_tot);
         
         /* The cb density */
         //double avg_density_cb = Omega_cb_z0 * rho_crit;
