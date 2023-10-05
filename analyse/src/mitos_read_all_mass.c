@@ -143,6 +143,8 @@ int main(int argc, char *argv[]) {
     message(rank, "Reading particle type '%s'.\n", pars.ImportName);
     message(rank, "BoxSize is %g\n", boxlen[0]);
 
+    double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
+
     /* Read the numbers of particles of each type */
     hsize_t numer_of_types;
     h_attr = H5Aopen(h_grp, "NumPart_Total", H5P_DEFAULT);
@@ -364,8 +366,6 @@ int main(int argc, char *argv[]) {
                 H5Dclose(h_dat);
             }
 
-            // double grid_cell_vol = boxlen[0]*boxlen[1]*boxlen[2] / (N*N*N);
-
             /* Assign the particles to the grid with CIC */
             for (int l=0; l<slab_size; l++) {
                 double x = fwrap(data[l][0], boxlen[0]);
@@ -457,7 +457,7 @@ int main(int argc, char *argv[]) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
-                    box[id] = (box[id] + density_nu_bg) / density_tot - 1.;
+                    box[id] = (box[id] / grid_cell_vol + density_nu_bg) / density_tot - 1.;
                 }
             }
         }
