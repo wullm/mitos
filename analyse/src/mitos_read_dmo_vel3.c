@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     /* Retrieve the physical density at z = 0 */
 
     /* The indices of the density transfer functions */
-    int index_ncdm = findTitle(ptdat.titles, pars.CrossSpectrumDensity1, ptdat.n_functions);
+    int index_ncdm = findTitle(ptdat.titles, "d_ncdm[0]", ptdat.n_functions);
     int index_cdm = findTitle(ptdat.titles, "d_cdm", ptdat.n_functions);
     int index_b = findTitle(ptdat.titles, "d_b", ptdat.n_functions);
 
@@ -185,15 +185,16 @@ int main(int argc, char *argv[]) {
 
     /* Allocate grids */
     double *box = fftw_alloc_real(N * N * N);
+    double *box_vx = fftw_alloc_real(N * N * N);
+    double *box_vy = fftw_alloc_real(N * N * N);
+    double *box_vz = fftw_alloc_real(N * N * N);
     
     double total_mass = 0;
 
-    char typestrings[5][200] = {"PartType1", "PartType6", "PartType0", "PartType4", "PartType5"};
+    char typestrings[2][200] = {"PartType1", "PartType6"};
 
-    for (int typenum = 0; typenum < 5; typenum++) {
+    for (int typenum = 0; typenum < 2; typenum++) {
         message(rank, "\nWorking on %s\n", typestrings[typenum]);
-
-        //if (typenum == 1) continue;
         
         /* Open the corresponding group */
         h_grp = H5Gopen(h_file, typestrings[typenum], H5P_DEFAULT);
@@ -273,13 +274,8 @@ int main(int argc, char *argv[]) {
             H5Dclose(h_dat);
 
 
-            /* Open the masses dataset (using DynamicalMasses for the BHs) */
-            if (typenum == 4) {
-                //h_dat = H5Dopen(h_grp, "SubgridMasses", H5P_DEFAULT);
-                h_dat = H5Dopen(h_grp, "DynamicalMasses", H5P_DEFAULT);
-            } else {
-                h_dat = H5Dopen(h_grp, "Masses", H5P_DEFAULT);
-            }
+            /* Open the masses dataset */
+            h_dat = H5Dopen(h_grp, "Masses", H5P_DEFAULT);
 
             /* Find the dataspace (in the file) */
             h_space = H5Dget_space (h_dat);
@@ -306,35 +302,34 @@ int main(int argc, char *argv[]) {
             /* Close the dataset */
             H5Dclose(h_dat);
 
-
-            // /* Open the velocities dataset */
-            // h_dat = H5Dopen(h_grp, "Velocities", H5P_DEFAULT);
-            //
-            // /* Find the dataspace (in the file) */
-            // h_space = H5Dget_space (h_dat);
-            //
-            // /* Select the hyperslab */
-            // status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
-            //                              NULL, slab_dims, NULL);
-            // assert(status >= 0);
-            //
-            // /* Create a memory space */
-            // h_mems = H5Screate_simple(2, slab_dims, NULL);
-            //
-            // /* Create the data array */
-            // double velocities_data[slab_size][3];
-            //
-            // status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
-            //                  velocities_data);
-            //
-            // /* Close the memory space */
-            // H5Sclose(h_mems);
-            //
-            // /* Close the data and memory spaces */
-            // H5Sclose(h_space);
-            //
-            // /* Close the dataset */
-            // H5Dclose(h_dat);
+            /* Open the velocities dataset */
+            h_dat = H5Dopen(h_grp, "Velocities", H5P_DEFAULT);
+            
+            /* Find the dataspace (in the file) */
+            h_space = H5Dget_space (h_dat);
+            
+            /* Select the hyperslab */
+            status = H5Sselect_hyperslab(h_space, H5S_SELECT_SET, start,
+                                         NULL, slab_dims, NULL);
+            assert(status >= 0);
+            
+            /* Create a memory space */
+            h_mems = H5Screate_simple(2, slab_dims, NULL);
+            
+            /* Create the data array */
+            double velocities_data[slab_size][3];
+            
+            status = H5Dread(h_dat, H5T_NATIVE_DOUBLE, h_mems, h_space, H5P_DEFAULT,
+                             velocities_data);
+            
+            /* Close the memory space */
+            H5Sclose(h_mems);
+            
+            /* Close the data and memory spaces */
+            H5Sclose(h_space);
+            
+            /* Close the dataset */
+            H5Dclose(h_dat);
             
             /* Create the data array */
             double weight_data[slab_size];
@@ -375,6 +370,10 @@ int main(int argc, char *argv[]) {
                 double X = x / (boxlen[0]/N);
                 double Y = y / (boxlen[1]/N);
                 double Z = z / (boxlen[2]/N);
+                
+                double V_X = velocities_data[l][0];
+                double V_Y = velocities_data[l][1];
+                double V_Z = velocities_data[l][2];
 
                 double M = mass_data[l];
 
@@ -386,7 +385,7 @@ int main(int argc, char *argv[]) {
                 }
                 
                 //total_mass += M;
-
+                
                 int iX = (int) floor(X);
                 int iY = (int) floor(Y);
                 int iZ = (int) floor(Z);
@@ -401,6 +400,9 @@ int main(int argc, char *argv[]) {
             
                 //double val = M / grid_cell_vol;
                 double val = M;
+                double val_X = M * V_X;
+                double val_Y = M * V_Y;
+                double val_Z = M * V_Z;
 
                 /* Deposit the mass over the nearest 8 cells */
                 box[row_major(iX, iY, iZ, N)] += val * tx * ty * tz;
@@ -411,7 +413,36 @@ int main(int argc, char *argv[]) {
                 box[row_major(iX+1, iY, iZ+1, N)] += val * dx * ty * dz;
                 box[row_major(iX, iY+1, iZ+1, N)] += val * tx * dy * dz;
                 box[row_major(iX+1, iY+1, iZ+1, N)] += val * dx * dy * dz;
+                
+                /* Deposit the X-velocities over the nearest 8 cells */
+                box_vx[row_major(iX, iY, iZ, N)] += val_X * tx * ty * tz;
+                box_vx[row_major(iX+1, iY, iZ, N)] += val_X * dx * ty * tz;
+                box_vx[row_major(iX, iY+1, iZ, N)] += val_X * tx * dy * tz;
+                box_vx[row_major(iX, iY, iZ+1, N)] += val_X * tx * ty * dz;
+                box_vx[row_major(iX+1, iY+1, iZ, N)] += val_X * dx * dy * tz;
+                box_vx[row_major(iX+1, iY, iZ+1, N)] += val_X * dx * ty * dz;
+                box_vx[row_major(iX, iY+1, iZ+1, N)] += val_X * tx * dy * dz;
+                box_vx[row_major(iX+1, iY+1, iZ+1, N)] += val_X * dx * dy * dz;
 
+                /* Deposit the X-velocities over the nearest 8 cells */
+                box_vy[row_major(iX, iY, iZ, N)] += val_Y * tx * ty * tz;
+                box_vy[row_major(iX+1, iY, iZ, N)] += val_Y * dx * ty * tz;
+                box_vy[row_major(iX, iY+1, iZ, N)] += val_Y * tx * dy * tz;
+                box_vy[row_major(iX, iY, iZ+1, N)] += val_Y * tx * ty * dz;
+                box_vy[row_major(iX+1, iY+1, iZ, N)] += val_Y * dx * dy * tz;
+                box_vy[row_major(iX+1, iY, iZ+1, N)] += val_Y * dx * ty * dz;
+                box_vy[row_major(iX, iY+1, iZ+1, N)] += val_Y * tx * dy * dz;
+                box_vy[row_major(iX+1, iY+1, iZ+1, N)] += val_Y * dx * dy * dz;
+                
+                /* Deposit the X-velocities over the nearest 8 cells */
+                box_vz[row_major(iX, iY, iZ, N)] += val_Z * tx * ty * tz;
+                box_vz[row_major(iX+1, iY, iZ, N)] += val_Z * dx * ty * tz;
+                box_vz[row_major(iX, iY+1, iZ, N)] += val_Z * tx * dy * tz;
+                box_vz[row_major(iX, iY, iZ+1, N)] += val_Z * tx * ty * dz;
+                box_vz[row_major(iX+1, iY+1, iZ, N)] += val_Z * dx * dy * tz;
+                box_vz[row_major(iX+1, iY, iZ+1, N)] += val_Z * dx * ty * dz;
+                box_vz[row_major(iX, iY+1, iZ+1, N)] += val_Z * tx * dy * dz;
+                box_vz[row_major(iX+1, iY+1, iZ+1, N)] += val_Z * dx * dy * dz;
             }
 
             printf("(%03d,%03d) Read %ld particles\n", rank, k, slab_size);
@@ -422,11 +453,29 @@ int main(int argc, char *argv[]) {
         H5Gclose(h_grp);
     }
 
-    /* Reduce the grid */
+    /* Reduce the grids */
     if (rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     } else {
         MPI_Reduce(box, box, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+    
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box_vx, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(box_vx, box_vx, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+    
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box_vy, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(box_vy, box_vy, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+    
+    if (rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, box_vz, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    } else {
+        MPI_Reduce(box_vz, box_vz, N * N * N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     }
 
     /* Reduce the total mass */
@@ -458,6 +507,10 @@ int main(int argc, char *argv[]) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
                     box[id] = box[id] / grid_cell_vol + density_nu_bg;
+                    
+                    box_vx[id] = box_vx[id] / grid_cell_vol;
+                    box_vy[id] = box_vy[id] / grid_cell_vol;
+                    box_vz[id] = box_vz[id] / grid_cell_vol;
                 }
             }
         }
@@ -480,6 +533,11 @@ int main(int argc, char *argv[]) {
             sprintf(box_fname, "density_tot.hdf5");
             writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
             message(rank, "Density grid exported to %s.\n", box_fname);
+            
+            writeFieldFileCompressed(box_vx, N, boxlen[0], "velocity_tot_x.hdf5", pars.LossyScaleDigits);
+            writeFieldFileCompressed(box_vy, N, boxlen[0], "velocity_tot_y.hdf5", pars.LossyScaleDigits);
+            writeFieldFileCompressed(box_vz, N, boxlen[0], "velocity_tot_z.hdf5", pars.LossyScaleDigits);
+            message(rank, "Velocity grids exported to velocity_tot_*.\n", box_fname);
         }
     }
     
@@ -533,6 +591,9 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
     fftw_free(box);
+    fftw_free(box_vx);
+    fftw_free(box_vy);
+    fftw_free(box_vz);
 
     /* Close the HDF5 file */
     H5Fclose(h_file);

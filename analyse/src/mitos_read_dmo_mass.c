@@ -445,12 +445,12 @@ int main(int argc, char *argv[]) {
         /* The cb density */
         //double avg_density_cb = Omega_cb_z0 * rho_crit;
         
-        /* Turn the density field into an overdensity field */
+        /* Turn the mass field into a mass density field */
         for (int x=0; x<N; x++) {
             for (int y=0; y<N; y++) {
                 for (int z=0; z<N; z++) {
                     int id = row_major(x, y, z, N);
-                    box[id] = (box[id] / grid_cell_vol + density_nu_bg) / density_tot - 1.;
+                    box[id] = box[id] / grid_cell_vol + density_nu_bg;
                 }
             }
         }
@@ -473,6 +473,16 @@ int main(int argc, char *argv[]) {
             sprintf(box_fname, "density_tot.hdf5");
             writeFieldFileCompressed(box, N, boxlen[0], box_fname, pars.LossyScaleDigits);
             message(rank, "Density grid exported to %s.\n", box_fname);
+        }
+    }
+    
+    /* Turn the density field into an overdensity field */
+    for (int x=0; x<N; x++) {
+        for (int y=0; y<N; y++) {
+            for (int z=0; z<N; z++) {
+                int id = row_major(x, y, z, N);
+                box[id] = box[id] / density_tot - 1.0;
+            }
         }
     }
 
