@@ -32,6 +32,8 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    int nfolds = 1;
+
     /* Initialize MPI for distributed memory parallelization */
     MPI_Init(&argc, &argv);
     fftw_mpi_init();
@@ -277,16 +279,18 @@ int main(int argc, char *argv[]) {
 
         /* Assign the particles to the grid with CIC */
         for (int l=0; l<slab_size; l++) {
-            double x = fwrap(data[l][0], boxlen[0]);
-            double y = fwrap(data[l][1], boxlen[0]);
-            double z = fwrap(data[l][2], boxlen[0]);
+            //if (data[l][0] > 500 || data[l][1] > 500 || data[l][2] > 500) continue;
+
+            double x = fwrap(data[l][0] * nfolds, boxlen[0]);
+            double y = fwrap(data[l][1] * nfolds, boxlen[0]);
+            double z = fwrap(data[l][2] * nfolds, boxlen[0]);
 
             double X = x / (boxlen[0]/N);
             double Y = y / (boxlen[1]/N);
             double Z = z / (boxlen[2]/N);
 
             if (fabs(X) < 0.01 && fabs(Y) < 0.01 && fabs(Z) < 0.01) {
-              printf("%d %g %g %g\n", l, X, Y, Z);
+              printf("%lld %g %g %g\n", l, X, Y, Z);
             }
 
             // double V_X = velocities_data[l][0];
@@ -299,21 +303,23 @@ int main(int argc, char *argv[]) {
             // (void) V_Z;
 
             double M = mass_data[l];
+            
             total_mass += M;
 
             int iX = (int) floor(X);
             int iY = (int) floor(Y);
             int iZ = (int) floor(Z);
 
-	        /* Displacements from grid corner */
+	    /* Displacements from grid corner */
             double dx = X - iX;
             double dy = Y - iY;
             double dz = Z - iZ;
             double tx = 1.0 - dx;
             double ty = 1.0 - dy;
             double tz = 1.0 - dz;
-
+        
             double val = M / grid_cell_vol;
+            //double val = M;
 
             /* Deposit the mass over the nearest 8 cells */
             box[row_major(iX, iY, iZ, N)] += val * tx * ty * tz;
@@ -405,7 +411,7 @@ int main(int argc, char *argv[]) {
         fftw_plan r2c = fftw_plan_dft_r2c_3d(N, N, N, box, fbox, FFTW_ESTIMATE);
         fftw_plan c2r = fftw_plan_dft_c2r_3d(N, N, N, fbox, box, FFTW_ESTIMATE);
         fft_execute(r2c);
-        fft_normalize_r2c(fbox,N,boxlen[0]);
+    	fft_normalize_r2c(fbox,N,boxlen[0]);
 
         /* Undo the CIC window function */
         undoCICWindow(fbox, N, boxlen[0]);
@@ -414,7 +420,7 @@ int main(int argc, char *argv[]) {
 
         /* Check that it is right */
         printf("\n");
-        printf("Power spectrum:\n");
+        printf("Example power spectrum:\n");
         printf("k P_measured(k) observations\n");
         for (int i=0; i<bins; i++) {
             if (obs_in_bins[i] <= 1) continue; //skip (virtually) empty bins
@@ -424,7 +430,7 @@ int main(int argc, char *argv[]) {
             double Pk = power_in_bins[i];
             int obs = obs_in_bins[i];
 
-            printf("%f %e %d\n", k, Pk, obs);
+            printf("%f %e %d\n", k*nfolds, Pk, obs);
         }
 
         fftw_destroy_plan(r2c);
